@@ -6,7 +6,7 @@
 - [x] 1.2 Adicionar `.gitignore` de Unity na raiz de `KingdomCollapse/` e verificar com `git status` que `Library/`, `Temp/`, `Logs/` e `Build/` não aparecem
 - [x] 1.3 Criar os assembly definitions `KingdomCollapse.Core` (sem referência a UnityEngine), `KingdomCollapse.Game` (referencia Core) e `KingdomCollapse.Tests.EditMode` (referencia Core), e verificar que o projeto compila com os três presentes
 - [x] 1.4 Adicionar um teste de EditMode trivial e verificar que ele roda e passa no Test Runner
-- [ ] 1.5 Commit inicial do repositório e verificar com `git log` que o histórico do KingdomCollapse é independente do repositório do MM
+- [x] 1.5 Commit inicial do repositório e verificar com `git log` que o histórico do KingdomCollapse é independente do repositório do MM
 
 ## 2. Modelo de grid
 
