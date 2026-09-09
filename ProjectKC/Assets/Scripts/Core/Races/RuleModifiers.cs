@@ -117,9 +117,9 @@ namespace KingdomCollapse.Core
         {
             ResourceAmounts amounts = new ResourceAmounts();
 
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                ResourceKind kind = Resources.All[i];
+                ResourceKind kind = ResourceKinds.All[i];
                 int value = GetInt(keyFor(kind), 0);
                 if (value != 0)
                 {

@@ -18,7 +18,14 @@ namespace KingdomCollapse.Core
         Population = 4
     }
 
-    public static class Resources
+    /// <summary>
+    /// Metadados dos recursos: a lista completa em ordem estavel e o nome de exibicao.
+    ///
+    /// Nao se chama "Resources" porque esse nome colide com UnityEngine.Resources, e
+    /// a camada Game usa os dois namespaces. Um alias por arquivo resolveria hoje e
+    /// voltaria a doer em todo arquivo novo.
+    /// </summary>
+    public static class ResourceKinds
     {
         /// <summary>Todos os tipos, em ordem estavel. Usado por iteracao e por UI.</summary>
         public static readonly ResourceKind[] All =
@@ -59,7 +66,7 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class ResourceAmounts
     {
-        private readonly int[] _values = new int[Resources.Count];
+        private readonly int[] _values = new int[ResourceKinds.Count];
 
         public ResourceAmounts()
         {
@@ -69,7 +76,7 @@ namespace KingdomCollapse.Core
         {
             if (other != null)
             {
-                Array.Copy(other._values, _values, Resources.Count);
+                Array.Copy(other._values, _values, ResourceKinds.Count);
             }
         }
 
@@ -139,11 +146,11 @@ namespace KingdomCollapse.Core
         /// <summary>Recursos com quantidade diferente de zero, em ordem estavel.</summary>
         public IEnumerable<ResourceKind> NonZero()
         {
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                if (_values[(int)Resources.All[i]] != 0)
+                if (_values[(int)ResourceKinds.All[i]] != 0)
                 {
-                    yield return Resources.All[i];
+                    yield return ResourceKinds.All[i];
                 }
             }
         }
@@ -160,7 +167,7 @@ namespace KingdomCollapse.Core
 
                 int value = this[kind];
                 builder.Append(value > 0 ? "+" : string.Empty).Append(value).Append(' ')
-                    .Append(Resources.DisplayName(kind));
+                    .Append(ResourceKinds.DisplayName(kind));
             }
 
             return builder.Length == 0 ? "nada" : builder.ToString();
@@ -189,7 +196,7 @@ namespace KingdomCollapse.Core
 
         public override string ToString()
         {
-            return Any ? "faltam " + Missing + " de " + Resources.DisplayName(Kind) : "nada falta";
+            return Any ? "faltam " + Missing + " de " + ResourceKinds.DisplayName(Kind) : "nada falta";
         }
     }
 
@@ -272,9 +279,9 @@ namespace KingdomCollapse.Core
                 return true;
             }
 
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                ResourceKind kind = Resources.All[i];
+                ResourceKind kind = ResourceKinds.All[i];
                 int needed = cost[kind];
 
                 if (needed > 0 && _amounts[kind] < needed)
@@ -303,9 +310,9 @@ namespace KingdomCollapse.Core
                 return true;
             }
 
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                ResourceKind kind = Resources.All[i];
+                ResourceKind kind = ResourceKinds.All[i];
                 int needed = cost[kind];
                 if (needed > 0)
                 {

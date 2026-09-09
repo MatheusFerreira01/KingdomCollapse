@@ -42,7 +42,7 @@ namespace KingdomCollapse.Core
             }
 
             context.Run.Add(_kind, amount);
-            return EffectResult.Ok("+" + amount + " " + Resources.DisplayName(_kind));
+            return EffectResult.Ok("+" + amount + " " + ResourceKinds.DisplayName(_kind));
         }
 
         private int ResolveAmount(RunState run)
@@ -93,12 +93,12 @@ namespace KingdomCollapse.Core
             int allowed = context.Budget.ClampResourceLoss(_kind, requested, current);
             if (allowed <= 0)
             {
-                return EffectResult.NoOp("nada a perder de " + Resources.DisplayName(_kind));
+                return EffectResult.NoOp("nada a perder de " + ResourceKinds.DisplayName(_kind));
             }
 
             int removed = run.Remove(_kind, allowed);
             return EffectResult.Ok(
-                "-" + removed + " " + Resources.DisplayName(_kind), clamped: allowed < requested);
+                "-" + removed + " " + ResourceKinds.DisplayName(_kind), clamped: allowed < requested);
         }
 
         public SeverityClaim DeclareSeverity()

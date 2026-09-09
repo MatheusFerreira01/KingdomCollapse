@@ -11,9 +11,9 @@ namespace KingdomCollapse.Tests
         {
             ResourcePool pool = new ResourcePool();
 
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                Assert.That(pool[Resources.All[i]], Is.Zero);
+                Assert.That(pool[ResourceKinds.All[i]], Is.Zero);
             }
         }
 

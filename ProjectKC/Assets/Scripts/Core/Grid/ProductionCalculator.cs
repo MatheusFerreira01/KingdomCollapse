@@ -26,7 +26,7 @@ namespace KingdomCollapse.Core
         public override string ToString()
         {
             return Reason + ": " + (Gold >= 0 ? "+" : string.Empty) + Gold + " " +
-                   Resources.DisplayName(Resource);
+                   ResourceKinds.DisplayName(Resource);
         }
     }
 

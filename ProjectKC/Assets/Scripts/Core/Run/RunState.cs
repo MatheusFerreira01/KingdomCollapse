@@ -428,7 +428,7 @@ namespace KingdomCollapse.Core
             int flat = (int)SumModifier(ModifierKeys.ProductionFlat);
 
             ResourceAmounts total = new ResourceAmounts();
-            foreach (ResourceKind kind in Resources.All)
+            foreach (ResourceKind kind in ResourceKinds.All)
             {
                 int scaled = (int)Math.Round(raw[kind] * multiplier, MidpointRounding.AwayFromZero);
 

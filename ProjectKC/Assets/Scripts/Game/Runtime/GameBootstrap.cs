@@ -397,7 +397,7 @@ namespace KingdomCollapse.Game
             {
                 case CommandRejection.NotEnoughResources:
                     return "Faltam " + result.Shortage.Missing + " de " +
-                           Resources.DisplayName(result.Shortage.Kind) + ".";
+                           ResourceKinds.DisplayName(result.Shortage.Kind) + ".";
                 case CommandRejection.WeatherBlocked:
                     return "O clima de hoje impede esta acao.";
                 case CommandRejection.NotEnoughGold:
@@ -568,9 +568,9 @@ namespace KingdomCollapse.Game
             ResourceAmounts predicted = run.CollectDailyProductionByResource();
             int upkeep = run.DailyFoodUpkeep();
 
-            for (int i = 0; i < Resources.All.Length; i++)
+            for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
-                ResourceKind kind = Resources.All[i];
+                ResourceKind kind = ResourceKinds.All[i];
                 int delta = predicted[kind];
 
                 if (kind == ResourceKind.Food)
@@ -583,7 +583,7 @@ namespace KingdomCollapse.Game
                     continue;
                 }
 
-                string line = Resources.DisplayName(kind).PadRight(9) + run[kind];
+                string line = ResourceKinds.DisplayName(kind).PadRight(9) + run[kind];
                 if (delta != 0)
                 {
                     line += "  (" + (delta > 0 ? "+" : string.Empty) + delta + "/dia)";
