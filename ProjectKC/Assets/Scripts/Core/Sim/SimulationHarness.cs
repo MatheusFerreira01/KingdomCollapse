@@ -143,13 +143,26 @@ namespace KingdomCollapse.Core
 
     public sealed class SimulationResult
     {
-        public SimulationResult(int seed, int collapseDay, CollapseReason reason, RunScore score, int tilesOwned)
+        public SimulationResult(
+            int seed,
+            int collapseDay,
+            CollapseReason reason,
+            RunScore score,
+            int tilesOwned,
+            int peakDefense,
+            int buildingsBuilt,
+            int goldAtEnd,
+            int cardsPlayed)
         {
             Seed = seed;
             CollapseDay = collapseDay;
             Reason = reason;
             Score = score;
             TilesOwned = tilesOwned;
+            PeakDefense = peakDefense;
+            BuildingsBuilt = buildingsBuilt;
+            GoldAtEnd = goldAtEnd;
+            CardsPlayed = cardsPlayed;
         }
 
         public int Seed { get; }
@@ -161,6 +174,18 @@ namespace KingdomCollapse.Core
         public RunScore Score { get; }
 
         public int TilesOwned { get; }
+
+        /// <summary>Maior defesa que a run chegou a ter. Constante em todas as runs
+        /// significa que o jogador nao tem como responder a ameaca.</summary>
+        public int PeakDefense { get; }
+
+        public int BuildingsBuilt { get; }
+
+        /// <summary>Ouro parado no fim. Muito ouro sobrando indica que nao havia no
+        /// que gastar, e nao que o jogador foi economico.</summary>
+        public int GoldAtEnd { get; }
+
+        public int CardsPlayed { get; }
     }
 
     /// <summary>
@@ -259,6 +284,91 @@ namespace KingdomCollapse.Core
             return inside / (double)Count;
         }
 
+        /// <summary>
+        /// Sinais de que o problema nao e de curva, e sim de conteudo faltando.
+        /// Ajustar numero num jogo sem alavanca so produz um jogo sem alavanca com
+        /// numeros diferentes, entao estes avisos vem antes do veredito de duracao.
+        /// </summary>
+        public List<string> Diagnose()
+        {
+            List<string> warnings = new List<string>();
+
+            if (Count == 0)
+            {
+                return warnings;
+            }
+
+            int minDefense = int.MaxValue;
+            int maxDefense = 0;
+            int minTiles = int.MaxValue;
+            int maxTiles = 0;
+            int totalBuildings = 0;
+            int totalCards = 0;
+            long totalGoldLeft = 0;
+
+            for (int i = 0; i < Results.Count; i++)
+            {
+                SimulationResult result = Results[i];
+                minDefense = Math.Min(minDefense, result.PeakDefense);
+                maxDefense = Math.Max(maxDefense, result.PeakDefense);
+                minTiles = Math.Min(minTiles, result.TilesOwned);
+                maxTiles = Math.Max(maxTiles, result.TilesOwned);
+                totalBuildings += result.BuildingsBuilt;
+                totalCards += result.CardsPlayed;
+                totalGoldLeft += result.GoldAtEnd;
+            }
+
+            if (minDefense == maxDefense)
+            {
+                warnings.Add(
+                    "DEFESA CONSTANTE (" + maxDefense + " em todas as runs): o jogador nao tem " +
+                    "como responder a ameaca. Falta edificio ou carta que some defesa. " +
+                    "Enquanto isso, o dia do Colapso e aritmetica, nao decisao.");
+            }
+
+            if (minTiles == maxTiles)
+            {
+                warnings.Add(
+                    "TERRITORIO CONSTANTE (" + maxTiles + " celulas): a expansao nao esta " +
+                    "acontecendo. Ou o custo cresce rapido demais para a renda, ou nao ha " +
+                    "o que construir nas celulas compradas.");
+            }
+
+            if (Min == Max)
+            {
+                warnings.Add(
+                    "ZERO VARIACAO entre " + Count + " sementes: nada no jogo depende de " +
+                    "sorteio nem de escolha. Calibrar curva aqui nao muda a natureza do " +
+                    "problema.");
+            }
+
+            double buildingsPerRun = totalBuildings / (double)Count;
+            if (buildingsPerRun < 1.0)
+            {
+                warnings.Add(
+                    "POUCA CONSTRUCAO (" + buildingsPerRun.ToString("0.0") + " por run): as " +
+                    "celulas compradas nao aceitam nenhum edificio disponivel. Confira se " +
+                    "todos os terrenos tem ao menos um edificio.");
+            }
+
+            if (totalCards == 0)
+            {
+                warnings.Add(
+                    "NENHUMA CARTA JOGADA: sem cartas no pool, o jogador so tem comprar e " +
+                    "construir. A economia de acoes do dia esta inerte.");
+            }
+
+            double goldPerRun = totalGoldLeft / (double)Count;
+            if (goldPerRun > 30)
+            {
+                warnings.Add(
+                    "OURO PARADO (" + goldPerRun.ToString("0") + " em media ao morrer): sobra " +
+                    "dinheiro sem ter no que gastar. Falta destino de ouro, nao ouro.");
+            }
+
+            return warnings;
+        }
+
         public string Describe()
         {
             StringBuilder builder = new StringBuilder();
@@ -269,6 +379,18 @@ namespace KingdomCollapse.Core
             builder.AppendLine("Dentro do alvo 25-35: " + (FractionWithin(25, 35) * 100).ToString("0.0") + "%");
             builder.AppendLine("Por integridade: " + CountByReason(CollapseReason.IntegrityLost) +
                                "  por territorio: " + CountByReason(CollapseReason.TerritoryLost));
+
+            List<string> warnings = Diagnose();
+            if (warnings.Count > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine("DIAGNOSTICO ESTRUTURAL:");
+                for (int i = 0; i < warnings.Count; i++)
+                {
+                    builder.AppendLine("  * " + warnings[i]);
+                }
+            }
+
             return builder.ToString();
         }
     }
@@ -294,9 +416,20 @@ namespace KingdomCollapse.Core
             RunEngine engine = bundle.Engine;
             engine.StartRun();
 
+            int peakDefense = bundle.Run.TotalDefense();
+            int cardsPlayed = 0;
+
             while (!bundle.Run.IsOver && bundle.Run.Day <= MaxDays)
             {
+                int handBefore = bundle.Run.Deck.Hand.Count;
                 chosen.PlanDay(engine, bundle);
+                cardsPlayed += Math.Max(0, handBefore - bundle.Run.Deck.Hand.Count);
+
+                int defense = bundle.Run.TotalDefense();
+                if (defense > peakDefense)
+                {
+                    peakDefense = defense;
+                }
 
                 // Descarta os eventos de dominio: a simulacao nao desenha nada, e
                 // acumular a lista por 500 dias so gasta memoria.
@@ -309,7 +442,15 @@ namespace KingdomCollapse.Core
 
             RunScore score = engine.FinalScore ?? ScoreCalculator.Calculate(bundle.Run);
             return new SimulationResult(
-                setup.Seed, bundle.Run.Stats.DaysSurvived, bundle.Run.Collapse, score, bundle.Run.Grid.OwnedCount);
+                setup.Seed,
+                bundle.Run.Stats.DaysSurvived,
+                bundle.Run.Collapse,
+                score,
+                bundle.Run.Grid.OwnedCount,
+                peakDefense,
+                bundle.Run.Stats.BuildingsBuilt,
+                bundle.Run.Gold,
+                cardsPlayed);
         }
 
         public static SimulationReport RunBatch(
