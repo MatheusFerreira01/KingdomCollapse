@@ -292,7 +292,10 @@ namespace KingdomCollapse.Core
             return WorkerAllocation.For(Grid, this[ResourceKind.Population], Stance);
         }
 
-        public int TotalDefense() => ProductionCalculator.TotalDefense(Grid, Allocation()) + PendingDefense;
+        public int TotalDefense()
+        {
+            return ProductionCalculator.TotalDefense(Grid, Allocation(), Rules) + PendingDefense;
+        }
 
         /// <summary>Teto de populacao dado pelos edificios em pe.</summary>
         public int PopulationCapacity() => ProductionCalculator.PopulationCapacity(Grid);

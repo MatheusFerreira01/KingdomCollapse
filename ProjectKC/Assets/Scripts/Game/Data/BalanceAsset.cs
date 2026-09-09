@@ -25,9 +25,6 @@ namespace KingdomCollapse.Game
         [SerializeField] private float _threatPerDay = 1f;
         [SerializeField] private float _threatDayExponent = 1.25f;
 
-        [Tooltip("Quanto cada celula alem da primeira soma a forca. E o custo em pressao de expandir (design D6).")]
-        [SerializeField] private float _threatPerTile = 2.5f;
-
         [Header("Agenda da ameaca")]
         [SerializeField] private int _firstThreatDay = 4;
         [SerializeField] private int _threatIntervalDays = 4;
@@ -53,7 +50,9 @@ namespace KingdomCollapse.Game
 
         public ThreatCurve ToThreatCurve()
         {
-            return new ThreatCurve(_threatBaseForce, _threatPerDay, _threatDayExponent, _threatPerTile);
+            // Sem termo por celula: o limite de expansao e economico, nao uma
+            // penalidade aplicada ao tamanho do territorio.
+            return new ThreatCurve(_threatBaseForce, _threatPerDay, _threatDayExponent);
         }
 
         public EventClassWeights ToEventWeights()

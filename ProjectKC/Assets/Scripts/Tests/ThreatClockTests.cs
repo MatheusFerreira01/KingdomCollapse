@@ -43,14 +43,17 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
-        public void MaisCelulasNoMesmoDia_GeramAmeacaMaisForte()
+        public void TerritorioNaoEPunidoPorSiSo()
         {
+            // O termo por celula era penalidade artificial por expandir, criada
+            // quando nada na economia impedia crescer. Com populacao que come e
+            // guarnece, o limite e economico, e punir o tamanho cobraria duas vezes.
             ThreatCurve curve = new ThreatCurve();
 
             int small = curve.ForceFor(10, 4);
             int large = curve.ForceFor(10, 12);
 
-            Assert.That(large, Is.GreaterThan(small));
+            Assert.That(large, Is.EqualTo(small));
         }
 
         [Test]

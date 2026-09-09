@@ -101,10 +101,10 @@ namespace KingdomCollapse.Tests
             ContentCatalog catalog = SimCatalog();
 
             SimulationReport gentle = SimulationHarness.RunBatch(
-                60, seed => new RunSetup("humans", seed) { ThreatCurve = new ThreatCurve(2, 0.8, 1.1, 0.7) }, catalog);
+                60, seed => new RunSetup("humans", seed) { ThreatCurve = new ThreatCurve(2, 0.8, 1.1) }, catalog);
 
             SimulationReport brutal = SimulationHarness.RunBatch(
-                60, seed => new RunSetup("humans", seed) { ThreatCurve = new ThreatCurve(10, 4.0, 1.5, 3.0) }, catalog);
+                60, seed => new RunSetup("humans", seed) { ThreatCurve = new ThreatCurve(10, 4.0, 1.5) }, catalog);
 
             Assert.That(brutal.Median, Is.LessThan(gentle.Median),
                 "gentil=" + gentle.Median + " brutal=" + brutal.Median);

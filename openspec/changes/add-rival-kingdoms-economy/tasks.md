@@ -13,8 +13,8 @@
 - [x] 1.7 Implementar crescimento de população por excedente, limitado por capacidade dos edifícios, verificando por teste que o crescimento para ao atingir a capacidade mesmo com comida sobrando
 - [x] 1.8 Implementar alocação de trabalhadores com edifícios ociosos quando falta gente, verificando por teste que um edifício sem trabalhadores não produz e não é destruído
 - [x] 1.9 Implementar defesa por guarnição, verificando por teste que uma torre sem trabalhadores soma zero de defesa e que guarnecer reduz a produção (spec `resources`)
-- [ ] 1.10 Remover o termo por célula da curva de ameaça e o remendo associado, verificando por teste que dois reinos de tamanhos diferentes enfrentam a mesma força no mesmo ataque (spec `threat-clock`)
-- [ ] 1.11 Deixar produção por terreno, guarnição e origem de recurso como pontos de extensão consultáveis por modificador de raça, verificando por teste que uma raça fictícia que tira comida de ataques repelidos funciona sem alterar o cálculo (design D11 — é o que mantém as raças viáveis depois)
+- [x] 1.10 Remover o termo por célula da curva de ameaça e o remendo associado, verificando por teste que dois reinos de tamanhos diferentes enfrentam a mesma força no mesmo ataque (spec `threat-clock`)
+- [x] 1.11 Deixar produção por terreno, guarnição e origem de recurso como pontos de extensão consultáveis por modificador de raça, verificando por teste que uma raça fictícia que tira comida de ataques repelidos funciona sem alterar o cálculo (design D11 — é o que mantém as raças viáveis depois)
 
 ## 2. Efeitos e conteúdo sobre recursos
 

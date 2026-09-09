@@ -251,6 +251,22 @@ namespace KingdomCollapse.Core
         public override string Kind => "attack_resolved";
     }
 
+    /// <summary>Recursos tirados de um ataque repelido, para racas que vivem do saque.</summary>
+    public sealed class PlunderCollectedEvent : RunEvent
+    {
+        public PlunderCollectedEvent(ResourceAmounts plunder, ThreatKind from)
+        {
+            Plunder = plunder ?? new ResourceAmounts();
+            From = from;
+        }
+
+        public ResourceAmounts Plunder { get; }
+
+        public ThreatKind From { get; }
+
+        public override string Kind => "plunder_collected";
+    }
+
     public sealed class DayEventDrawnEvent : RunEvent
     {
         public DayEventDrawnEvent(EventDefinition definition)

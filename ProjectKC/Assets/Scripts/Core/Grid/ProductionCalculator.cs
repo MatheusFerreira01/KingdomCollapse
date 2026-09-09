@@ -104,7 +104,16 @@ namespace KingdomCollapse.Core
 
             if (!tile.HasBuilding)
             {
-                // Regra dos Elfos: floresta possuida rende mesmo sem edificio.
+                // Ponto de extensao: um terreno possuido pode render por si so, sem
+                // edificio. E o que permite uma raca viver da terra em vez de a
+                // desenvolver, sem abrir este calculo no meio.
+                ResourceAmounts byTerrain = mods.TerrainYield(tile.Terrain);
+                foreach (ResourceKind kind in byTerrain.NonZero())
+                {
+                    breakdown.Add(tile.Terrain + " (raca)", kind, byTerrain[kind]);
+                }
+
+                // Chave legada, mantida porque conteudo ja autorado depende dela.
                 if (tile.Terrain == TerrainType.Forest)
                 {
                     int passive = mods.GetInt(RuleKeys.ForestPassiveProduction, 0);
@@ -208,6 +217,17 @@ namespace KingdomCollapse.Core
             }
 
             return defense;
+        }
+
+        /// <summary>Defesa guarnecida, com o multiplicador de guarnicao da raca.</summary>
+        public static int TotalDefense(
+            KingdomGrid grid, WorkerAllocation allocation, RuleModifiers rules)
+        {
+            int raw = TotalDefense(grid, allocation);
+            double multiplier = (rules ?? RuleModifiers.None)
+                .GetDouble(RuleKeys.GarrisonDefenseMultiplier, 1.0);
+
+            return (int)System.Math.Round(raw * multiplier, System.MidpointRounding.AwayFromZero);
         }
 
         /// <summary>Teto de populacao somado pelos edificios em pe.</summary>

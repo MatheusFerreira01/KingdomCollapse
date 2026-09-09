@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace KingdomCollapse.Core
@@ -35,6 +36,32 @@ namespace KingdomCollapse.Core
 
         /// <summary>Comida excedente necessaria para crescer um habitante. Padrao 5.</summary>
         public const string FoodPerGrowth = "food_per_growth";
+
+        /// <summary>Multiplica a defesa vinda de edificios guarnecidos. Padrao 1.</summary>
+        public const string GarrisonDefenseMultiplier = "garrison_defense_multiplier";
+
+        // --- Pontos de extensao por raca ---
+        //
+        // Existem para que raca continue sendo verbo, e nao multiplicador. Sem eles,
+        // Orcs que se alimentam do saque exigiriam abrir o calculo de ataque no meio,
+        // e Elfos que so vivem de floresta exigiriam abrir o de producao. Cada um e
+        // consultado por nome: chave ausente significa comportamento padrao.
+
+        /// <summary>Recurso ganho a cada ataque repelido. Ex.: "plunder_food".</summary>
+        public static string Plunder(ResourceKind kind)
+        {
+            return "plunder_" + kind.ToString().ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Recurso extra por quadrado possuido de um terreno, mesmo sem edificio.
+        /// Ex.: "terrain_forest_wood".
+        /// </summary>
+        public static string TerrainYield(TerrainType terrain, ResourceKind kind)
+        {
+            return "terrain_" + terrain.ToString().ToLowerInvariant() + "_" +
+                   kind.ToString().ToLowerInvariant();
+        }
     }
 
     /// <summary>
@@ -81,5 +108,35 @@ namespace KingdomCollapse.Core
         }
 
         public IReadOnlyDictionary<string, double> Values => _values;
+
+        /// <summary>
+        /// Le um conjunto de recursos declarado por chaves nomeadas. Devolve vazio
+        /// quando nenhuma chave existe, que e o caso da maioria das racas.
+        /// </summary>
+        public ResourceAmounts ResourcesBy(Func<ResourceKind, string> keyFor)
+        {
+            ResourceAmounts amounts = new ResourceAmounts();
+
+            for (int i = 0; i < Resources.All.Length; i++)
+            {
+                ResourceKind kind = Resources.All[i];
+                int value = GetInt(keyFor(kind), 0);
+                if (value != 0)
+                {
+                    amounts[kind] = value;
+                }
+            }
+
+            return amounts;
+        }
+
+        /// <summary>Recursos ganhos ao repelir um ataque. Vazio para quem nao saqueia.</summary>
+        public ResourceAmounts PlunderOnRepel() => ResourcesBy(RuleKeys.Plunder);
+
+        /// <summary>Recursos que um terreno possuido rende por si so.</summary>
+        public ResourceAmounts TerrainYield(TerrainType terrain)
+        {
+            return ResourcesBy(kind => RuleKeys.TerrainYield(terrain, kind));
+        }
     }
 }

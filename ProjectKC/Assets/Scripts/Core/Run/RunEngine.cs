@@ -588,6 +588,16 @@ namespace KingdomCollapse.Core
                 if (report.Repelled)
                 {
                     Run.Stats.AttacksSurvived++;
+
+                    // Ponto de extensao: repelir pode render recursos. E o que
+                    // permite uma raca tirar sustento da guerra, invertendo o papel
+                    // da campanha inimiga, sem abrir este calculo no meio.
+                    ResourceAmounts plunder = Run.Rules.PlunderOnRepel();
+                    if (!plunder.IsEmpty)
+                    {
+                        Run.Add(plunder);
+                        Emit(new PlunderCollectedEvent(plunder, report.Kind));
+                    }
                 }
 
                 Emit(new AttackResolvedEvent(report));

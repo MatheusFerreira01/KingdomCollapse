@@ -44,24 +44,24 @@ namespace KingdomCollapse.Core
     }
 
     /// <summary>
-    /// Curva de forca da ameaca. Escala com o dia e com o territorio, sem teto
-    /// (spec threat-clock). O termo do territorio e o que torna a expansao uma
-    /// decisao e nao um ganho gratuito: com ele baixo demais, cada celula comprada
-    /// abriga uma torre que da mais defesa do que a celula adiciona de ameaca, e
-    /// expandir vira a jogada obviamente certa em todo dia da run.
+    /// Curva de forca da ameaca. Escala com o tempo, sem teto (spec threat-clock).
+    ///
+    /// Nao escala com o territorio de proposito. O termo por celula existiu enquanto
+    /// nada na economia impedia crescer para sempre: era uma penalidade artificial
+    /// por expandir, inventada para substituir um limite que faltava. Com populacao
+    /// que come e guarnece, o teto virou economico, e punir o tamanho seria cobrar
+    /// duas vezes pela mesma expansao.
     /// </summary>
     public sealed class ThreatCurve
     {
         public ThreatCurve(
             double baseForce = 3,
             double perDay = 1.0,
-            double dayExponent = 1.25,
-            double perTile = 2.5)
+            double dayExponent = 1.25)
         {
             BaseForce = baseForce;
             PerDay = perDay;
             DayExponent = dayExponent;
-            PerTile = perTile;
         }
 
         public double BaseForce { get; }
@@ -70,14 +70,17 @@ namespace KingdomCollapse.Core
 
         public double DayExponent { get; }
 
-        public double PerTile { get; }
-
-        public int ForceFor(int day, int ownedTiles)
+        public int ForceFor(int day)
         {
             double byDay = PerDay * Math.Pow(Math.Max(1, day), DayExponent);
-            double byTerritory = PerTile * Math.Max(0, ownedTiles - 1);
-            return Math.Max(1, (int)Math.Round(BaseForce + byDay + byTerritory, MidpointRounding.AwayFromZero));
+            return Math.Max(1, (int)Math.Round(BaseForce + byDay, MidpointRounding.AwayFromZero));
         }
+
+        /// <summary>
+        /// Sobrecarga que ignora o territorio. Existe para nao quebrar quem ainda
+        /// chama com o numero de celulas; o parametro nao tem efeito.
+        /// </summary>
+        public int ForceFor(int day, int ownedTiles) => ForceFor(day);
     }
 
     /// <summary>
