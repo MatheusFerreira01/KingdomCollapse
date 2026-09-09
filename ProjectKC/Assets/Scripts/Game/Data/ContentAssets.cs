@@ -102,6 +102,25 @@ namespace KingdomCollapse.Game
                 _retained,
                 _allowedRaceIds);
         }
+
+#if UNITY_EDITOR
+        /// <summary>Preenchimento programatico, usado pelo gerador de conteudo inicial.</summary>
+        public void EditorConfigure(
+            string displayName,
+            string rulesText,
+            int energyCost,
+            TargetRequirement target,
+            List<EffectEntry> effects,
+            bool retained = false)
+        {
+            _displayName = displayName;
+            _rulesText = rulesText;
+            _energyCost = energyCost;
+            _target = target;
+            _effects = effects ?? new List<EffectEntry>();
+            _retained = retained;
+        }
+#endif
     }
 
     [CreateAssetMenu(menuName = "Kingdom Collapse/Evento", fileName = "Event_")]
@@ -143,6 +162,11 @@ namespace KingdomCollapse.Game
         public sealed class Option
         {
             public string Label = "Continuar";
+
+            [Tooltip("Opcao paga: o custo em ouro e preco, nao dano, e fica isento do teto da classe. " +
+                     "So vale se o evento tiver outra opcao sem custo, para dar como recusar.")]
+            public bool IsOffer;
+
             public List<EffectEntry> Effects = new List<EffectEntry>();
         }
 
@@ -172,7 +196,10 @@ namespace KingdomCollapse.Game
             List<EventOption> options = new List<EventOption>();
             for (int i = 0; i < _options.Count; i++)
             {
-                options.Add(new EventOption(_options[i].Label, EffectEntry.ToEffects(_options[i].Effects)));
+                options.Add(new EventOption(
+                    _options[i].Label,
+                    EffectEntry.ToEffects(_options[i].Effects),
+                    _options[i].IsOffer));
             }
 
             List<EventCondition> conditions = new List<EventCondition>();
@@ -184,6 +211,27 @@ namespace KingdomCollapse.Game
             return new EventDefinition(
                 Id, _displayName, _class, options, conditions, _weight, _cooldownDays, _flavorText);
         }
+
+#if UNITY_EDITOR
+        /// <summary>Preenchimento programatico, usado pelo gerador de conteudo inicial.</summary>
+        public void EditorConfigure(
+            string displayName,
+            string flavorText,
+            EventClass eventClass,
+            List<Option> options,
+            List<Condition> conditions = null,
+            float weight = 1f,
+            int cooldownDays = 5)
+        {
+            _displayName = displayName;
+            _flavorText = flavorText;
+            _class = eventClass;
+            _options = options ?? new List<Option>();
+            _conditions = conditions ?? new List<Condition>();
+            _weight = weight;
+            _cooldownDays = cooldownDays;
+        }
+#endif
     }
 
     [CreateAssetMenu(menuName = "Kingdom Collapse/Raca", fileName = "Race_")]

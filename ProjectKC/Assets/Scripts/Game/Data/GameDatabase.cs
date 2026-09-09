@@ -75,6 +75,9 @@ namespace KingdomCollapse.Game
         [SerializeField] private List<RaceAsset> _races = new List<RaceAsset>();
         [SerializeField] private List<MetaNodeAsset> _metaNodes = new List<MetaNodeAsset>();
 
+        [Tooltip("Climas do jogo. Nao passam por desbloqueio: todo dia tem um.")]
+        [SerializeField] private List<WeatherAsset> _weather = new List<WeatherAsset>();
+
         [Header("Desbloqueado desde o inicio")]
         [Tooltip("O que aparece numa run sem nenhum no de meta comprado.")]
         [SerializeField] private List<BuildingAsset> _startingBuildings = new List<BuildingAsset>();
@@ -126,6 +129,14 @@ namespace KingdomCollapse.Game
                 }
 
                 catalog.AddEvent(_events[i].ToDefinition(), startingEvents.Contains(_events[i].Id));
+            }
+
+            for (int i = 0; i < _weather.Count; i++)
+            {
+                if (_weather[i] != null)
+                {
+                    catalog.AddWeather(_weather[i].ToDefinition());
+                }
             }
 
             HashSet<string> startingRaces = IdsOf(_startingRaces);
@@ -215,6 +226,7 @@ namespace KingdomCollapse.Game
             List<CatalogViolation> violations = new List<CatalogViolation>();
             violations.AddRange(EventCatalogValidator.Validate(BuildEventDefinitions()));
             violations.AddRange(MetaCatalogValidator.Validate(BuildMetaTree()));
+            violations.AddRange(WeatherCatalogValidator.Validate(BuildCatalog().Weather));
 
             if (violations.Count == 0)
             {
