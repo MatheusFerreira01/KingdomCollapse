@@ -22,11 +22,11 @@ namespace KingdomCollapse.Game
 
         [Header("Forca da ameaca")]
         [SerializeField] private float _threatBaseForce = 3f;
-        [SerializeField] private float _threatPerDay = 0.4f;
-        [SerializeField] private float _threatDayExponent = 1.1f;
+        [SerializeField] private float _threatPerDay = 1f;
+        [SerializeField] private float _threatDayExponent = 1.25f;
 
         [Tooltip("Quanto cada celula alem da primeira soma a forca. E o custo em pressao de expandir (design D6).")]
-        [SerializeField] private float _threatPerTile = 0.8f;
+        [SerializeField] private float _threatPerTile = 2.5f;
 
         [Header("Agenda da ameaca")]
         [SerializeField] private int _firstThreatDay = 4;

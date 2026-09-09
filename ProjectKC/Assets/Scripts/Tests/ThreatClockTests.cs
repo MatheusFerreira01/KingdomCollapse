@@ -174,6 +174,48 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
+        public void DefesaDeCarta_NaoAcumulaEntreDias()
+        {
+            // Se durasse ate o proximo ataque, os dias calmos viravam estoque: com
+            // ataque a cada quatro dias o jogador empilhava quatro dias de cartas.
+            RunBundle bundle = TestContent.Run();
+            bundle.Run.AddPendingDefense(20);
+            Assert.That(bundle.Run.TotalDefense(), Is.GreaterThanOrEqualTo(20));
+
+            bundle.Engine.EndDay();
+
+            Assert.That(bundle.Run.PendingDefense, Is.Zero);
+        }
+
+        [Test]
+        public void DefesaDeEdificio_PermaneceEntreDias()
+        {
+            RunBundle bundle = TestContent.Run();
+            Coord tower = new Coord(1, 0);
+            bundle.Run.Grid.Grant(tower);
+            bundle.Run.Grid.Build(tower, TestContent.Watchtower());
+            int before = bundle.Run.TotalDefense();
+
+            bundle.Engine.EndDay();
+
+            Assert.That(bundle.Run.TotalDefense(), Is.EqualTo(before),
+                "defesa de edificio nao pode expirar com o dia");
+        }
+
+        [Test]
+        public void PrepararNoDiaErrado_NaoAjuda()
+        {
+            RunBundle bundle = TestContent.Run(firstThreatDay: 4);
+            bundle.Run.AddPendingDefense(30);
+
+            bundle.Engine.EndDay();
+            bundle.Engine.EndDay();
+
+            Assert.That(bundle.Run.PendingDefense, Is.Zero,
+                "a defesa jogada tres dias antes nao pode chegar ao dia do ataque");
+        }
+
+        [Test]
         public void DefesaTemporaria_EConsumidaPeloAtaque()
         {
             RunBundle bundle = TestContent.Run();

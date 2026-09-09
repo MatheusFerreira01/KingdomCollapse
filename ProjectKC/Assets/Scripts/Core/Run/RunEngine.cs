@@ -523,6 +523,12 @@ namespace KingdomCollapse.Core
 
             // Energia nao acumula: o dia seguinte recomeca cheio, nunca somado.
             Run.Energy = 0;
+
+            // Defesa temporaria tambem nao acumula. Se durasse ate o proximo ataque,
+            // os dias sem combate viravam estoque: com ataque a cada quatro dias o
+            // jogador empilhava quatro dias de cartas e a defesa passava a crescer
+            // mais rapido que qualquer curva de ameaca.
+            Run.ConsumePendingDefense();
             Run.Stats.DaysSurvived = Run.Day;
             Run.Stats.PeakTilesOwned = Math.Max(Run.Stats.PeakTilesOwned, Run.Grid.OwnedCount);
             Run.TickModifiers();

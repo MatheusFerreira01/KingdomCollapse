@@ -42,10 +42,10 @@ namespace KingdomCollapse.Core
         {
             RunState run = engine.Run;
 
-            PlayAffordableCards(engine, run);
             RepairWhatWasLost(engine, run);
 
             bool underThreat = IsDefenseInsufficient(run);
+            PlayAffordableCards(engine, run, underThreat);
             BuildWhereItFits(engine, bundle, run, underThreat);
             ExpandIfComfortable(engine, run, underThreat);
             BuildWhereItFits(engine, bundle, run, underThreat);
@@ -70,7 +70,7 @@ namespace KingdomCollapse.Core
                    && next.Force > run.TotalDefense();
         }
 
-        private static void PlayAffordableCards(RunEngine engine, RunState run)
+        private static void PlayAffordableCards(RunEngine engine, RunState run, bool underThreat)
         {
             // Copia a mao: jogar carta altera a colecao original.
             List<CardDefinition> hand = new List<CardDefinition>(run.Deck.Hand);
@@ -79,6 +79,13 @@ namespace KingdomCollapse.Core
             {
                 CardDefinition card = hand[i];
                 if (card.EnergyCost > run.Energy)
+                {
+                    continue;
+                }
+
+                // Defesa vale so hoje: gasta-la num dia calmo e jogar fora. Um bot que
+                // desperdica assim mede a curva como mais letal do que ela e.
+                if (!underThreat && GivesDefense(card))
                 {
                     continue;
                 }
@@ -159,6 +166,20 @@ namespace KingdomCollapse.Core
             }
         }
 
+        /// <summary>Se a carta concede defesa temporaria, que so vale no dia.</summary>
+        private static bool GivesDefense(CardDefinition card)
+        {
+            for (int i = 0; i < card.Effects.Count; i++)
+            {
+                if (card.Effects[i].Kind == EffectKinds.AddDefense)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Producao mais defesa. Sob ameaca que a defesa atual nao segura, o peso da
         /// defesa domina: sobreviver ao dia seguinte vale mais que render ouro.
@@ -170,15 +191,11 @@ namespace KingdomCollapse.Core
                 : building.BaseGoldProduction * 2 + building.Defense;
         }
 
+        /// <summary>Teto por dia, para uma configuracao degenerada nao girar sem fim.</summary>
+        private const int MaxPurchasesPerDay = 12;
+
         private void ExpandIfComfortable(RunEngine engine, RunState run, bool underThreat)
         {
-            List<Coord> purchasable = run.Grid.PurchasableCoords(run.Rules);
-            if (purchasable.Count == 0)
-            {
-                return;
-            }
-
-            int cost = run.Grid.NextTileCost(run.Rules);
             double reserve = ExpansionReserveRatio;
 
             // Sob ameaca, expandir e duplamente ruim: gasta o ouro que compraria
@@ -188,12 +205,28 @@ namespace KingdomCollapse.Core
                 reserve *= 1.6;
             }
 
-            if (run.Gold < cost * reserve)
+            // Compra enquanto sobrar folga, e nao uma celula por dia: o teto de uma
+            // compra diaria fazia o ouro empilhar sem que a decisao de expandir
+            // aparecesse na medicao.
+            for (int guard = 0; guard < MaxPurchasesPerDay; guard++)
             {
-                return;
-            }
+                List<Coord> purchasable = run.Grid.PurchasableCoords(run.Rules);
+                if (purchasable.Count == 0)
+                {
+                    return;
+                }
 
-            engine.BuyTile(purchasable[0]);
+                int cost = run.Grid.NextTileCost(run.Rules);
+                if (run.Gold < cost * reserve)
+                {
+                    return;
+                }
+
+                if (!engine.BuyTile(purchasable[0]).Ok)
+                {
+                    return;
+                }
+            }
         }
 
         public int ChooseEventOption(RunState run, EventDefinition definition)

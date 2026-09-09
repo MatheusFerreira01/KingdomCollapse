@@ -146,7 +146,11 @@ namespace KingdomCollapse.Core
 
         public int HandSize { get; internal set; }
 
-        /// <summary>Defesa temporaria, consumida ao resolver o proximo ataque.</summary>
+        /// <summary>
+        /// Defesa temporaria de hoje. Consumida ao resolver um ataque e descartada no
+        /// Fim do Dia: e o que obriga o jogador a preparar no dia certo em vez de
+        /// estocar defesa nos dias calmos.
+        /// </summary>
         public int PendingDefense { get; private set; }
 
         public bool IsOver => Phase == DayPhase.Collapsed;

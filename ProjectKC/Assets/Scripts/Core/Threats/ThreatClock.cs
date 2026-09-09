@@ -46,15 +46,17 @@ namespace KingdomCollapse.Core
     /// <summary>
     /// Curva de forca da ameaca. Escala com o dia e com o territorio, sem teto
     /// (spec threat-clock). O termo do territorio e o que torna a expansao uma
-    /// decisao e nao um ganho gratuito.
+    /// decisao e nao um ganho gratuito: com ele baixo demais, cada celula comprada
+    /// abriga uma torre que da mais defesa do que a celula adiciona de ameaca, e
+    /// expandir vira a jogada obviamente certa em todo dia da run.
     /// </summary>
     public sealed class ThreatCurve
     {
         public ThreatCurve(
             double baseForce = 3,
-            double perDay = 0.4,
-            double dayExponent = 1.1,
-            double perTile = 0.8)
+            double perDay = 1.0,
+            double dayExponent = 1.25,
+            double perTile = 2.5)
         {
             BaseForce = baseForce;
             PerDay = perDay;

@@ -41,6 +41,21 @@ Na Resolução, a força da ameaça SHALL ser confrontada com a defesa total do 
 - **WHEN** um ataque é resolvido
 - **THEN** o jogador vê a força, a defesa e as perdas resultantes de forma discriminada
 
+### Requirement: Defesa temporária dura o dia
+Defesa concedida por carta ou por evento SHALL valer apenas no dia em que foi concedida, e SHALL expirar no Fim do Dia mesmo que nenhum ataque tenha acontecido. Defesa vinda de edifícios SHALL ser permanente enquanto o edifício estiver de pé.
+
+#### Scenario: Defesa de carta não acumula entre dias
+- **WHEN** o jogador ganha defesa por carta num dia sem ataque e o dia termina
+- **THEN** essa defesa não está mais disponível no dia seguinte
+
+#### Scenario: Defesa de edifício permanece
+- **WHEN** o dia termina e o jogador tem uma Torre de Vigia em pé
+- **THEN** a defesa da Torre continua contando no dia seguinte
+
+#### Scenario: Preparar no dia certo é a decisão
+- **WHEN** uma ameaça é anunciada para daqui a três dias
+- **THEN** jogar defesa hoje não ajuda no dia da chegada, e o jogador precisa guardar a carta para o dia do ataque
+
 ### Requirement: Visibilidade do relógio
 O relógio de ameaça SHALL estar visível durante todo o Planejamento, mostrando os dias restantes e a força prevista de cada ameaça pendente.
 

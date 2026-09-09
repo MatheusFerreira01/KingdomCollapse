@@ -305,7 +305,7 @@ namespace KingdomCollapse.Core
             }
 
             context.Run.AddPendingDefense(_amount);
-            return EffectResult.Ok("+" + _amount + " defesa ate o proximo ataque");
+            return EffectResult.Ok("+" + _amount + " defesa hoje");
         }
     }
 
