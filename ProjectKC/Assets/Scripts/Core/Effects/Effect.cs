@@ -193,6 +193,21 @@ namespace KingdomCollapse.Core
         public static readonly SeverityBudget PositiveEvent =
             new SeverityBudget(0.0, 0.0, 0, false, 0);
 
+        /// <summary>
+        /// Mesmo orcamento, sem teto de ouro. Usado por opcao paga: o preco foi
+        /// aceito, mas dano e destruicao continuam limitados.
+        /// </summary>
+        public SeverityBudget AsOffer()
+        {
+            return new SeverityBudget(
+                1.0,
+                MaxBaseDamageFraction,
+                MaxTilesDestroyed,
+                CanDestroyBuiltTile,
+                MaxCardsRemoved,
+                AllowsLethalDamage);
+        }
+
         public static SeverityBudget ForClass(EventClass eventClass)
         {
             switch (eventClass)

@@ -45,6 +45,14 @@ namespace KingdomCollapse.Core
                     continue;
                 }
 
+                if (definition.HasOffer && !definition.HasDeclineOption)
+                {
+                    violations.Add(new CatalogViolation(
+                        definition.Id,
+                        "oferta sem saida",
+                        "toda opcao paga precisa de uma alternativa sem custo para recusar"));
+                }
+
                 SeverityBudget budget = SeverityBudget.ForClass(definition.Class);
                 ValidateEffects(definition, budget, violations);
             }
@@ -96,6 +104,12 @@ namespace KingdomCollapse.Core
                 }
 
                 string where = "opcao " + optionIndex;
+
+                // Preco aceito nao conta como severidade; dano continua contando.
+                if (option.IsOffer && definition.HasDeclineOption)
+                {
+                    goldLoss = 0;
+                }
 
                 if (goldLoss > budget.MaxGoldLossFraction)
                 {

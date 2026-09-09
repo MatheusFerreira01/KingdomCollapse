@@ -101,15 +101,24 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class EventOption
     {
-        public EventOption(string label, IReadOnlyList<IEffect> effects)
+        public EventOption(string label, IReadOnlyList<IEffect> effects, bool isOffer = false)
         {
             Label = label;
             Effects = effects ?? new List<IEffect>();
+            IsOffer = isOffer;
         }
 
         public string Label { get; }
 
         public IReadOnlyList<IEffect> Effects { get; }
+
+        /// <summary>
+        /// Opcao paga: o custo em ouro e preco, nao dano. Fica isenta do teto de perda
+        /// de ouro da classe porque o jogador aceitou o preco ao escolher; o orcamento
+        /// existe para limitar surpresa, e uma escolha nao e surpresa.
+        /// So vale em evento que ofereca alternativa sem custo.
+        /// </summary>
+        public bool IsOffer { get; }
     }
 
     /// <summary>
@@ -179,6 +188,40 @@ namespace KingdomCollapse.Core
         public string FlavorText { get; }
 
         public bool HasChoice => Options.Count > 1;
+
+        /// <summary>Existe ao menos uma opcao paga.</summary>
+        public bool HasOffer
+        {
+            get
+            {
+                for (int i = 0; i < Options.Count; i++)
+                {
+                    if (Options[i].IsOffer)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>Existe ao menos uma saida sem custo, ou seja, da para recusar.</summary>
+        public bool HasDeclineOption
+        {
+            get
+            {
+                for (int i = 0; i < Options.Count; i++)
+                {
+                    if (!Options[i].IsOffer)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         public bool IsEligible(RunState run)
         {

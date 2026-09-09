@@ -76,6 +76,21 @@ A apresentação de um evento SHALL indicar sua classe — positivo, negativo ou
 - **WHEN** um evento é exibido ao jogador
 - **THEN** sua classe é identificável na apresentação, antes de qualquer confirmação
 
+### Requirement: Ofertas com custo em ouro
+Um evento SHALL poder oferecer uma troca com custo em ouro. Uma opção marcada como oferta SHALL ficar isenta do teto de perda de ouro da sua classe, e SHALL só ser válida em um evento que tenha ao menos uma opção alternativa sem custo — de modo que o jogador sempre possa recusar. Os demais tetos — dano à base, destruição de quadrado, remoção de carta — SHALL continuar valendo para ofertas.
+
+#### Scenario: Oferta cobra o preço cheio
+- **WHEN** o jogador escolhe uma opção de oferta que custa mais ouro que o teto da classe do evento
+- **THEN** o preço é cobrado integralmente, porque o jogador o aceitou ao escolher
+
+#### Scenario: Oferta sempre pode ser recusada
+- **WHEN** um evento contém uma opção de oferta
+- **THEN** ele contém também ao menos uma opção sem custo, e escolher essa opção não cobra nada
+
+#### Scenario: Oferta não vira dano disfarçado
+- **WHEN** uma opção de oferta declara dano à base ou destruição de quadrado
+- **THEN** esses efeitos continuam limitados pelo orçamento de severidade da classe do evento
+
 ### Requirement: Eventos com escolha
 Eventos SHALL poder oferecer ao jogador uma escolha entre opções com custos e recompensas distintos, e a escolha SHALL ser feita antes de qualquer efeito ser aplicado.
 

@@ -293,6 +293,132 @@ namespace KingdomCollapse.Tests
                 "positivos+neutros=" + (positives + neutrals) + " negativos=" + negatives);
         }
 
+        // --- Ofertas: preco aceito nao e dano ---
+
+        private static EventDefinition Merchant(double priceFraction)
+        {
+            return new EventDefinition(
+                "mercador", "Mercador", EventClass.Positive,
+                new List<EventOption>
+                {
+                    new EventOption("Recusar", new List<IEffect>()),
+                    new EventOption(
+                        "Comprar",
+                        new List<IEffect>
+                        {
+                            new LoseGoldEffect(priceFraction),
+                            new AddDefenseEffect(10)
+                        },
+                        isOffer: true)
+                });
+        }
+
+        [Test]
+        public void Oferta_CobraOPrecoCheioMesmoAcimaDoTetoDaClasse()
+        {
+            RunBundle bundle = TestContent.Run();
+            int gold = bundle.Run.Gold;
+
+            // Evento positivo tem teto de ouro zero; a oferta ignora esse teto.
+            EventOutcome outcome = EventResolver.Resolve(bundle.Run, Merchant(0.5), 1);
+
+            Assert.That(bundle.Run.Gold, Is.LessThan(gold));
+            Assert.That(gold - bundle.Run.Gold, Is.EqualTo((int)System.Math.Ceiling(gold * 0.5)));
+            Assert.That(bundle.Run.PendingDefense, Is.EqualTo(10));
+            Assert.That(outcome.Option.Label, Is.EqualTo("Comprar"));
+        }
+
+        [Test]
+        public void RecusarOferta_NaoCustaNada()
+        {
+            RunBundle bundle = TestContent.Run();
+            int gold = bundle.Run.Gold;
+
+            EventResolver.Resolve(bundle.Run, Merchant(0.5), 0);
+
+            Assert.That(bundle.Run.Gold, Is.EqualTo(gold));
+            Assert.That(bundle.Run.PendingDefense, Is.Zero);
+        }
+
+        [Test]
+        public void OfertaSemSaida_NaoGanhaIsencao()
+        {
+            // Sem alternativa, "escolher" seria so um nome bonito para dano obrigatorio,
+            // entao o teto da classe volta a valer.
+            RunBundle bundle = TestContent.Run();
+            EventDefinition trap = new EventDefinition(
+                "cilada", "Cilada", EventClass.Negative,
+                new List<EventOption>
+                {
+                    new EventOption(
+                        "Pagar",
+                        new List<IEffect> { new LoseGoldEffect(0.9) },
+                        isOffer: true)
+                });
+            int gold = bundle.Run.Gold;
+
+            EventResolver.Resolve(bundle.Run, trap, 0);
+
+            int lost = gold - bundle.Run.Gold;
+            Assert.That(lost, Is.LessThanOrEqualTo((int)(gold * 0.30) + 1), "teto de evento negativo deve valer");
+        }
+
+        [Test]
+        public void Oferta_NaoIsentaDanoNemDestruicao()
+        {
+            RunBundle bundle = TestContent.Run();
+            bundle.Run.Damage(bundle.Run.Integrity - 1);
+
+            EventDefinition costly = new EventDefinition(
+                "pacto", "Pacto", EventClass.Positive,
+                new List<EventOption>
+                {
+                    new EventOption("Recusar", new List<IEffect>()),
+                    new EventOption(
+                        "Aceitar",
+                        new List<IEffect> { new LoseGoldEffect(0.4), new DamageBaseEffect(999) },
+                        isOffer: true)
+                });
+
+            EventResolver.Resolve(bundle.Run, costly, 1);
+
+            Assert.That(bundle.Run.Integrity, Is.EqualTo(1), "dano continua limitado mesmo em oferta");
+        }
+
+        [Test]
+        public void CatalogoComOfertaESaida_EValido()
+        {
+            List<CatalogViolation> violations = EventCatalogValidator.Validate(
+                new List<EventDefinition> { Merchant(0.6) });
+
+            Assert.That(violations, Is.Empty, string.Join(" | ", violations));
+        }
+
+        [Test]
+        public void OfertaSemSaida_EReprovadaNoCatalogo()
+        {
+            EventDefinition trap = new EventDefinition(
+                "cilada", "Cilada", EventClass.Positive,
+                new List<EventOption>
+                {
+                    new EventOption("Pagar", new List<IEffect> { new LoseGoldEffect(0.5) }, isOffer: true)
+                });
+
+            List<CatalogViolation> violations = EventCatalogValidator.Validate(
+                new List<EventDefinition> { trap });
+
+            bool found = false;
+            for (int i = 0; i < violations.Count; i++)
+            {
+                if (violations[i].Rule == "oferta sem saida")
+                {
+                    found = true;
+                }
+            }
+
+            Assert.That(found, Is.True, string.Join(" | ", violations));
+        }
+
         // --- Validacao de catalogo (tarefa 7.7) ---
 
         [Test]

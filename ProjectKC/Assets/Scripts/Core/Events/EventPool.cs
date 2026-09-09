@@ -200,6 +200,13 @@ namespace KingdomCollapse.Core
 
             EventOption option = definition.Options[index];
             SeverityBudget budget = SeverityBudget.ForClass(definition.Class);
+
+            // Opcao paga so fica isenta se o evento de fato oferece uma saida: sem
+            // alternativa, "escolher" seria so um nome bonito para dano obrigatorio.
+            if (option.IsOffer && definition.HasDeclineOption)
+            {
+                budget = budget.AsOffer();
+            }
             List<EffectResult> results = EffectRunner.ApplyAll(
                 option.Effects, run, EffectSource.Event, null, budget);
 
