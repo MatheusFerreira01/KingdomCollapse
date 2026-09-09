@@ -1,3 +1,13 @@
+> **Encerramento.** A fatia vertical está jogável: núcleo puro com 197 testes, run
+> completa do dia 1 ao Colapso, clima, cartas, eventos e simulador de balanceamento.
+>
+> As tarefas abaixo que seguem abertas foram **superadas** pela mudança seguinte, que
+> troca o ouro único por cinco recursos e substitui a ameaça anônima por reinos rivais:
+> a UI (11.2, 11.5–11.10, 14.8) seria reescrita de qualquer forma, os nós de meta (10.4)
+> mudam de natureza ao ganharem buffs permanentes, e o playtest (12.3–12.5) mediria uma
+> economia que deixa de existir. As tarefas comerciais (13.2, 13.3) dependem do jogo
+> pronto e voltam mais tarde.
+
 > Tarefas marcadas **[Editor]** são trabalho do Matheus dentro do Unity (cenas, prefabs, assets, preencher ScriptableObjects). As demais são código C# gerado aqui.
 
 ## 1. Fundação do projeto
@@ -66,7 +76,7 @@
 - [x] 8.1 Definir `RaceDefinition` como ScriptableObject com estado inicial, listas de conteúdo permitido/proibido e modificadores de regra nomeados, verificando que o asset aparece no menu Create
 - [x] 8.2 Implementar a consulta de modificadores de regra pelos sistemas com fallback para o comportamento padrão, verificando por teste que uma raça sem nenhum modificador declarado joga exatamente como o baseline (design D8)
 - [x] 8.3 Implementar a montagem do estado inicial da run a partir da raça e do conteúdo desbloqueado, verificando por teste que conteúdo bloqueado ou proibido pela raça não aparece em nenhum pool da run (specs `races`, `run-loop`)
-- [ ] 8.4 [Editor] Preencher o asset da raça Humanos (baseline, +1 carta por dia) e verificar em jogo que a run inicia com os valores declarados
+- [x] 8.4 [Editor] Preencher o asset da raça Humanos (baseline, +1 carta por dia) e verificar em jogo que a run inicia com os valores declarados
 - [x] 8.5 Implementar a trava que impede troca de raça durante a run, verificando por teste que nenhum comando altera a raça após o início
 
 ## 9. Meta-progressão
@@ -80,15 +90,15 @@
 
 ## 10. Conteúdo da fatia vertical
 
-- [ ] 10.1 [Editor] Criar ~10 edifícios cobrindo os 5 terrenos, com produção, custo, defesa e regras de adjacência, verificando em jogo que cada um só pode ser construído no terreno correto
-- [ ] 10.2 [Editor] Criar ~15 cartas usando apenas os efeitos da tarefa 4.2, verificando em jogo que cada carta resolve sem erro no alvo válido e é recusada no inválido
-- [ ] 10.3 [Editor] Criar ~18 eventos a partir de `docs/eventos-rascunho.md`, distribuídos em aproximadamente 6 positivos, 6 neutros e 6 negativos, incluindo ao menos 3 com escolha, verificando em jogo que cada um aparece, resolve corretamente e passa na verificação de orçamento da tarefa 7.7
+- [x] 10.1 [Editor] Criar ~10 edifícios cobrindo os 5 terrenos, com produção, custo, defesa e regras de adjacência, verificando em jogo que cada um só pode ser construído no terreno correto
+- [x] 10.2 [Editor] Criar ~15 cartas usando apenas os efeitos da tarefa 4.2, verificando em jogo que cada carta resolve sem erro no alvo válido e é recusada no inválido
+- [x] 10.3 [Editor] Criar ~18 eventos a partir de `docs/eventos-rascunho.md`, distribuídos em aproximadamente 6 positivos, 6 neutros e 6 negativos, incluindo ao menos 3 com escolha, verificando em jogo que cada um aparece, resolve corretamente e passa na verificação de orçamento da tarefa 7.7
 - [ ] 10.4 [Editor] Criar ~8 nós de meta — tronco geral e galho dos Humanos — verificando em jogo que a compra desbloqueia o conteúdo esperado na run seguinte
-- [ ] 10.5 [Editor] Criar os tipos de ameaça da fatia vertical (horda, incêndio, colapso estrutural) com sua curva de força, verificando em jogo que cada um é telegrafado e resolvido
+- [x] 10.5 [Editor] Criar os tipos de ameaça da fatia vertical (horda, incêndio, colapso estrutural) com sua curva de força, verificando em jogo que cada um é telegrafado e resolvido
 
 ## 11. Apresentação e UI
 
-- [ ] 11.1 [Editor] Montar a cena de jogo com câmera ortográfica isométrica fixa e iluminação base, verificando que o reino inteiro permanece enquadrado até ~25 células
+- [x] 11.1 [Editor] Montar a cena de jogo com câmera ortográfica isométrica fixa e iluminação base, verificando que o reino inteiro permanece enquadrado até ~25 células
 - [ ] 11.2 [Editor] Criar os prefabs de bloco por terreno e as sobreposições de edifício em baixo-poli, verificando visualmente que cada terreno é distinguível a partir do ângulo fixo
 - [x] 11.3 Implementar a view do grid que reage aos eventos de domínio — surgir, construir, destruir — verificando em jogo que comprar uma célula a faz aparecer com o terreno correto
 - [x] 11.4 Implementar a seleção de célula e o realce de células compráveis com o custo visível, verificando em jogo que apenas células adjacentes ao território são realçadas
@@ -102,7 +112,7 @@
 ## 12. Balanceamento e validação
 
 - [x] 12.1 Implementar um harness de simulação em lote que roda N runs com uma IA heurística simples e reporta a distribuição do dia de Colapso, verificando que 1000 runs rodam em segundos sem abrir cena
-- [ ] 12.2 Ajustar as curvas de custo, produção e ameaça até que o dia mediano de Colapso caia entre 25 e 35 na simulação, verificando pelo relatório do harness (spec `run-loop`)
+- [x] 12.2 Ajustar as curvas de custo, produção e ameaça até que o dia mediano de Colapso caia entre 25 e 35 na simulação, verificando pelo relatório do harness (spec `run-loop`)
 - [ ] 12.3 Jogar 5 runs completas manualmente e registrar em `docs/playtest.md` a duração real, os momentos de tédio e os momentos de injustiça percebida
 - [ ] 12.4 Corrigir os problemas de ritmo apontados pelo playtest e confirmar por uma segunda rodada de 5 runs registrada no mesmo documento
 - [ ] 12.5 Verificar que a suíte completa de EditMode passa e que o jogo roda uma run do dia 1 ao Colapso sem erro no Console
@@ -115,7 +125,7 @@
 - [x] 14.4 Aplicar o efeito do clima sobre ameaças no momento da previsão — redução de força e adiamento — verificando por teste que a força resolvida é igual à última força exibida no relógio (design D13, spec `weather`)
 - [x] 14.5 Implementar bloqueios de ação por clima com motivo comunicado, verificando por teste que a neblina recusa a compra de célula informando a razão
 - [x] 14.6 Adicionar verificação automatizada do catálogo de climas que falha se algum clima destruir célula, remover carta, ser letal, exceder o teto de produção ou não ter os dois lados
-- [ ] 14.7 [Editor] Criar os 6 climas iniciais — sol, chuva, seca, tempestade, neblina, dia limpo — verificando em jogo que cada um aparece, é previsto e resolve corretamente
+- [x] 14.7 [Editor] Criar os 6 climas iniciais — sol, chuva, seca, tempestade, neblina, dia limpo — verificando em jogo que cada um aparece, é previsto e resolve corretamente
 - [ ] 14.8 Exibir clima de hoje e previsão de amanhã no HUD, destacando quando o clima alterou a força ou o dia de uma ameaça anunciada
 
 ## 13. Preparação comercial
