@@ -51,10 +51,10 @@ namespace KingdomCollapse.Core
     public sealed class ThreatCurve
     {
         public ThreatCurve(
-            double baseForce = 4,
-            double perDay = 1.6,
-            double dayExponent = 1.25,
-            double perTile = 1.4)
+            double baseForce = 3,
+            double perDay = 0.4,
+            double dayExponent = 1.1,
+            double perTile = 0.8)
         {
             BaseForce = baseForce;
             PerDay = perDay;

@@ -86,6 +86,21 @@ namespace KingdomCollapse.Core
         public override string Kind => "building_placed";
     }
 
+    public sealed class TileRepairedEvent : RunEvent
+    {
+        public TileRepairedEvent(Coord coord, int cost)
+        {
+            Coord = coord;
+            Cost = cost;
+        }
+
+        public Coord Coord { get; }
+
+        public int Cost { get; }
+
+        public override string Kind => "tile_repaired";
+    }
+
     public sealed class CardPlayedEvent : RunEvent
     {
         public CardPlayedEvent(string cardId, Coord? target, List<EffectResult> results)

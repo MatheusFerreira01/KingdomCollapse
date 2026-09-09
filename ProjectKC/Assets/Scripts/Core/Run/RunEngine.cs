@@ -254,6 +254,43 @@ namespace KingdomCollapse.Core
             return CommandResult.Success;
         }
 
+        /// <summary>
+        /// Repara um quadrado arrasado por ouro. Existe como comando, e nao apenas
+        /// como efeito de carta, porque a spec garante que a celula e reconstruivel:
+        /// depender do sorteio de uma carta tornaria a destruicao permanente sempre
+        /// que a carta nao viesse.
+        /// </summary>
+        public CommandResult RepairTile(Coord coord)
+        {
+            CommandResult phase = EnsurePlanning();
+            if (!phase.Ok)
+            {
+                return phase;
+            }
+
+            Tile tile = Run.Grid.TileAt(coord);
+            if (!tile.Owned)
+            {
+                return CommandResult.FailGrid(GridRejection.NotOwned);
+            }
+
+            if (!tile.Destroyed)
+            {
+                return CommandResult.Fail(CommandRejection.InvalidTarget);
+            }
+
+            int cost = Run.Grid.CostCurve.RepairCost;
+            if (!Run.CanAfford(cost))
+            {
+                return CommandResult.Fail(CommandRejection.NotEnoughGold);
+            }
+
+            Run.RemoveGold(cost);
+            Run.Grid.Repair(coord);
+            Emit(new TileRepairedEvent(coord, cost));
+            return CommandResult.Success;
+        }
+
         public CommandResult Demolish(Coord coord)
         {
             CommandResult phase = EnsurePlanning();

@@ -55,6 +55,66 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
+        public void Reparo_DevolveACelulaAoJogo()
+        {
+            RunBundle bundle = TestContent.Run();
+            Coord target = new Coord(1, 0);
+            bundle.Run.Grid.Grant(target);
+            bundle.Run.Grid.SetTerrain(target, TerrainType.Plain);
+            bundle.Run.Grid.Destroy(target);
+            int goldBefore = bundle.Run.Gold;
+            int cost = bundle.Run.Grid.CostCurve.RepairCost;
+
+            CommandResult result = bundle.Engine.RepairTile(target);
+
+            Assert.That(result.Ok, Is.True);
+            Assert.That(bundle.Run.Gold, Is.EqualTo(goldBefore - cost));
+            Assert.That(bundle.Run.Grid.TileAt(target).Destroyed, Is.False);
+            Assert.That(bundle.Engine.BuildOn(target, TestContent.Farm()).Ok, Is.True);
+        }
+
+        [Test]
+        public void Reparo_SemOuro_ERecusado()
+        {
+            RunBundle bundle = TestContent.Run(TestContent.Humans(gold: 0));
+            Coord target = new Coord(1, 0);
+            bundle.Run.Grid.Grant(target);
+            bundle.Run.Grid.Destroy(target);
+
+            CommandResult result = bundle.Engine.RepairTile(target);
+
+            Assert.That(result.Rejection, Is.EqualTo(CommandRejection.NotEnoughGold));
+            Assert.That(bundle.Run.Grid.TileAt(target).Destroyed, Is.True);
+        }
+
+        [Test]
+        public void Reparo_DeCelulaIntacta_ERecusado()
+        {
+            RunBundle bundle = TestContent.Run();
+
+            CommandResult result = bundle.Engine.RepairTile(Coord.Zero);
+
+            Assert.That(result.Rejection, Is.EqualTo(CommandRejection.InvalidTarget));
+        }
+
+        [Test]
+        public void DestruicaoNaoEAmputacaoPermanente()
+        {
+            // Sem comando de reparo, uma run cujas celulas foram arrasadas ficava
+            // travada mesmo com ouro sobrando, dependendo do sorteio de uma carta.
+            RunBundle bundle = TestContent.Run();
+            Coord target = new Coord(1, 0);
+            bundle.Run.Grid.Grant(target);
+            bundle.Run.Grid.SetTerrain(target, TerrainType.Plain);
+            bundle.Run.Grid.Destroy(target);
+
+            Assert.That(bundle.Run.Deck.Hand, Is.Empty.Or.Not.Empty);
+            Assert.That(bundle.Run.CanAfford(bundle.Run.Grid.CostCurve.RepairCost), Is.True);
+            Assert.That(bundle.Engine.RepairTile(target).Ok, Is.True,
+                "existe acao que devolve o reino ao jogo sem depender de carta");
+        }
+
+        [Test]
         public void PrimeiroAnel_NasceRevelado()
         {
             KingdomGrid grid = TestContent.GridWithHall();

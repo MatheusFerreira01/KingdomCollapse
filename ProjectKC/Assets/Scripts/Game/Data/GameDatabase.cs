@@ -12,17 +12,20 @@ namespace KingdomCollapse.Game
     public sealed class BalanceAsset : ScriptableObject
     {
         [Header("Custo de expansao")]
-        [SerializeField] private int _tileBaseCost = 25;
-        [SerializeField] private float _tileCostGrowth = 1.35f;
-        [SerializeField] private int _tileCostFlatStep = 5;
+        [SerializeField] private int _tileBaseCost = 14;
+        [SerializeField] private float _tileCostGrowth = 1.05f;
+        [SerializeField] private int _tileCostFlatStep = 2;
+
+        [Tooltip("Custo de reparar celula arrasada. Barato de proposito: ataque e reves, nao amputacao.")]
+        [SerializeField] private int _repairCost = 8;
 
         [Header("Forca da ameaca")]
-        [SerializeField] private float _threatBaseForce = 4f;
-        [SerializeField] private float _threatPerDay = 1.6f;
-        [SerializeField] private float _threatDayExponent = 1.25f;
+        [SerializeField] private float _threatBaseForce = 3f;
+        [SerializeField] private float _threatPerDay = 0.4f;
+        [SerializeField] private float _threatDayExponent = 1.1f;
 
         [Tooltip("Quanto cada celula alem da primeira soma a forca. E o custo em pressao de expandir (design D6).")]
-        [SerializeField] private float _threatPerTile = 1.4f;
+        [SerializeField] private float _threatPerTile = 0.8f;
 
         [Header("Agenda da ameaca")]
         [SerializeField] private int _firstThreatDay = 4;
@@ -44,7 +47,7 @@ namespace KingdomCollapse.Game
 
         public TileCostCurve ToTileCostCurve()
         {
-            return new TileCostCurve(_tileBaseCost, _tileCostGrowth, _tileCostFlatStep);
+            return new TileCostCurve(_tileBaseCost, _tileCostGrowth, _tileCostFlatStep, _repairCost);
         }
 
         public ThreatCurve ToThreatCurve()

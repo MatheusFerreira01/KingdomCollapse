@@ -58,13 +58,40 @@ namespace KingdomCollapse.Tests
         {
             ThreatCurve curve = new ThreatCurve();
 
-            int previous = curve.ForceFor(1, 5);
-            for (int day = 2; day <= 60; day++)
+            // A forca e inteira, entao dias vizinhos podem empatar por arredondamento.
+            // O que a spec garante e que a pressao sobe sem teto: a unidade que importa
+            // e o intervalo entre ataques, nao o dia isolado.
+            const int ThreatInterval = 4;
+
+            for (int day = 1; day <= 200; day++)
             {
-                int current = curve.ForceFor(day, 5);
-                Assert.That(current, Is.GreaterThan(previous), "forca parou de crescer no dia " + day);
-                previous = current;
+                Assert.That(
+                    curve.ForceFor(day + 1, 5),
+                    Is.GreaterThanOrEqualTo(curve.ForceFor(day, 5)),
+                    "forca caiu do dia " + day + " para o seguinte");
+
+                Assert.That(
+                    curve.ForceFor(day + ThreatInterval, 5),
+                    Is.GreaterThan(curve.ForceFor(day, 5)),
+                    "forca parou de crescer na janela iniciada no dia " + day);
             }
+        }
+
+        [Test]
+        public void ForcaSuperaQualquerDefesaFixaComOTempo()
+        {
+            // Sem isto, uma build defensiva boa o bastante tornaria a run eterna e
+            // quebraria a promessa de sessao de 25 a 35 minutos (spec run-loop).
+            ThreatCurve curve = new ThreatCurve();
+            const int GenerousDefense = 500;
+
+            int day = 1;
+            while (day < 5000 && curve.ForceFor(day, 10) <= GenerousDefense)
+            {
+                day++;
+            }
+
+            Assert.That(day, Is.LessThan(5000), "a forca nunca superou uma defesa fixa alta");
         }
 
         [Test]

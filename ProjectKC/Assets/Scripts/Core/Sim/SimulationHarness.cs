@@ -20,12 +20,17 @@ namespace KingdomCollapse.Core
     }
 
     /// <summary>
-    /// Heuristica simples: guarda uma reserva de ouro, constroi onde o terreno
-    /// permite, expande quando sobra, e joga as cartas que couberem na energia.
+    /// Heuristica simples, mas nao ingenua: joga as cartas que cabem na energia,
+    /// constroi, e expande quando sobra ouro.
+    ///
+    /// A parte que importa e olhar o relogio de ameaca: quando o proximo ataque
+    /// supera a defesa atual, o bot passa a priorizar defesa em vez de producao.
+    /// Um bot que ignora a ameaca anunciada mede o jogo errado, porque atribui a
+    /// curva uma letalidade que na verdade e burrice do proprio bot.
     /// </summary>
     public sealed class GreedyPolicy : IRunPolicy
     {
-        public GreedyPolicy(double expansionReserveRatio = 1.5)
+        public GreedyPolicy(double expansionReserveRatio = 1.15)
         {
             ExpansionReserveRatio = expansionReserveRatio;
         }
@@ -38,9 +43,31 @@ namespace KingdomCollapse.Core
             RunState run = engine.Run;
 
             PlayAffordableCards(engine, run);
-            BuildWhereItFits(engine, bundle, run);
-            ExpandIfComfortable(engine, run);
-            BuildWhereItFits(engine, bundle, run);
+            RepairWhatWasLost(engine, run);
+
+            bool underThreat = IsDefenseInsufficient(run);
+            BuildWhereItFits(engine, bundle, run, underThreat);
+            ExpandIfComfortable(engine, run, underThreat);
+            BuildWhereItFits(engine, bundle, run, underThreat);
+        }
+
+        /// <summary>Dias de antecedencia em que o bot entra em postura defensiva.</summary>
+        public const int ImminenceWindow = 2;
+
+        /// <summary>
+        /// Verdadeiro so quando o ataque e iminente E a defesa atual nao o segura.
+        /// A imminencia importa: como a forca da ameaca quase sempre supera a defesa
+        /// em algum ponto do futuro, olhar apenas "supera?" deixa o bot em panico
+        /// permanente e ele nunca expande, o que faz a run parecer letal quando o
+        /// letal era o bot.
+        /// </summary>
+        private static bool IsDefenseInsufficient(RunState run)
+        {
+            ScheduledThreat next = run.Threats.NextThreat(run.Day);
+
+            return next != null
+                   && next.DaysUntil(run.Day) <= ImminenceWindow
+                   && next.Force > run.TotalDefense();
         }
 
         private static void PlayAffordableCards(RunEngine engine, RunState run)
@@ -70,7 +97,27 @@ namespace KingdomCollapse.Core
             }
         }
 
-        private static void BuildWhereItFits(RunEngine engine, RunBundle bundle, RunState run)
+        /// <summary>
+        /// Repara celulas arrasadas antes de qualquer outra coisa. Celula arrasada nao
+        /// produz nem aceita construcao, entao deixa-la assim trava a run inteira: e o
+        /// gasto de ouro com melhor retorno que existe.
+        /// </summary>
+        private static void RepairWhatWasLost(RunEngine engine, RunState run)
+        {
+            int cost = run.Grid.CostCurve.RepairCost;
+
+            foreach (Tile tile in run.Grid.OwnedTilesOrdered())
+            {
+                if (!tile.Destroyed || !run.CanAfford(cost))
+                {
+                    continue;
+                }
+
+                engine.RepairTile(tile.Coord);
+            }
+        }
+
+        private static void BuildWhereItFits(RunEngine engine, RunBundle bundle, RunState run, bool underThreat)
         {
             List<BuildingDefinition> buildings = bundle.AvailableBuildings();
             if (buildings.Count == 0)
@@ -99,7 +146,7 @@ namespace KingdomCollapse.Core
                         continue;
                     }
 
-                    if (best == null || Value(candidate) > Value(best))
+                    if (best == null || Value(candidate, underThreat) > Value(best, underThreat))
                     {
                         best = candidate;
                     }
@@ -112,13 +159,18 @@ namespace KingdomCollapse.Core
             }
         }
 
-        /// <summary>Producao mais defesa, para o bot nao ignorar torres.</summary>
-        private static int Value(BuildingDefinition building)
+        /// <summary>
+        /// Producao mais defesa. Sob ameaca que a defesa atual nao segura, o peso da
+        /// defesa domina: sobreviver ao dia seguinte vale mais que render ouro.
+        /// </summary>
+        private static int Value(BuildingDefinition building, bool underThreat)
         {
-            return building.BaseGoldProduction * 2 + building.Defense;
+            return underThreat
+                ? building.Defense * 4 + building.BaseGoldProduction
+                : building.BaseGoldProduction * 2 + building.Defense;
         }
 
-        private void ExpandIfComfortable(RunEngine engine, RunState run)
+        private void ExpandIfComfortable(RunEngine engine, RunState run, bool underThreat)
         {
             List<Coord> purchasable = run.Grid.PurchasableCoords(run.Rules);
             if (purchasable.Count == 0)
@@ -127,7 +179,16 @@ namespace KingdomCollapse.Core
             }
 
             int cost = run.Grid.NextTileCost(run.Rules);
-            if (run.Gold < cost * ExpansionReserveRatio)
+            double reserve = ExpansionReserveRatio;
+
+            // Sob ameaca, expandir e duplamente ruim: gasta o ouro que compraria
+            // defesa e ainda aumenta a forca do proximo ataque (design D6).
+            if (underThreat)
+            {
+                reserve *= 1.6;
+            }
+
+            if (run.Gold < cost * reserve)
             {
                 return;
             }

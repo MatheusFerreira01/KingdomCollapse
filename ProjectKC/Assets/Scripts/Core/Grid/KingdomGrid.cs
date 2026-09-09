@@ -40,12 +40,19 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class TileCostCurve
     {
-        public TileCostCurve(int baseCost = 25, double growth = 1.35, int flatStep = 5)
+        public TileCostCurve(int baseCost = 14, double growth = 1.05, int flatStep = 2, int repairCost = 8)
         {
             BaseCost = baseCost;
             Growth = growth;
             FlatStep = flatStep;
+            RepairCost = repairCost;
         }
+
+        /// <summary>
+        /// Custo de devolver ao jogo um quadrado arrasado. Fixo e barato de proposito:
+        /// um ataque deve ser um revés, nao a amputacao permanente de uma celula.
+        /// </summary>
+        public int RepairCost { get; }
 
         public int BaseCost { get; }
 

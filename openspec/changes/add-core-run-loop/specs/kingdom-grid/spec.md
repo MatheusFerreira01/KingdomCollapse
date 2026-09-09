@@ -79,3 +79,18 @@ Quadrados SHALL poder ser destruídos por ameaças e eventos. Um quadrado destru
 #### Scenario: Quadrado destruído para de produzir
 - **WHEN** um ataque destrói um quadrado com uma Fazenda
 - **THEN** a Fazenda é removida, o quadrado não produz nada e continua possuído
+
+### Requirement: Reparo de quadrado destruído
+O jogador SHALL poder reparar um quadrado destruído gastando ouro, durante o Planejamento, sem depender de carta. Um quadrado reparado SHALL voltar a aceitar construção.
+
+#### Scenario: Reparo devolve o quadrado ao jogo
+- **WHEN** o jogador tem ouro suficiente e repara um quadrado destruído
+- **THEN** o ouro é debitado, o quadrado deixa de estar destruído e pode receber um edifício
+
+#### Scenario: Reparo sem ouro é rejeitado
+- **WHEN** o jogador tenta reparar sem ouro suficiente
+- **THEN** o reparo é recusado e o quadrado continua destruído
+
+#### Scenario: Destruição não é amputação permanente
+- **WHEN** todos os quadrados construídos do jogador são destruídos e ele ainda tem ouro
+- **THEN** existe uma ação disponível que devolve o reino ao jogo, sem depender de sorteio de carta
