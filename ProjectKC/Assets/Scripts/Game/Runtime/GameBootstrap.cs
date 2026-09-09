@@ -35,6 +35,12 @@ namespace KingdomCollapse.Game
         private string _lastRejection;
         private Vector2 _logScroll;
 
+        private FloatingNumbers _numbers;
+        private readonly DayStaging _staging = new DayStaging();
+
+        /// <summary>Recurso que a ultima recusa apontou, para destacar no painel.</summary>
+        private ResourceShortage _lastShortage = ResourceShortage.None;
+
         private void Start()
         {
             if (_database == null)
@@ -109,6 +115,7 @@ namespace KingdomCollapse.Game
             {
                 GameObject viewObject = new GameObject("Grid View");
                 _gridView = viewObject.AddComponent<GridView>();
+                _numbers = viewObject.AddComponent<FloatingNumbers>();
             }
 
             if (_createLighting && FindAnyObjectByType<Light>() == null)
@@ -129,6 +136,7 @@ namespace KingdomCollapse.Game
                 return;
             }
 
+            _staging.Tick(Time.deltaTime);
             HandleClick();
         }
 
@@ -176,11 +184,11 @@ namespace KingdomCollapse.Game
 
             if (!result.Ok)
             {
-                _lastRejection = Explain(result);
+                Reject(result);
                 return;
             }
 
-            _lastRejection = null;
+            ClearRejection();
             Log("Comprou " + coord + " por " + cost + " de ouro.");
             AfterStateChanged();
         }
@@ -191,11 +199,11 @@ namespace KingdomCollapse.Game
 
             if (!result.Ok)
             {
-                _lastRejection = Explain(result);
+                Reject(result);
                 return;
             }
 
-            _lastRejection = null;
+            ClearRejection();
             Log("Construiu " + building.DisplayName + " em " + coord + ".");
             AfterStateChanged();
         }
@@ -221,11 +229,11 @@ namespace KingdomCollapse.Game
 
             if (!result.Ok)
             {
-                _lastRejection = Explain(result);
+                Reject(result);
                 return;
             }
 
-            _lastRejection = null;
+            ClearRejection();
             Log("Jogou " + card.DisplayName + ".");
             AfterStateChanged();
         }
@@ -237,13 +245,25 @@ namespace KingdomCollapse.Game
 
             if (!result.Ok)
             {
-                _lastRejection = Explain(result);
+                Reject(result);
                 return;
             }
 
-            _lastRejection = null;
+            ClearRejection();
             Log("--- fim do dia " + day + " ---");
             AfterStateChanged();
+        }
+
+        private void Reject(CommandResult result)
+        {
+            _lastRejection = Explain(result);
+            _lastShortage = result.Shortage;
+        }
+
+        private void ClearRejection()
+        {
+            _lastRejection = null;
+            _lastShortage = ResourceShortage.None;
         }
 
         private void AfterStateChanged()
@@ -261,14 +281,61 @@ namespace KingdomCollapse.Game
         {
             List<RunEvent> events = _bundle.Engine.DrainEvents();
 
+            // A encenacao le os mesmos eventos que o log: a ordem apresentada e a
+            // ordem resolvida porque as duas leituras vem da mesma fonte.
+            List<DayStep> steps = DayPresentation.Build(events);
+            if (steps.Count > 0)
+            {
+                _staging.Begin(steps);
+            }
+
             for (int i = 0; i < events.Count; i++)
             {
                 switch (events[i])
                 {
                     case ProductionCollectedEvent production:
-                        if (production.Gold > 0)
+                        if (!production.Produced.IsEmpty)
                         {
-                            Log("Producao: +" + production.Gold + " ouro.");
+                            Log("Producao: " + production.Produced);
+                        }
+
+                        // O numero sobe onde foi gerado. O contador diz que mudou;
+                        // isto diz de onde veio.
+                        for (int b = 0; b < production.Breakdowns.Count; b++)
+                        {
+                            ProductionBreakdown breakdown = production.Breakdowns[b];
+                            if (!breakdown.IsEmpty && _numbers != null)
+                            {
+                                _numbers.SpawnBreakdown(_gridView.AnchorFor(breakdown.Coord), breakdown);
+                            }
+                        }
+
+                        break;
+
+                    case FoodResolvedEvent food:
+                        Log(food.Famine
+                            ? "FOME: -" + food.Starved + " de populacao."
+                            : "Consumo: -" + food.Upkeep + " de comida.");
+                        break;
+
+                    case FamineWarningEvent warning:
+                        Log("AVISO: a comida prevista nao cobre o consumo de amanha (faltam " +
+                            warning.Deficit + ").");
+                        break;
+
+                    case PopulationGrewEvent growth:
+                        Log("Populacao cresce para " + growth.Total + " de " + growth.Capacity + ".");
+                        break;
+
+                    case PlunderCollectedEvent plunder:
+                        Log("Saque: " + plunder.Plunder);
+                        break;
+
+                    case WeatherChangedEvent weather:
+                        if (weather.Today != null)
+                        {
+                            Log("Clima: " + weather.Today.DisplayName +
+                                (weather.Tomorrow != null ? " | amanha: " + weather.Tomorrow.DisplayName : ""));
                         }
 
                         break;
@@ -328,6 +395,11 @@ namespace KingdomCollapse.Game
         {
             switch (result.Rejection)
             {
+                case CommandRejection.NotEnoughResources:
+                    return "Faltam " + result.Shortage.Missing + " de " +
+                           Resources.DisplayName(result.Shortage.Kind) + ".";
+                case CommandRejection.WeatherBlocked:
+                    return "O clima de hoje impede esta acao.";
                 case CommandRejection.NotEnoughGold:
                     return "Ouro insuficiente.";
                 case CommandRejection.NotEnoughEnergy:
@@ -407,10 +479,11 @@ namespace KingdomCollapse.Game
             GUILayout.BeginArea(new Rect(10, 10, PanelWidth, Screen.height - LogHeight - 40f), GUI.skin.box);
 
             GUILayout.Label("Dia " + run.Day + "   |   " + run.Phase);
-            GUILayout.Label("Ouro " + run.Gold + "  (+" + run.CollectDailyProduction() + "/dia)" +
-                            "    Energia " + run.Energy + "/" + run.EnergyPerDay);
-            GUILayout.Label("Integridade " + run.Integrity + "/" + run.MaxIntegrity +
+            DrawResources(run);
+            GUILayout.Label("Energia " + run.Energy + "/" + run.EnergyPerDay +
+                            "    Integridade " + run.Integrity + "/" + run.MaxIntegrity +
                             "    Defesa " + run.TotalDefense());
+            DrawWorkforce(run);
             GUILayout.Label("Celulas " + run.Grid.OwnedCount + " (de pe: " + run.StandingTileCount() + ")");
 
             int nextCost = run.Grid.NextTileCost(run.Rules);
@@ -436,13 +509,24 @@ namespace KingdomCollapse.Game
             {
                 DrawCollapse();
             }
-            else if (GUILayout.Button("Fim do Dia", GUILayout.Height(32)))
+            else
             {
-                EndDay();
+                if (GUILayout.Button("Fim do Dia", GUILayout.Height(32)))
+                {
+                    EndDay();
+                }
+
+                // Acelerar e pular sao requisitos, nao conveniencias: a encenacao
+                // irrita na decima repeticao, e a run tem dezenas de dias.
+                if (GUILayout.Button("Encenacao: " + DayStaging.Label(_staging.Speed)))
+                {
+                    _staging.Speed = DayStaging.Cycle(_staging.Speed);
+                }
             }
 
             GUILayout.EndArea();
 
+            DrawStaging();
             DrawGhostPrices(run);
             DrawLog();
         }
@@ -472,6 +556,126 @@ namespace KingdomCollapse.Game
                 Rect rect = new Rect(screen.x - 28f, Screen.height - screen.y - 12f, 56f, 22f);
                 GUI.Label(rect, label);
             }
+        }
+
+        /// <summary>
+        /// Os cinco recursos, com a variacao prevista do dia. O recurso que a ultima
+        /// recusa apontou aparece marcado: a mensagem diz o que falta, e a marca diz
+        /// onde olhar (spec game-feel).
+        /// </summary>
+        private void DrawResources(RunState run)
+        {
+            ResourceAmounts predicted = run.CollectDailyProductionByResource();
+            int upkeep = run.DailyFoodUpkeep();
+
+            for (int i = 0; i < Resources.All.Length; i++)
+            {
+                ResourceKind kind = Resources.All[i];
+                int delta = predicted[kind];
+
+                if (kind == ResourceKind.Food)
+                {
+                    delta -= upkeep;
+                }
+
+                if (kind == ResourceKind.Population)
+                {
+                    continue;
+                }
+
+                string line = Resources.DisplayName(kind).PadRight(9) + run[kind];
+                if (delta != 0)
+                {
+                    line += "  (" + (delta > 0 ? "+" : string.Empty) + delta + "/dia)";
+                }
+
+                bool missing = _lastShortage.Any && _lastShortage.Kind == kind;
+                GUILayout.Label(missing ? ">> " + line + "  <<" : "   " + line);
+            }
+        }
+
+        private void DrawWorkforce(RunState run)
+        {
+            WorkerAllocation allocation = run.Allocation();
+            int capacity = run.PopulationCapacity();
+
+            string line = "populacao ".PadRight(9) + run[ResourceKind.Population] + "/" + capacity +
+                          "  (" + allocation.Assigned + " trabalhando";
+
+            if (allocation.IdleBuildings > 0)
+            {
+                line += ", " + allocation.IdleBuildings + " parado(s)";
+            }
+
+            line += ")";
+
+            bool missing = _lastShortage.Any && _lastShortage.Kind == ResourceKind.Population;
+            GUILayout.Label(missing ? ">> " + line + "  <<" : "   " + line);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Postura:", GUILayout.Width(60));
+            if (GUILayout.Button(StanceLabel(run.Stance)))
+            {
+                run.Stance = NextStance(run.Stance);
+                _gridView.Sync();
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        private static WorkerStance NextStance(WorkerStance stance)
+        {
+            switch (stance)
+            {
+                case WorkerStance.Balanced:
+                    return WorkerStance.ProductionFirst;
+                case WorkerStance.ProductionFirst:
+                    return WorkerStance.DefenseFirst;
+                default:
+                    return WorkerStance.Balanced;
+            }
+        }
+
+        private static string StanceLabel(WorkerStance stance)
+        {
+            switch (stance)
+            {
+                case WorkerStance.ProductionFirst:
+                    return "campos primeiro";
+                case WorkerStance.DefenseFirst:
+                    return "muralhas primeiro";
+                default:
+                    return "equilibrada";
+            }
+        }
+
+        /// <summary>A cena do dia, com o passo atual em destaque.</summary>
+        private void DrawStaging()
+        {
+            if (!_staging.IsPlaying && _staging.Current == null)
+            {
+                return;
+            }
+
+            DayStep step = _staging.Current;
+            if (step == null)
+            {
+                return;
+            }
+
+            float width = 460f;
+            float height = step.IsHighlight ? 70f : 46f;
+            Rect rect = new Rect((Screen.width - width) * 0.5f, 60f, width, height);
+
+            GUILayout.BeginArea(rect, GUI.skin.box);
+            GUILayout.Label(step.IsHighlight ? "*** " + step.Headline + " ***" : step.Headline);
+
+            if (GUILayout.Button("pular"))
+            {
+                _staging.SkipRest();
+            }
+
+            GUILayout.EndArea();
         }
 
         private void DrawThreatClock(RunState run)

@@ -29,12 +29,12 @@
 > Vem antes dos rivais de propósito: sem retorno, o playtest não consegue dizer se
 > a economia nova é divertida, e todo design daqui pra frente vira chute (design D9).
 
-- [ ] 3.1 Implementar números flutuantes sobre a célula de origem para ganho e perda de recurso, verificando em jogo que a produção do dia aparece sobre cada célula que produziu antes de o contador subir (spec `game-feel`)
-- [ ] 3.2 Implementar a encenação ordenada da resolução do dia — produção, consumo, ameaça, evento — com pausa legível, verificando por teste que a mesma semente produz estado final idêntico com e sem encenação
-- [ ] 3.3 Implementar acelerar e pular a encenação com preferência persistente, verificando em jogo que pular preserva o resultado consultável
-- [ ] 3.4 Encenar o ataque como cena principal: força que chega, defesa que responde, desfecho legível sem texto, verificando em jogo que repelir e quebrar são distinguíveis sem ler números
-- [ ] 3.5 Sinalizar no tabuleiro célula ociosa por falta de gente, célula arrasada e célula produtiva, verificando em jogo que o estado é identificável sem selecionar
-- [ ] 3.6 Destacar o recurso que falta quando uma ação é recusada, verificando em jogo que a recusa aponta para o contador do recurso em falta
+- [x] 3.1 Implementar números flutuantes sobre a célula de origem para ganho e perda de recurso, verificando em jogo que a produção do dia aparece sobre cada célula que produziu antes de o contador subir (spec `game-feel`)
+- [x] 3.2 Implementar a encenação ordenada da resolução do dia — produção, consumo, ameaça, evento — com pausa legível, verificando por teste que a mesma semente produz estado final idêntico com e sem encenação
+- [x] 3.3 Implementar acelerar e pular a encenação com preferência persistente, verificando em jogo que pular preserva o resultado consultável
+- [x] 3.4 Encenar o ataque como cena principal: força que chega, defesa que responde, desfecho legível sem texto, verificando em jogo que repelir e quebrar são distinguíveis sem ler números
+- [x] 3.5 Sinalizar no tabuleiro célula ociosa por falta de gente, célula arrasada e célula produtiva, verificando em jogo que o estado é identificável sem selecionar
+- [x] 3.6 Destacar o recurso que falta quando uma ação é recusada, verificando em jogo que a recusa aponta para o contador do recurso em falta
 - [ ] 3.7 Apresentar derrota de rival, Vitória e desbloqueio como momentos próprios, verificando em jogo que cada um interrompe o fluxo normal do dia
 
 ## 4. Reinos rivais

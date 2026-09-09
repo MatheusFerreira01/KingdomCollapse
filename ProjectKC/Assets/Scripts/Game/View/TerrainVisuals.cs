@@ -61,6 +61,15 @@ namespace KingdomCollapse.Game
         public static readonly Color BuildingColor = new Color(0.88f, 0.78f, 0.52f);
         public static readonly Color HallColor = new Color(0.92f, 0.62f, 0.30f);
         public static readonly Color SelectionColor = new Color(1f, 0.95f, 0.55f);
+
+        /// <summary>
+        /// Celula possuida cujo edificio esta sem gente. Precisa ser identificavel de
+        /// relance: se o jogador tiver que selecionar cada celula para descobrir que
+        /// metade do reino parou, ele nao descobre (spec game-feel).
+        /// </summary>
+        public static readonly Color IdleTint = new Color(0.42f, 0.38f, 0.30f);
+
+        public static readonly Color IdleMarkerColor = new Color(0.55f, 0.50f, 0.42f);
         public static readonly Color PurchasableColor = new Color(0.95f, 0.85f, 0.40f);
 
         public static Vector3 WorldPosition(Coord coord, float height)

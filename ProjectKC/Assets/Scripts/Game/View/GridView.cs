@@ -17,10 +17,13 @@ namespace KingdomCollapse.Game
         private readonly Dictionary<Coord, Material> _materials = new Dictionary<Coord, Material>();
         private readonly HashSet<Coord> _alive = new HashSet<Coord>();
 
+        private readonly HashSet<Coord> _idle = new HashSet<Coord>();
+
         private RunState _run;
         private Transform _root;
         private Material _buildingMaterial;
         private Material _hallMaterial;
+        private Material _idleMaterial;
 
         public Coord? Selected { get; private set; }
 
@@ -31,6 +34,7 @@ namespace KingdomCollapse.Game
             _root.SetParent(transform, false);
             _buildingMaterial = TerrainVisuals.CreateMaterial(TerrainVisuals.BuildingColor);
             _hallMaterial = TerrainVisuals.CreateMaterial(TerrainVisuals.HallColor);
+            _idleMaterial = TerrainVisuals.CreateMaterial(TerrainVisuals.IdleMarkerColor);
             Sync();
         }
 
@@ -53,9 +57,20 @@ namespace KingdomCollapse.Game
 
             _alive.Clear();
 
+            // Quem esta sem gente hoje. Lido uma vez por sincronizacao, e nao por
+            // celula, para que a leitura seja consistente dentro do mesmo quadro.
+            _idle.Clear();
+            WorkerAllocation allocation = _run.Allocation();
+
             foreach (Tile tile in _run.Grid.OwnedTilesOrdered())
             {
                 _alive.Add(tile.Coord);
+
+                if (tile.HasBuilding && !tile.Destroyed && !allocation.IsStaffed(tile.Coord))
+                {
+                    _idle.Add(tile.Coord);
+                }
+
                 SyncTile(tile, false);
             }
 
@@ -120,6 +135,11 @@ namespace KingdomCollapse.Game
                 return TerrainVisuals.DestroyedTint;
             }
 
+            if (_idle.Contains(tile.Coord))
+            {
+                return Color.Lerp(TerrainVisuals.ColorFor(tile.Terrain), TerrainVisuals.IdleTint, 0.65f);
+            }
+
             return TerrainVisuals.ColorFor(tile.Terrain);
         }
 
@@ -165,7 +185,20 @@ namespace KingdomCollapse.Game
                 terrainHeight + markerHeight * 0.5f,
                 tile.Coord.Y * TerrainVisuals.TileStep);
 
-            marker.GetComponent<Renderer>().sharedMaterial = isHall ? _hallMaterial : _buildingMaterial;
+            // O edificio ocioso encolhe e escurece: a silhueta do reino passa a
+            // mostrar quanto dele parou, sem exigir leitura de painel.
+            bool idle = _idle.Contains(tile.Coord);
+            if (idle)
+            {
+                marker.transform.localScale = new Vector3(width * 0.6f, markerHeight * 0.5f, width * 0.6f);
+                marker.transform.localPosition = new Vector3(
+                    tile.Coord.X * TerrainVisuals.TileStep,
+                    terrainHeight + markerHeight * 0.25f,
+                    tile.Coord.Y * TerrainVisuals.TileStep);
+            }
+
+            marker.GetComponent<Renderer>().sharedMaterial =
+                idle ? _idleMaterial : (isHall ? _hallMaterial : _buildingMaterial);
         }
 
         private void RemoveStale()
@@ -228,6 +261,19 @@ namespace KingdomCollapse.Game
 
             return anchors;
         }
+
+        /// <summary>Posicao no mundo do topo de uma celula, para ancorar numero flutuante.</summary>
+        public Vector3 AnchorFor(Coord coord)
+        {
+            if (_tiles.TryGetValue(coord, out GameObject block) && block != null)
+            {
+                return block.transform.position + Vector3.up * 0.6f;
+            }
+
+            return TerrainVisuals.WorldPosition(coord, 0.4f);
+        }
+
+        public bool IsIdle(Coord coord) => _idle.Contains(coord);
 
         /// <summary>Bounds do que esta desenhado. A camera usa para enquadrar o reino.</summary>
         public Bounds WorldBounds()
