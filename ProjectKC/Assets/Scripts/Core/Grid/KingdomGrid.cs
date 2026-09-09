@@ -132,7 +132,12 @@ namespace KingdomCollapse.Core
             return byY != 0 ? byY : a.Coord.X.CompareTo(b.Coord.X);
         }
 
-        /// <summary>Cria o Salao do Reino e marca a primeira celula como possuida.</summary>
+        /// <summary>
+        /// Cria o Salao do Reino e marca a primeira celula como possuida. O primeiro
+        /// anel nasce revelado: a primeira expansao da run precisa ser uma decisao, e
+        /// nao um sorteio, ou o jogador novo perde antes de entender a economia.
+        /// Do segundo anel em diante o terreno volta a ser incognita.
+        /// </summary>
         public Tile PlaceHall(BuildingDefinition hall)
         {
             Tile tile = TileAt(HallCoord);
@@ -140,6 +145,12 @@ namespace KingdomCollapse.Core
             tile.Revealed = true;
             tile.Building = hall;
             OwnedCount = 1;
+
+            foreach (Coord neighbor in HallCoord.Neighbors())
+            {
+                TileAt(neighbor).Revealed = true;
+            }
+
             return tile;
         }
 

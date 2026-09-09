@@ -200,6 +200,35 @@ namespace KingdomCollapse.Game
             }
         }
 
+        /// <summary>
+        /// Posicao no mundo de cada celula compravel. O HUD usa para desenhar o preco
+        /// em cima do bloco: sem o custo a vista, o jogador clica e leva "ouro
+        /// insuficiente" sem saber quanto falta.
+        /// </summary>
+        public List<KeyValuePair<Coord, Vector3>> GhostAnchors()
+        {
+            List<KeyValuePair<Coord, Vector3>> anchors = new List<KeyValuePair<Coord, Vector3>>();
+
+            foreach (KeyValuePair<Coord, GameObject> pair in _tiles)
+            {
+                GameObject block = pair.Value;
+                if (block == null)
+                {
+                    continue;
+                }
+
+                TileView view = block.GetComponent<TileView>();
+                if (view == null || !view.IsGhost)
+                {
+                    continue;
+                }
+
+                anchors.Add(new KeyValuePair<Coord, Vector3>(pair.Key, block.transform.position));
+            }
+
+            return anchors;
+        }
+
         /// <summary>Bounds do que esta desenhado. A camera usa para enquadrar o reino.</summary>
         public Bounds WorldBounds()
         {

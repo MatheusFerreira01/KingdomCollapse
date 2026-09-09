@@ -274,7 +274,8 @@ namespace KingdomCollapse.Tests
         public void RevealTile_TornaCelulaVisivelSemDarPosse()
         {
             RunBundle bundle = TestContent.Run();
-            Coord target = new Coord(0, 1);
+            // Fora do primeiro anel, que ja nasce revelado.
+            Coord target = new Coord(0, 3);
             Assert.That(bundle.Run.Grid.TileAt(target).Revealed, Is.False);
 
             EffectResult result = new RevealTileEffect().Apply(Ctx(bundle.Run, target));

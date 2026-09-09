@@ -34,11 +34,22 @@ O custo de comprar um quadrado SHALL aumentar conforme o número de quadrados j�
 - **THEN** o custo com 9 quadrados é estritamente maior
 
 ### Requirement: Terrenos
-Cada quadrado SHALL ter exatamente um terreno entre planície, floresta, mina, rio e ruína. O terreno SHALL determinar quais edifícios podem ser construídos ali e SHALL ser desconhecido até a compra, salvo quando revelado por um efeito.
+Cada quadrado SHALL ter exatamente um terreno entre planície, floresta, mina, rio e ruína. O terreno SHALL determinar quais edifícios podem ser construídos ali e SHALL ser desconhecido até a compra, salvo quando revelado por um efeito ou pela revelação inicial do território.
 
 #### Scenario: Terreno revelado na compra
 - **WHEN** um quadrado é comprado
 - **THEN** seu terreno é revelado e passa a restringir a construção naquele quadrado
+
+### Requirement: Revelação inicial do primeiro anel
+Os quadrados ortogonalmente adjacentes ao Salão do Reino SHALL nascer revelados no início da run. Todo quadrado além desse primeiro anel SHALL permanecer oculto até ser comprado ou revelado por um efeito.
+
+#### Scenario: Primeira decisão da run é informada
+- **WHEN** a run começa
+- **THEN** o jogador vê o terreno das 4 células vizinhas ao Salão e escolhe a direção da primeira expansão sabendo o que está comprando
+
+#### Scenario: Segundo anel continua oculto
+- **WHEN** o jogador compra uma célula do primeiro anel
+- **THEN** as células recém-fronteiriças além do primeiro anel aparecem como compráveis, mas com terreno oculto
 
 #### Scenario: Edifício incompatível é bloqueado
 - **WHEN** o jogador tenta construir um edifício que exige floresta em um quadrado de mina

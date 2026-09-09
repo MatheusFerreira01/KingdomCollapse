@@ -407,10 +407,22 @@ namespace KingdomCollapse.Game
             GUILayout.BeginArea(new Rect(10, 10, PanelWidth, Screen.height - LogHeight - 40f), GUI.skin.box);
 
             GUILayout.Label("Dia " + run.Day + "   |   " + run.Phase);
-            GUILayout.Label("Ouro " + run.Gold + "    Energia " + run.Energy + "/" + run.EnergyPerDay);
+            GUILayout.Label("Ouro " + run.Gold + "  (+" + run.CollectDailyProduction() + "/dia)" +
+                            "    Energia " + run.Energy + "/" + run.EnergyPerDay);
             GUILayout.Label("Integridade " + run.Integrity + "/" + run.MaxIntegrity +
                             "    Defesa " + run.TotalDefense());
             GUILayout.Label("Celulas " + run.Grid.OwnedCount + " (de pe: " + run.StandingTileCount() + ")");
+
+            int nextCost = run.Grid.NextTileCost(run.Rules);
+            GUILayout.Label("Proxima celula: " + nextCost + " ouro" +
+                            (run.CanAfford(nextCost) ? string.Empty : "  (falta " + (nextCost - run.Gold) + ")"));
+
+            // A recusa fica no topo, junto do dado que a explica. No rodape ela passava
+            // despercebida e o jogador so via o clique "nao fazer nada".
+            if (!string.IsNullOrEmpty(_lastRejection))
+            {
+                GUILayout.Label(">> " + _lastRejection);
+            }
 
             DrawThreatClock(run);
             GUILayout.Space(6);
@@ -419,11 +431,6 @@ namespace KingdomCollapse.Game
             DrawHand(run);
 
             GUILayout.FlexibleSpace();
-
-            if (!string.IsNullOrEmpty(_lastRejection))
-            {
-                GUILayout.Label("! " + _lastRejection);
-            }
 
             if (run.IsOver)
             {
@@ -436,7 +443,35 @@ namespace KingdomCollapse.Game
 
             GUILayout.EndArea();
 
+            DrawGhostPrices(run);
             DrawLog();
+        }
+
+        /// <summary>Desenha o custo sobre cada celula compravel, projetado na tela.</summary>
+        private void DrawGhostPrices(RunState run)
+        {
+            if (run.IsOver)
+            {
+                return;
+            }
+
+            int cost = run.Grid.NextTileCost(run.Rules);
+            bool affordable = run.CanAfford(cost);
+            string label = cost + (affordable ? string.Empty : " x");
+
+            List<KeyValuePair<Coord, Vector3>> anchors = _gridView.GhostAnchors();
+
+            for (int i = 0; i < anchors.Count; i++)
+            {
+                Vector3 screen = _camera.WorldToScreenPoint(anchors[i].Value);
+                if (screen.z <= 0f)
+                {
+                    continue;
+                }
+
+                Rect rect = new Rect(screen.x - 28f, Screen.height - screen.y - 12f, 56f, 22f);
+                GUI.Label(rect, label);
+            }
         }
 
         private void DrawThreatClock(RunState run)
@@ -464,8 +499,7 @@ namespace KingdomCollapse.Game
             if (!_gridView.Selected.HasValue)
             {
                 GUILayout.Label("-- Nenhuma celula selecionada --");
-                GUILayout.Label("Clique num bloco amarelo para comprar (" +
-                                run.Grid.NextTileCost(run.Rules) + " ouro).");
+                GUILayout.Label("Clique num bloco amarelo para comprar.");
                 return;
             }
 

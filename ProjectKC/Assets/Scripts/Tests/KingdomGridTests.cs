@@ -55,6 +55,31 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
+        public void PrimeiroAnel_NasceRevelado()
+        {
+            KingdomGrid grid = TestContent.GridWithHall();
+
+            foreach (Coord neighbor in Coord.Zero.Neighbors())
+            {
+                Assert.That(grid.TileAt(neighbor).Revealed, Is.True, neighbor + " deveria nascer revelada");
+                Assert.That(grid.TileAt(neighbor).Owned, Is.False, "revelar nao pode dar posse");
+            }
+        }
+
+        [Test]
+        public void SegundoAnel_ContinuaOculto()
+        {
+            KingdomGrid grid = TestContent.GridWithHall();
+
+            grid.Grant(new Coord(1, 0));
+
+            // (2,0) so virou fronteira agora: e comprável, mas segue incognita.
+            Tile beyond = grid.TileAt(new Coord(2, 0));
+            Assert.That(grid.PurchasableCoords(), Contains.Item(new Coord(2, 0)));
+            Assert.That(beyond.Revealed, Is.False);
+        }
+
+        [Test]
         public void Compra_TomaPosseERevelaTerreno()
         {
             Dictionary<Coord, TerrainType> terrain = new Dictionary<Coord, TerrainType>

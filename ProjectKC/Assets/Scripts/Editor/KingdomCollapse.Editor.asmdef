@@ -1,0 +1,19 @@
+{
+    "name": "KingdomCollapse.Editor",
+    "rootNamespace": "KingdomCollapse.EditorTools",
+    "references": [
+        "KingdomCollapse.Core",
+        "KingdomCollapse.Game"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

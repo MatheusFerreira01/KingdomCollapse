@@ -20,7 +20,7 @@
 
 ## 3. Sistema de cartas
 
-- [ ] 3.1 Definir `CardDefinition` (custo de energia, requisito de alvo, lista de efeitos, raças permitidas) como ScriptableObject espelhado por um tipo puro em Core, verificando que o asset aparece no menu Create do Unity
+- [x] 3.1 Definir `CardDefinition` (custo de energia, requisito de alvo, lista de efeitos, raças permitidas) como ScriptableObject espelhado por um tipo puro em Core, verificando que o asset aparece no menu Create do Unity
 - [x] 3.2 Implementar `RunDeck` com deck, mão e descarte, compra e reciclagem do descarte, verificando por teste que a mão é reabastecida, que o descarte é embaralhado de volta quando o deck esvazia e que deck e descarte vazios não causam erro (spec `card-system`)
 - [x] 3.3 Implementar energia diária com recarga no Início do Dia e sem acúmulo, verificando por teste que uma carta cara é rejeitada sem gastar energia e que a sobra não passa para o dia seguinte
 - [x] 3.4 Implementar seleção e validação de alvo com cancelamento gratuito, verificando por teste que alvo inválido e cancelamento deixam mão e energia intactas
@@ -51,7 +51,7 @@
 
 ## 7. Eventos de fim de dia
 
-- [ ] 7.1 Definir `EventDefinition` (classe, condições de elegibilidade, opções de escolha, efeitos) como ScriptableObject espelhado por um tipo puro, verificando que o asset aparece no menu Create
+- [x] 7.1 Definir `EventDefinition` (classe, condições de elegibilidade, opções de escolha, efeitos) como ScriptableObject espelhado por um tipo puro, verificando que o asset aparece no menu Create
 - [x] 7.2 Implementar o sorteio ponderado por classe com no máximo um evento por dia, verificando por teste que uma run simulada de 30 dias tem maioria de eventos positivos e neutros somados (spec `day-events`)
 - [x] 7.3 Implementar a filtragem por elegibilidade e o bloqueio de repetição imediata, verificando por teste que um evento condicional sem condição satisfeita fica fora do sorteio e que um evento sorteado não repete no dia seguinte
 - [x] 7.4 Limitar o dano de evento para que nunca zere a base nem remova a última célula, verificando por teste que um evento de dano letal deixa a integridade em 1 e a run continua
@@ -90,8 +90,8 @@
 
 - [ ] 11.1 [Editor] Montar a cena de jogo com câmera ortográfica isométrica fixa e iluminação base, verificando que o reino inteiro permanece enquadrado até ~25 células
 - [ ] 11.2 [Editor] Criar os prefabs de bloco por terreno e as sobreposições de edifício em baixo-poli, verificando visualmente que cada terreno é distinguível a partir do ângulo fixo
-- [ ] 11.3 Implementar a view do grid que reage aos eventos de domínio — surgir, construir, destruir — verificando em jogo que comprar uma célula a faz aparecer com o terreno correto
-- [ ] 11.4 Implementar a seleção de célula e o realce de células compráveis com o custo visível, verificando em jogo que apenas células adjacentes ao território são realçadas
+- [x] 11.3 Implementar a view do grid que reage aos eventos de domínio — surgir, construir, destruir — verificando em jogo que comprar uma célula a faz aparecer com o terreno correto
+- [x] 11.4 Implementar a seleção de célula e o realce de células compráveis com o custo visível, verificando em jogo que apenas células adjacentes ao território são realçadas
 - [ ] 11.5 Implementar a UI de mão, energia e ouro, com arrastar-para-alvo e cancelamento, verificando em jogo que uma carta cancelada volta para a mão sem custo
 - [ ] 11.6 Implementar a UI do relógio de ameaça mostrando dias restantes e força prevista, e o aviso de aumento de pressão antes da compra de célula, verificando em jogo que comprar uma célula altera visivelmente a previsão (design D6)
 - [ ] 11.7 Implementar a UI de evento com opções de escolha, verificando em jogo que os efeitos só são aplicados após a escolha
