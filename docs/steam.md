@@ -2,6 +2,8 @@
 
 Documento de trabalho. O objetivo declarado do projeto é aprender este pipeline, então cada item traz o que é, o que custa e quando fazer.
 
+> **Atualização de 2026-09-09.** O projeto deixou de ser "jogo pequeno para gerar renda rápido" e passou a ser o jogo completo, bem feito (ver `roadmap.md`). O pipeline abaixo continua valendo inteiro — o que muda é que a **demo sai bem mais tarde**, depois das raças e do onboarding. A página, essa continua indo ao ar cedo.
+
 **Regra de ouro do cronograma**: a página da Steam deve ir ao ar **muito antes** do jogo ficar pronto. Wishlist acumulada antes do lançamento é o principal fator de visibilidade no dia 1. Página no ar cedo é a decisão de marketing mais barata e mais determinante do projeto.
 
 ## 1. Conta e burocracia
@@ -65,15 +67,17 @@ Aprovação da página leva de 2 a 5 dias úteis. Prever ao menos uma rodada de 
 
 ## 7. Cronograma alvo
 
-| Fase | Duração | Marco |
+| Fase | Depende de | Marco |
 |---|---|---|
-| Conta e Direct | 1–3 semanas | Pode criar produto |
-| Fatia vertical jogável | — | Material para capsule e GIF |
-| Página no ar | 1 semana | **Wishlist começa a contar** |
-| Demo | — | Base para o Next Fest |
-| Next Fest | 1 semana | Pico de wishlist |
-| Build de review | 2 semanas de espera | Data de lançamento travável |
+| Conta e Direct | nada | Pode criar produto |
+| Página no ar | um GIF decente | **Wishlist começa a contar** |
+| Feedback barato | build privada | GIFs, playtest com 3–4 pessoas |
+| Demo | raças + onboarding + som | Base para o Next Fest |
+| Next Fest | demo polida | Pico de wishlist, e só acontece uma vez |
+| Build de review | jogo completo | 2 semanas de espera antes de poder lançar |
 | Lançamento | — | — |
+
+As três primeiras linhas não dependem do jogo estar pronto e podem ser feitas agora.
 
 ## 8. Decisões em aberto
 

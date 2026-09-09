@@ -2,7 +2,8 @@
 
 A fatia vertical anterior está arquivada e jogável: núcleo puro com 197 testes, run completa, clima, cartas, eventos e simulador de balanceamento. Ver `proposal.md - Why` para o que ela expôs. Restrições que continuam valendo:
 
-- **Dev solo**, objetivo comercial de escopo pequeno. Ver `docs/steam.md`.
+- **Dev solo**, e o objetivo do projeto mudou: deixou de ser "jogo pequeno para gerar renda rápido" e passou a ser **o jogo completo, bem feito**. O critério para decidir escopo é qualidade, não prazo. Ver `docs/roadmap.md`.
+- **Fatiar continua valendo.** "Completo" é o destino, não o tamanho de cada entrega: uma mudança de 110 tarefas não é mais ambiciosa que duas de 55, é só menos revisável.
 - **Núcleo em C# puro** (`KingdomCollapse.Core`, sem `UnityEngine`), imposto pelo asmdef. É o que permite simular milhares de runs.
 - **Conteúdo em ScriptableObjects**, autorado no Inspector, gerado pelo `ContentSeeder`.
 - **Trabalho de editor é do Matheus**; o código C# é gerado aqui.
@@ -103,7 +104,9 @@ As raças continuam sendo modificadores nesta mudança. O desenho de raças-como
 
 *Por quê:* o diagnóstico está certo — modificador numérico não cria apego, verbo cria, e Orcs que se alimentam do saque seriam outro jogo em vez de outro multiplicador. Mas é o item mais caro dos três levantados (exige pool de cartas por raça) e o que menos ajuda a responder se o loop base funciona. Fazer antes do primeiro playtest com retorno visual seria construir quatro variações de um jogo que ainda não sabemos se é bom.
 
-*Risco de adiar:* a economia de cinco recursos precisa ser projetada com espaço para essas raças, ou elas ficam impossíveis depois. Concretamente: produção por terreno, guarnição e saque precisam ser pontos de extensão, não regras fixas no meio do cálculo.
+*Risco de adiar:* a economia de cinco recursos precisa ser projetada com espaço para essas raças, ou elas ficam impossíveis depois. Concretamente: produção por terreno, guarnição e saque precisam ser pontos de extensão, não regras fixas no meio do cálculo. A tarefa 1.11 transforma isso num teste que falha se a porta dos Orcs for fechada.
+
+*Registro:* com a decisão de fazer o jogo completo, isto deixou de ser um corte e virou dependência. `add-race-identities` está comprometida no roteiro.
 
 ## Risks / Trade-offs
 
