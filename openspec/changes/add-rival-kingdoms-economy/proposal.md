@@ -18,8 +18,11 @@ Esta mudança ataca os dois: uma economia de cinco recursos onde população é 
   - Cada rival pressiona um recurso diferente, o que é o que torna os cinco recursos necessários em vez de decorativos. Um rival que ataca a comida não é respondido com muralha.
 - **Escada de dificuldade**: vencer desbloqueia o próximo nível, que adiciona rivais ou endurece os existentes.
 - **Árvore de meta com buffs permanentes**, além do desbloqueio de conteúdo. **BREAKING** em relação à decisão registrada na mudança anterior, que proibia poder permanente para evitar grind-para-vencer. A objeção cai porque a escada de dificuldade absorve o poder acumulado; sem a escada, ela continuaria valendo.
+- **Camada de retorno visual**: o que muda aparece onde muda, a resolução do dia é encenada na ordem em que o núcleo a resolve, e o ataque vira a cena principal. Entra agora, e não como polimento posterior, porque sem ela **não há como responder se o jogo é divertido** — hoje o clímax de cada quatro dias é uma linha de log.
+- **Encontros**: acontecimentos com identidade — um minotauro ferido, um dragão que se instala — com escolha assimétrica, presença que permanece na run e cadeia de consequências. É deles que vem a variedade: um evento que ajusta um número é esquecido no dia seguinte; um que deixa um dragão cobrando tributo muda o assunto da run.
 - **Recalibração completa** das curvas de custo, produção e ameaça. O balanceamento atual foi medido sobre a economia de ouro único e não sobrevive à mudança.
-- **Fora de escopo**: contra-ataque ou invasão do rival, mais de uma raça jogável, arte final, Steamworks, UI definitiva além do necessário para jogar os cinco recursos e a campanha.
+- **Fora de escopo**: contra-ataque ou invasão do rival, arte final, Steamworks, localização.
+- **Adiado conscientemente — raças com sistema próprio.** As raças de hoje são modificadores numéricos, e ninguém se apega a um multiplicador: o que faz alguém amar uma classe é um **verbo diferente**, não um número diferente. O desenho existe — Orcs que tiram comida do saque e para quem a campanha do rival vira renda, Elfos que não podem construir em floresta e precisam preservá-la, Anões que jogam alto em poucas células — e cada um exige pool de cartas próprio. Fica para a mudança seguinte porque é o item mais caro dos três e o que menos ajuda a descobrir se o loop base funciona. **Não é esquecimento: é ordem.**
 
 ## Capabilities
 
@@ -27,6 +30,8 @@ Esta mudança ataca os dois: uma economia de cinco recursos onde população é 
 - `resources`: os cinco recursos, produção por terreno, consumo diário de comida, crescimento e alocação de população, e as regras de escassez.
 - `rival-kingdoms`: identidade de cada rival, campanha de ataques, condição de derrota do rival, sucessão entre rivais e vitória da run.
 - `difficulty-ladder`: níveis de dificuldade, o que cada um endurece, e desbloqueio pelo triunfo.
+- `game-feel`: retorno visual na origem da mudança, encenação ordenada da resolução do dia, o ataque como cena principal, e desbloqueio como momento.
+- `encounters`: encontros com identidade, escolha assimétrica, presença persistente e cadeia de consequências.
 
 ### Modified Capabilities
 - `kingdom-grid`: edifícios passam a custar madeira e pedra em vez de ouro, a produzir recursos distintos por terreno e a exigir trabalhadores para operar.
@@ -43,4 +48,5 @@ Esta mudança ataca os dois: uma economia de cinco recursos onde população é 
 - **Simulador e política do bot** precisam entender cinco recursos e a campanha; a heurística atual só sabe raciocinar sobre ouro e defesa.
 - **Conteúdo existente reautorado**: os 7 edifícios, 15 cartas, 20 eventos e 6 climas já criados precisam de custos e efeitos nos recursos novos. O gerador de conteúdo cobre a maior parte disso.
 - **Balanceamento zerado**: as curvas atuais deixam de valer, e a medição recomeça com o alvo de duração medido em campanha vencida, não em dias sobrevividos.
+- **Apresentação deixa de ser adiável**: o andaime IMGUI continua servindo para painéis, mas o tabuleiro passa a precisar de números flutuantes, encenação da resolução e destaque do ataque.
 - **HUD**: precisa mostrar cinco recursos, população alocada e o progresso da campanha do rival. O andaime IMGUI atual serve para provar o loop, e a UI definitiva continua sendo tarefa própria.

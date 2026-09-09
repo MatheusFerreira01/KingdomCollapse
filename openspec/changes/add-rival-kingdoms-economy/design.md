@@ -19,8 +19,9 @@ O que muda o desenho agora é que o jogo passou a ter duas camadas que não exis
 
 **Non-Goals:**
 - Contra-ataque, invasão ou qualquer iniciativa militar do jogador sobre o rival.
-- Mais de uma raça jogável nesta mudança.
-- Arte final, UI definitiva, Steamworks, localização.
+- Raças com sistemas próprios (ver D11): esta mudança mantém a raça única.
+- Arte final, Steamworks, localização.
+- Animação de personagem: o retorno visual é feito de números flutuantes, tween e destaque, não de rig.
 - Cadeias de produção com transformação (madeira vira tábua vira móvel). Recurso é produzido e consumido, sem intermediários.
 
 ## Decisions
@@ -81,6 +82,29 @@ A `GreedyPolicy` atual só sabe raciocinar sobre ouro e defesa. Ela precisa pass
 
 *Consequência de processo:* nenhuma calibração desta mudança vale antes de o bot saber jogar a economia nova.
 
+### D9 — Retorno visual é requisito desta mudança, não polimento posterior
+A camada de feedback entra junto com a economia, e não depois dela.
+
+*Por quê:* a build atual não consegue responder à única pergunta que importa — "isto é divertido?" — porque não tem retorno nenhum. O clímax de cada quatro dias, que é o ataque, é uma linha de texto num log cinza. Continuar adiando apresentação significa continuar projetando às cegas, e cada decisão de design tomada assim é chute caro.
+
+*O que isso não é:* não é arte. É retorno de informação — número saltando sobre a célula que produziu, resolução encenada na ordem em que o núcleo resolve, ataque com destaque. Nada disso depende de asset final.
+
+*Trade-off:* encenação irrita na repetição, então acelerar e pular são requisitos, não conveniências.
+
+### D10 — Encontros deixam algo para trás; eventos ajustam números
+Eventos de fim de dia continuam sendo o tempero leve. Encontros são uma categoria própria: têm identidade, escolha assimétrica, e podem deixar uma presença que age pela run inteira.
+
+*Por quê:* variedade não vem de mais números diferentes. Nossos eventos atuais — imposto, praga, caravana — são planilha com texto, e são esquecidos no dia seguinte. O que faz uma run ser lembrada é o dragão que se instalou na fronteira e cobra tributo, porque ele muda o que a run é sobre. A permanência é a diferença entre tempero e história.
+
+*Consequência:* a presença persistente é estado novo na run, com ação periódica anunciada e custo de resolução conhecido. Sem "anunciada" e "conhecido", vira azar disfarçado de conteúdo.
+
+### D11 — Raças com sistema próprio ficam para a mudança seguinte
+As raças continuam sendo modificadores nesta mudança. O desenho de raças-como-verbo está registrado e adiado.
+
+*Por quê:* o diagnóstico está certo — modificador numérico não cria apego, verbo cria, e Orcs que se alimentam do saque seriam outro jogo em vez de outro multiplicador. Mas é o item mais caro dos três levantados (exige pool de cartas por raça) e o que menos ajuda a responder se o loop base funciona. Fazer antes do primeiro playtest com retorno visual seria construir quatro variações de um jogo que ainda não sabemos se é bom.
+
+*Risco de adiar:* a economia de cinco recursos precisa ser projetada com espaço para essas raças, ou elas ficam impossíveis depois. Concretamente: produção por terreno, guarnição e saque precisam ser pontos de extensão, não regras fixas no meio do cálculo.
+
 ## Risks / Trade-offs
 
 - **Escopo: isto é quase uma reescrita da economia** → mitigado por fazer em ordem, com o jogo compilando e testado a cada etapa: recursos, depois rivais, depois escada. Cada etapa é jogável antes da seguinte começar.
@@ -88,7 +112,9 @@ A `GreedyPolicy` atual só sabe raciocinar sobre ouro e defesa. Ela precisa pass
 - **Conteúdo existente precisa ser reautorado** → o `ContentSeeder` cobre a maior parte; o custo real é decidir números, não digitar.
 - **Balanceamento recomeça do zero** → aceito e planejado; o simulador torna isso barato, desde que o bot seja consertado primeiro (D8).
 - **Reversão da regra de poder permanente pode reintroduzir grind-para-vencer** → mitigado pelo teto por nível verificado em teste (D6); se o teste for enfraquecido, o risco volta inteiro.
-- **A UI atual é andaime IMGUI e vai ficar pequena para cinco recursos e campanha** → aceito nesta mudança; a UI definitiva continua sendo trabalho próprio, e o andaime só precisa ser suficiente para jogar e medir.
+- **A UI atual é andaime IMGUI e vai ficar pequena para cinco recursos e campanha** → os painéis continuam em andaime; o que sai do andaime é o tabuleiro, onde o retorno visual precisa acontecer (D9).
+- **Encenação vira irritação na repetição** → acelerar e pular são requisitos da spec, e a preferência persiste entre dias.
+- **Adiar as raças pode torná-las inviáveis depois** → mitigado exigindo que produção, guarnição e saque sejam pontos de extensão desde já (D11); se essa disciplina falhar, a mudança seguinte vira reescrita.
 
 ## Migration Plan
 
