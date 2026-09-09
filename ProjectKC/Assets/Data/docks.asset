@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: docks
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
-  _displayName: Edificio
-  _allowedTerrains: 
-  _goldCost: 20
-  _baseGoldProduction: 2
+  _displayName: Ancoradouro
+  _allowedTerrains: 03000000
+  _goldCost: 22
+  _baseGoldProduction: 3
   _defense: 0
-  _adjacencyBonuses: []
+  _adjacencyBonuses:
+  - Match: 0
+    Terrain: 3
+    BuildingId: 
+    GoldPerMatch: 2

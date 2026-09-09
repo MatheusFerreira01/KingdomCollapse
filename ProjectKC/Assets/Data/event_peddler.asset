@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: event_peddler
+  m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:EventAsset
+  _id: 
+  _displayName: Mascate
+  _flavorText: Ele abre a mala e espera.
+  _class: 1
+  _weight: 1
+  _cooldownDays: 4
+  _conditions: []
+  _options:
+  - Label: Deixar passar
+    IsOffer: 0
+    Effects: []
+  - Label: Comprar a carta (25% do ouro)
+    IsOffer: 1
+    Effects:
+    - Kind: 1
+      Amount: 0.25
+      Scaling: 2
+      AsFraction: 0
+      Days: 1
+      AsMultiplier: 0
+      Building: {fileID: 0}
+      FreeBuild: 1
+      Card: {fileID: 0}
+      TargetTerrain: 0
+      RequiredTerrain: 0
+      RequireSourceTerrain: 0
+      RevealCount: 0
+    - Kind: 9
+      Amount: 0
+      Scaling: 0
+      AsFraction: 0
+      Days: 1
+      AsMultiplier: 0
+      Building: {fileID: 0}
+      FreeBuild: 1
+      Card: {fileID: 11400000, guid: a1c84fb0a33127149bfef3fbff281d8a, type: 2}
+      TargetTerrain: 0
+      RequiredTerrain: 0
+      RequireSourceTerrain: 0
+      RevealCount: 0

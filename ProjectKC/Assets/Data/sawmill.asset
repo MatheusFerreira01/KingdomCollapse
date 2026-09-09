@@ -18,4 +18,8 @@ MonoBehaviour:
   _goldCost: 25
   _baseGoldProduction: 2
   _defense: 1
-  _adjacencyBonuses: []
+  _adjacencyBonuses:
+  - Match: 0
+    Terrain: 1
+    BuildingId: 
+    GoldPerMatch: 2

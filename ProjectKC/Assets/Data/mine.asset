@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: mine
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
-  _displayName: Edificio
-  _allowedTerrains: 
-  _goldCost: 20
-  _baseGoldProduction: 2
+  _displayName: Mina
+  _allowedTerrains: 02000000
+  _goldCost: 30
+  _baseGoldProduction: 5
   _defense: 0
   _adjacencyBonuses: []

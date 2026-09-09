@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: watchtower
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
-  _displayName: Edificio
+  _displayName: Torre de Vigia
   _allowedTerrains: 
-  _goldCost: 20
-  _baseGoldProduction: 2
-  _defense: 0
+  _goldCost: 30
+  _baseGoldProduction: 0
+  _defense: 6
   _adjacencyBonuses: []

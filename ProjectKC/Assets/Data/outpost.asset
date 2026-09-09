@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: outpost
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
-  _displayName: Edificio
+  _displayName: "Posto Avan\xE7ado"
   _allowedTerrains: 
-  _goldCost: 20
-  _baseGoldProduction: 2
-  _defense: 0
+  _goldCost: 18
+  _baseGoldProduction: 1
+  _defense: 3
   _adjacencyBonuses: []

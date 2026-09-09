@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: Balance
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BalanceAsset
-  _tileBaseCost: 25
-  _tileCostGrowth: 1.35
+  _tileBaseCost: 15
+  _tileCostGrowth: 1.05
   _tileCostFlatStep: 5
+  _repairCost: 8
   _threatBaseForce: 4
-  _threatPerDay: 1.6
-  _threatDayExponent: 1.25
-  _threatPerTile: 1.4
+  _threatPerDay: 1.05
+  _threatDayExponent: 1.1
+  _threatPerTile: 0.8
   _firstThreatDay: 4
   _threatIntervalDays: 4
   _threatLeadDays: 3

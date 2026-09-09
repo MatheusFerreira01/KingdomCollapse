@@ -21,15 +21,10 @@ namespace KingdomCollapse.EditorTools
     /// </summary>
     public static class ContentSeeder
     {
-        private const string DataFolder = "Assets/Data";
-
         [MenuItem("Kingdom Collapse/Gerar conteudo inicial")]
         public static void Seed()
         {
-            if (!AssetDatabase.IsValidFolder(DataFolder))
-            {
-                AssetDatabase.CreateFolder("Assets", "Data");
-            }
+            DataFolders.EnsureAll();
 
             List<CardAsset> cards = SeedCards();
             List<WeatherAsset> weather = SeedWeather();
@@ -81,18 +76,26 @@ namespace KingdomCollapse.EditorTools
 
         // --- Utilidades ---
 
-        private static T GetOrCreate<T>(string id) where T : ScriptableObject
+        /// <summary>
+        /// Devolve o asset existente com este id, onde quer que ele esteja, ou cria um
+        /// novo na subpasta do tipo. Procurar no projeto inteiro, e nao so no caminho
+        /// esperado, evita gerar duplicata depois que a pasta for reorganizada.
+        /// </summary>
+        private static T GetOrCreate<T>(string id, string folder) where T : ScriptableObject
         {
-            string path = Path.Combine(DataFolder, id + ".asset").Replace('\\', '/');
-            T existing = AssetDatabase.LoadAssetAtPath<T>(path);
+            string[] guids = AssetDatabase.FindAssets(id + " t:" + typeof(T).Name);
 
-            if (existing != null)
+            for (int i = 0; i < guids.Length; i++)
             {
-                return existing;
+                string found = AssetDatabase.GUIDToAssetPath(guids[i]);
+                if (Path.GetFileNameWithoutExtension(found) == id)
+                {
+                    return AssetDatabase.LoadAssetAtPath<T>(found);
+                }
             }
 
             T created = ScriptableObject.CreateInstance<T>();
-            AssetDatabase.CreateAsset(created, path);
+            AssetDatabase.CreateAsset(created, folder + "/" + id + ".asset");
             return created;
         }
 
@@ -195,7 +198,7 @@ namespace KingdomCollapse.EditorTools
             string id, string name, string rules, int energy,
             TargetRequirement target, List<EffectEntry> effects)
         {
-            CardAsset asset = GetOrCreate<CardAsset>(id);
+            CardAsset asset = GetOrCreate<CardAsset>(id, DataFolders.Cards);
             asset.EditorConfigure(name, rules, energy, target, effects);
             EditorUtility.SetDirty(asset);
             return asset;
@@ -263,7 +266,7 @@ namespace KingdomCollapse.EditorTools
             float weight = 1f,
             bool isCalmDay = false)
         {
-            WeatherAsset asset = GetOrCreate<WeatherAsset>(id);
+            WeatherAsset asset = GetOrCreate<WeatherAsset>(id, DataFolders.Weather);
             asset.EditorConfigure(
                 name, flavor, terrain, productionMultiplier, buildCostMultiplier, energyDelta,
                 baseDamage, blocksPurchase, blocksReveal, threatForceDelta, threatDelayDays,
@@ -393,7 +396,7 @@ namespace KingdomCollapse.EditorTools
         private static EventAsset Simple(
             string id, string name, EventClass eventClass, string flavor, List<EffectEntry> effects)
         {
-            EventAsset asset = GetOrCreate<EventAsset>(id);
+            EventAsset asset = GetOrCreate<EventAsset>(id, DataFolders.Events);
             asset.EditorConfigure(
                 name, flavor, eventClass,
                 new List<EventAsset.Option>
@@ -409,7 +412,7 @@ namespace KingdomCollapse.EditorTools
             string declineLabel, List<EffectEntry> declineEffects,
             string offerLabel, List<EffectEntry> offerEffects)
         {
-            EventAsset asset = GetOrCreate<EventAsset>(id);
+            EventAsset asset = GetOrCreate<EventAsset>(id, DataFolders.Events);
             asset.EditorConfigure(
                 name, flavor, eventClass,
                 new List<EventAsset.Option>
