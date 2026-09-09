@@ -19,12 +19,22 @@ namespace KingdomCollapse.Core
             RuleModifiers rules = null,
             IReadOnlyList<string> forbiddenCardIds = null,
             IReadOnlyList<string> forbiddenBuildingIds = null,
-            IReadOnlyList<string> forbiddenEventIds = null)
+            IReadOnlyList<string> forbiddenEventIds = null,
+            ResourceAmounts startingResources = null)
         {
             Id = id;
             DisplayName = displayName;
             StartingGold = startingGold;
             StartingIntegrity = startingIntegrity;
+
+            // O ouro inicial continua sendo declarado a parte por conveniencia de
+            // autoria; ele e dobrado no conjunto de recursos, que e a fonte de verdade.
+            StartingResources = new ResourceAmounts(startingResources);
+            if (StartingResources[ResourceKind.Gold] == 0)
+            {
+                StartingResources[ResourceKind.Gold] = startingGold;
+            }
+
             HandSize = handSize;
             EnergyPerDay = energyPerDay;
             StartingCards = startingCards ?? new List<CardDefinition>();
@@ -39,6 +49,9 @@ namespace KingdomCollapse.Core
         public string DisplayName { get; }
 
         public int StartingGold { get; }
+
+        /// <summary>Saldo com que a run comeca, em todos os recursos.</summary>
+        public ResourceAmounts StartingResources { get; }
 
         public int StartingIntegrity { get; }
 

@@ -4,27 +4,42 @@ namespace KingdomCollapse.Core
 {
     public readonly struct ProductionLine
     {
-        public ProductionLine(string reason, int gold)
+        public ProductionLine(string reason, ResourceKind resource, int amount)
         {
             Reason = reason;
-            Gold = gold;
+            Resource = resource;
+            Gold = amount;
         }
 
         public string Reason { get; }
 
+        public ResourceKind Resource { get; }
+
+        /// <summary>
+        /// Quantidade da parcela. O nome vem de quando so existia ouro; mantido para
+        /// nao quebrar leitura de codigo antigo, mas o recurso esta em Resource.
+        /// </summary>
         public int Gold { get; }
 
-        public override string ToString() => Reason + ": " + (Gold >= 0 ? "+" : string.Empty) + Gold;
+        public int Amount => Gold;
+
+        public override string ToString()
+        {
+            return Reason + ": " + (Gold >= 0 ? "+" : string.Empty) + Gold + " " +
+                   Resources.DisplayName(Resource);
+        }
     }
 
     /// <summary>
-    /// Producao de uma celula, discriminada. O detalhamento existe porque a spec
-    /// exige que o jogador consiga inspecionar de onde vem cada moeda antes de
-    /// encerrar o dia; sem isso a sinergia de adjacencia fica invisivel.
+    /// Producao de uma celula, discriminada por parcela e por recurso. O detalhamento
+    /// existe porque a spec exige que o jogador consiga inspecionar de onde vem cada
+    /// unidade antes de encerrar o dia; sem isso a sinergia de adjacencia fica
+    /// invisivel, e com cinco recursos ficaria incompreensivel.
     /// </summary>
     public sealed class ProductionBreakdown
     {
         private readonly List<ProductionLine> _lines = new List<ProductionLine>();
+        private readonly ResourceAmounts _totals = new ResourceAmounts();
 
         public ProductionBreakdown(Coord coord)
         {
@@ -35,32 +50,49 @@ namespace KingdomCollapse.Core
 
         public IReadOnlyList<ProductionLine> Lines => _lines;
 
-        public int Total { get; private set; }
+        public ResourceAmounts Totals => _totals;
 
-        public void Add(string reason, int gold)
+        /// <summary>Total em ouro. Atalho para leitura antiga e para a UI resumida.</summary>
+        public int Total => _totals[ResourceKind.Gold];
+
+        /// <summary>Celula possuida cujo edificio nao tem gente para operar.</summary>
+        public bool Idle { get; internal set; }
+
+        public int this[ResourceKind kind] => _totals[kind];
+
+        public void Add(string reason, int amount)
         {
-            if (gold == 0)
+            Add(reason, ResourceKind.Gold, amount);
+        }
+
+        public void Add(string reason, ResourceKind resource, int amount)
+        {
+            if (amount == 0)
             {
                 return;
             }
 
-            _lines.Add(new ProductionLine(reason, gold));
-            Total += gold;
+            _lines.Add(new ProductionLine(reason, resource, amount));
+            _totals[resource] += amount;
         }
+
+        public bool IsEmpty => _totals.IsEmpty;
 
         public override string ToString()
         {
-            return Coord + " => " + Total;
+            return Coord + " => " + (Idle ? "ociosa" : _totals.ToString());
         }
     }
 
     public static class ProductionCalculator
     {
         /// <summary>
-        /// Producao de uma celula com bonus de adjacencia aplicados. Celula arrasada
-        /// nao produz nada, mesmo continuando possuida.
+        /// Producao de uma celula, com bonus de adjacencia aplicados por recurso.
+        /// Celula arrasada nao produz nada, mesmo continuando possuida; celula ociosa
+        /// por falta de gente tambem nao, e a diferenca entre as duas e informada.
         /// </summary>
-        public static ProductionBreakdown ForTile(KingdomGrid grid, Tile tile, RuleModifiers rules = null)
+        public static ProductionBreakdown ForTile(
+            KingdomGrid grid, Tile tile, RuleModifiers rules = null, bool staffed = true)
         {
             RuleModifiers mods = rules ?? RuleModifiers.None;
             ProductionBreakdown breakdown = new ProductionBreakdown(tile.Coord);
@@ -76,14 +108,24 @@ namespace KingdomCollapse.Core
                 if (tile.Terrain == TerrainType.Forest)
                 {
                     int passive = mods.GetInt(RuleKeys.ForestPassiveProduction, 0);
-                    breakdown.Add("floresta (raca)", passive);
+                    breakdown.Add("floresta (raca)", ResourceKind.Wood, passive);
                 }
 
                 return breakdown;
             }
 
+            if (!staffed)
+            {
+                breakdown.Idle = true;
+                return breakdown;
+            }
+
             BuildingDefinition building = tile.Building;
-            breakdown.Add(building.DisplayName, building.BaseGoldProduction);
+
+            foreach (ResourceKind kind in building.Production.NonZero())
+            {
+                breakdown.Add(building.DisplayName, kind, building.Production[kind]);
+            }
 
             for (int i = 0; i < building.AdjacencyBonuses.Count; i++)
             {
@@ -91,7 +133,10 @@ namespace KingdomCollapse.Core
                 int matches = CountMatches(grid, tile.Coord, bonus);
                 if (matches > 0)
                 {
-                    breakdown.Add(bonus.Describe() + " x" + matches, bonus.GoldPerMatch * matches);
+                    breakdown.Add(
+                        bonus.Describe() + " x" + matches,
+                        bonus.Resource,
+                        bonus.GoldPerMatch * matches);
                 }
             }
 
@@ -126,8 +171,9 @@ namespace KingdomCollapse.Core
             return matches;
         }
 
-        /// <summary>Producao total do reino, com o detalhamento de cada celula.</summary>
-        public static int TotalProduction(KingdomGrid grid, RuleModifiers rules, List<ProductionBreakdown> breakdowns = null)
+        /// <summary>Producao total do reino em ouro. Atalho para leitura antiga.</summary>
+        public static int TotalProduction(
+            KingdomGrid grid, RuleModifiers rules, List<ProductionBreakdown> breakdowns = null)
         {
             int total = 0;
             foreach (Tile tile in grid.OwnedTilesOrdered())
@@ -140,19 +186,43 @@ namespace KingdomCollapse.Core
             return total;
         }
 
-        /// <summary>Defesa somada dos edificios em pe.</summary>
-        public static int TotalDefense(KingdomGrid grid)
+        /// <summary>Defesa somada dos edificios em pe e guarnecidos.</summary>
+        public static int TotalDefense(KingdomGrid grid, WorkerAllocation allocation = null)
         {
             int defense = 0;
             foreach (Tile tile in grid.OwnedTiles())
             {
-                if (!tile.Destroyed && tile.HasBuilding)
+                if (tile.Destroyed || !tile.HasBuilding)
                 {
-                    defense += tile.Building.Defense;
+                    continue;
                 }
+
+                // Torre sem gente nao defende (spec resources). Sem alocacao, todo
+                // edificio conta: e o comportamento do conteudo que nao exige gente.
+                if (allocation != null && !allocation.IsStaffed(tile.Coord))
+                {
+                    continue;
+                }
+
+                defense += tile.Building.Defense;
             }
 
             return defense;
+        }
+
+        /// <summary>Teto de populacao somado pelos edificios em pe.</summary>
+        public static int PopulationCapacity(KingdomGrid grid)
+        {
+            int capacity = 0;
+            foreach (Tile tile in grid.OwnedTiles())
+            {
+                if (!tile.Destroyed && tile.HasBuilding)
+                {
+                    capacity += tile.Building.PopulationCapacity;
+                }
+            }
+
+            return capacity;
         }
     }
 }

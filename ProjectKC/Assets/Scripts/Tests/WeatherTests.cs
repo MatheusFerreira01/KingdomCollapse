@@ -146,11 +146,13 @@ namespace KingdomCollapse.Tests
             bundle.Run.Grid.Build(river, new BuildingDefinition(
                 "docks", "Ancoradouro", new List<TerrainType> { TerrainType.River }, 22, 3, 0));
 
-            int withRain = bundle.Run.CollectDailyProduction();
-            int costWithRain = bundle.Engine.BuildCostOf(TestContent.Farm());
+            ResourceAmounts withRain = bundle.Run.CollectDailyProductionByResource();
+            int costWithRain = bundle.Engine.BuildCostOf(TestContent.Farm())[ResourceKind.Gold];
 
             Assert.That(bundle.Run.TodayWeather.Id, Is.EqualTo("rain"));
-            Assert.That(withRain, Is.GreaterThan(5), "rio deve render mais na chuva");
+
+            // O clima age no recurso do terreno: rio rende comida, nao ouro.
+            Assert.That(withRain[ResourceKind.Food], Is.GreaterThan(0), "rio deve render comida na chuva");
             Assert.That(costWithRain, Is.GreaterThan(TestContent.Farm().GoldCost));
         }
 
@@ -168,7 +170,9 @@ namespace KingdomCollapse.Tests
 
             ProductionBreakdown farmTile = lines.Find(b => b.Coord == plain);
             Assert.That(farmTile, Is.Not.Null);
-            Assert.That(farmTile.Total, Is.LessThan(TestContent.Farm().BaseGoldProduction));
+
+            // Seca castiga a planicie na comida, que e o recurso daquele terreno.
+            Assert.That(farmTile[ResourceKind.Food], Is.LessThan(0));
         }
 
         [Test]

@@ -4,15 +4,15 @@
 
 ## 1. Economia de recursos
 
-- [ ] 1.1 Implementar `ResourceKind` (ouro, madeira, pedra, comida, população) e `ResourcePool` com crédito, débito e verificação que reporta qual recurso faltou, verificando por teste que debitar além do saldo é recusado sem alterar nada
-- [ ] 1.2 Migrar `RunState` do ouro único para o `ResourcePool`, verificando por teste que a run inicia com os valores declarados pela raça em cada recurso
-- [ ] 1.3 Estender `BuildingDefinition` com custo por recurso, produção por recurso e trabalhadores exigidos, verificando por teste que construir debita todos os materiais e é recusado quando falta qualquer um (spec `kingdom-grid`)
-- [ ] 1.4 Implementar produção por terreno e por recurso no `ProductionCalculator`, com detalhamento por recurso, verificando por teste que floresta rende madeira e mina rende pedra, e nenhuma rende o recurso da outra (spec `resources`)
-- [ ] 1.5 Implementar consumo diário de comida proporcional à população, aplicado depois da produção, verificando por teste que o saldo do dia é discriminado e que dobrar a população dobra o consumo
-- [ ] 1.6 Implementar escassez de comida com queda de população e aviso antecipado, verificando por teste que a fome não encerra a run e que o aviso aparece no Planejamento anterior
-- [ ] 1.7 Implementar crescimento de população por excedente, limitado por capacidade dos edifícios, verificando por teste que o crescimento para ao atingir a capacidade mesmo com comida sobrando
-- [ ] 1.8 Implementar alocação de trabalhadores com edifícios ociosos quando falta gente, verificando por teste que um edifício sem trabalhadores não produz e não é destruído
-- [ ] 1.9 Implementar defesa por guarnição, verificando por teste que uma torre sem trabalhadores soma zero de defesa e que guarnecer reduz a produção (spec `resources`)
+- [x] 1.1 Implementar `ResourceKind` (ouro, madeira, pedra, comida, população) e `ResourcePool` com crédito, débito e verificação que reporta qual recurso faltou, verificando por teste que debitar além do saldo é recusado sem alterar nada
+- [x] 1.2 Migrar `RunState` do ouro único para o `ResourcePool`, verificando por teste que a run inicia com os valores declarados pela raça em cada recurso
+- [x] 1.3 Estender `BuildingDefinition` com custo por recurso, produção por recurso e trabalhadores exigidos, verificando por teste que construir debita todos os materiais e é recusado quando falta qualquer um (spec `kingdom-grid`)
+- [x] 1.4 Implementar produção por terreno e por recurso no `ProductionCalculator`, com detalhamento por recurso, verificando por teste que floresta rende madeira e mina rende pedra, e nenhuma rende o recurso da outra (spec `resources`)
+- [x] 1.5 Implementar consumo diário de comida proporcional à população, aplicado depois da produção, verificando por teste que o saldo do dia é discriminado e que dobrar a população dobra o consumo
+- [x] 1.6 Implementar escassez de comida com queda de população e aviso antecipado, verificando por teste que a fome não encerra a run e que o aviso aparece no Planejamento anterior
+- [x] 1.7 Implementar crescimento de população por excedente, limitado por capacidade dos edifícios, verificando por teste que o crescimento para ao atingir a capacidade mesmo com comida sobrando
+- [x] 1.8 Implementar alocação de trabalhadores com edifícios ociosos quando falta gente, verificando por teste que um edifício sem trabalhadores não produz e não é destruído
+- [x] 1.9 Implementar defesa por guarnição, verificando por teste que uma torre sem trabalhadores soma zero de defesa e que guarnecer reduz a produção (spec `resources`)
 - [ ] 1.10 Remover o termo por célula da curva de ameaça e o remendo associado, verificando por teste que dois reinos de tamanhos diferentes enfrentam a mesma força no mesmo ataque (spec `threat-clock`)
 - [ ] 1.11 Deixar produção por terreno, guarnição e origem de recurso como pontos de extensão consultáveis por modificador de raça, verificando por teste que uma raça fictícia que tira comida de ataques repelidos funciona sem alterar o cálculo (design D11 — é o que mantém as raças viáveis depois)
 

@@ -78,7 +78,9 @@ namespace KingdomCollapse.Tests
             ProductionBreakdown breakdown = ProductionCalculator.ForTile(
                 bundle.Run.Grid, bundle.Run.Grid.TileAt(forest), bundle.Run.Rules);
 
-            Assert.That(breakdown.Total, Is.EqualTo(2));
+            // Floresta rende madeira, e nao um total generico de producao.
+            Assert.That(breakdown[ResourceKind.Wood], Is.EqualTo(2));
+            Assert.That(breakdown[ResourceKind.Gold], Is.Zero);
             Assert.That(breakdown.Lines[0].Reason, Does.Contain("raca"));
         }
 

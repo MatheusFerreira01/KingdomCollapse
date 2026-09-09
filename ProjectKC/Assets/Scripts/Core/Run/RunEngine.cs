@@ -14,17 +14,26 @@ namespace KingdomCollapse.Core
         InvalidTarget,
         TargetRequired,
         GridRefused,
-        WeatherBlocked
+        WeatherBlocked,
+        NotEnoughResources
     }
 
     public readonly struct CommandResult
     {
-        private CommandResult(bool ok, CommandRejection rejection, GridRejection gridRejection)
+        private CommandResult(
+            bool ok, CommandRejection rejection, GridRejection gridRejection, ResourceShortage shortage)
         {
             Ok = ok;
             Rejection = rejection;
             GridRejection = gridRejection;
+            Shortage = shortage;
         }
+
+        /// <summary>
+        /// Qual recurso faltou, quando a recusa foi por recurso. "Ouro insuficiente"
+        /// e inutil quando o que falta e pedra.
+        /// </summary>
+        public ResourceShortage Shortage { get; }
 
         public bool Ok { get; }
 
@@ -33,16 +42,24 @@ namespace KingdomCollapse.Core
         public GridRejection GridRejection { get; }
 
         public static readonly CommandResult Success =
-            new CommandResult(true, CommandRejection.None, Core.GridRejection.None);
+            new CommandResult(true, CommandRejection.None, Core.GridRejection.None, ResourceShortage.None);
 
         public static CommandResult Fail(CommandRejection rejection)
         {
-            return new CommandResult(false, rejection, Core.GridRejection.None);
+            return new CommandResult(
+                false, rejection, Core.GridRejection.None, ResourceShortage.None);
         }
 
         public static CommandResult FailGrid(GridRejection gridRejection)
         {
-            return new CommandResult(false, CommandRejection.GridRefused, gridRejection);
+            return new CommandResult(
+                false, CommandRejection.GridRefused, gridRejection, ResourceShortage.None);
+        }
+
+        public static CommandResult FailResource(ResourceShortage shortage)
+        {
+            return new CommandResult(
+                false, CommandRejection.NotEnoughResources, Core.GridRejection.None, shortage);
         }
 
         public override string ToString() => Ok ? "ok" : Rejection.ToString();
@@ -147,6 +164,7 @@ namespace KingdomCollapse.Core
                 Run.HandSize + extraDraw, Run.Random.Channel(RandomChannel.Cards));
 
             Emit(new DayStartedEvent(Run.Day, Run.Energy, drawn));
+            WarnAboutFamine();
             CheckMilestones();
 
             SetPhase(DayPhase.Planning);
@@ -281,13 +299,11 @@ namespace KingdomCollapse.Core
                 return CommandResult.FailGrid(check.Rejection);
             }
 
-            int buildCost = BuildCostOf(building);
-            if (!Run.CanAfford(buildCost))
+            ResourceAmounts buildCost = BuildCostOf(building);
+            if (!Run.TrySpend(buildCost, out ResourceShortage shortage))
             {
-                return CommandResult.Fail(CommandRejection.NotEnoughGold);
+                return CommandResult.FailResource(shortage);
             }
-
-            Run.RemoveGold(buildCost);
 
             int delay = Run.Rules.GetInt(RuleKeys.BuildDelayDays, 0);
             if (delay > 0)
@@ -342,11 +358,22 @@ namespace KingdomCollapse.Core
             return CommandResult.Success;
         }
 
-        /// <summary>Custo de obra do dia, ja com o efeito do clima.</summary>
-        public int BuildCostOf(BuildingDefinition building)
+        /// <summary>Custo de obra do dia, em todos os recursos, ja com o efeito do clima.</summary>
+        public ResourceAmounts BuildCostOf(BuildingDefinition building)
         {
             double multiplier = Run.TodayWeather?.BuildCostMultiplier ?? 1.0;
-            return Math.Max(0, (int)Math.Round(building.GoldCost * multiplier, MidpointRounding.AwayFromZero));
+            ResourceAmounts cost = new ResourceAmounts();
+
+            foreach (ResourceKind kind in building.Cost.NonZero())
+            {
+                // Populacao nao encarece com o clima: chuva atrasa a obra, nao muda
+                // quantas pessoas ela exige.
+                double scale = kind == ResourceKind.Population ? 1.0 : multiplier;
+                cost[kind] = Math.Max(0,
+                    (int)Math.Round(building.Cost[kind] * scale, MidpointRounding.AwayFromZero));
+            }
+
+            return cost;
         }
 
         public CommandResult Demolish(Coord coord)
@@ -456,12 +483,97 @@ namespace KingdomCollapse.Core
 
         private void ResolveProduction()
         {
-            // A producao vem antes de qualquer perda do dia: a spec exige que o ouro
-            // esteja creditado antes de o ataque resolver.
+            // A producao vem antes de qualquer perda do dia: a spec exige que os
+            // recursos estejam creditados antes de o ataque resolver.
             List<ProductionBreakdown> breakdowns = new List<ProductionBreakdown>();
-            int gold = Run.CollectDailyProduction(breakdowns);
-            Run.AddGold(gold);
-            Emit(new ProductionCollectedEvent(gold, breakdowns));
+            ResourceAmounts produced = Run.CollectDailyProductionByResource(breakdowns);
+
+            Run.Add(produced);
+            Emit(new ProductionCollectedEvent(produced, breakdowns));
+
+            ResolveFood(produced[ResourceKind.Food]);
+        }
+
+        /// <summary>
+        /// A populacao come depois de a producao entrar. A ordem importa: cobrar
+        /// antes de creditar faria a colheita do dia nao alimentar ninguem.
+        /// </summary>
+        private void ResolveFood(int producedFood)
+        {
+            int upkeep = Run.DailyFoodUpkeep();
+            if (upkeep <= 0)
+            {
+                return;
+            }
+
+            int paid = Run.Remove(ResourceKind.Food, upkeep);
+            int missing = upkeep - paid;
+            int starved = 0;
+
+            if (missing > 0)
+            {
+                // Fome nao encerra a run: ela derruba a populacao, e o reino fica
+                // incapaz de operar ate ela voltar a crescer (spec resources).
+                double severity = Run.Rules.GetDouble(RuleKeys.StarvationSeverity, 1.0);
+                starved = (int)Math.Ceiling(missing * severity);
+                starved = Run.Remove(ResourceKind.Population, starved);
+            }
+
+            Emit(new FoodResolvedEvent(producedFood, upkeep, starved));
+        }
+
+        /// <summary>
+        /// Cresce a populacao com o excedente de comida, ate o teto dos edificios.
+        /// Roda no Fim do Dia, depois de o consumo ja ter acontecido.
+        /// </summary>
+        private void ResolvePopulationGrowth()
+        {
+            int capacity = Run.PopulationCapacity();
+            int current = Run[ResourceKind.Population];
+
+            if (current >= capacity)
+            {
+                return;
+            }
+
+            double perGrowth = Math.Max(1, Run.Rules.GetDouble(RuleKeys.FoodPerGrowth, 5.0));
+            int growth = (int)(Run[ResourceKind.Food] / perGrowth);
+
+            if (growth <= 0)
+            {
+                return;
+            }
+
+            growth = Math.Min(growth, capacity - current);
+            if (growth <= 0)
+            {
+                return;
+            }
+
+            Run.Remove(ResourceKind.Food, (int)Math.Round(growth * perGrowth, MidpointRounding.AwayFromZero));
+            Run.Add(ResourceKind.Population, growth);
+            Emit(new PopulationGrewEvent(growth, Run[ResourceKind.Population], capacity));
+        }
+
+        /// <summary>
+        /// Avisa se a comida prevista nao cobre o consumo de amanha. O aviso sai no
+        /// Planejamento de proposito: sem antecedencia, a fome vira punicao sem aviso.
+        /// </summary>
+        private void WarnAboutFamine()
+        {
+            int upkeep = Run.DailyFoodUpkeep();
+            if (upkeep <= 0)
+            {
+                return;
+            }
+
+            int predicted = Run[ResourceKind.Food] +
+                            Run.CollectDailyProductionByResource()[ResourceKind.Food];
+
+            if (predicted < upkeep)
+            {
+                Emit(new FamineWarningEvent(predicted, upkeep));
+            }
         }
 
         private void ResolveThreats()
@@ -516,6 +628,8 @@ namespace KingdomCollapse.Core
                 int loss = (int)Math.Ceiling(Run.Gold * stagnation);
                 Run.RemoveGold(loss);
             }
+
+            ResolvePopulationGrowth();
 
             int handBefore = Run.Deck.Hand.Count;
             int discarded = Run.Deck.DiscardHand();

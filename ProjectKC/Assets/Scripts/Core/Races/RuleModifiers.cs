@@ -26,6 +26,15 @@ namespace KingdomCollapse.Core
 
         /// <summary>Cartas compradas alem do tamanho de mao base. Padrao 0.</summary>
         public const string ExtraCardsPerDay = "extra_cards_per_day";
+
+        /// <summary>Comida consumida por habitante por dia. Padrao 1.</summary>
+        public const string FoodPerPopulation = "food_per_population";
+
+        /// <summary>Fracao da populacao perdida por unidade de comida em falta. Padrao 1.</summary>
+        public const string StarvationSeverity = "starvation_severity";
+
+        /// <summary>Comida excedente necessaria para crescer um habitante. Padrao 5.</summary>
+        public const string FoodPerGrowth = "food_per_growth";
     }
 
     /// <summary>

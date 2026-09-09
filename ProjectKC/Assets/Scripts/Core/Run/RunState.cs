@@ -101,7 +101,7 @@ namespace KingdomCollapse.Core
 
             Day = 1;
             Phase = DayPhase.DayStart;
-            Gold = race.StartingGold;
+            Pool = new ResourcePool(race.StartingResources);
             MaxIntegrity = race.StartingIntegrity;
             Integrity = race.StartingIntegrity;
             EnergyPerDay = race.EnergyPerDay;
@@ -134,7 +134,17 @@ namespace KingdomCollapse.Core
 
         public DayPhase Phase { get; internal set; }
 
-        public int Gold { get; private set; }
+        /// <summary>Saldo dos cinco recursos do reino.</summary>
+        public ResourcePool Pool { get; private set; }
+
+        /// <summary>
+        /// Atalho para o ouro. Existe porque ouro continua sendo o recurso liquido,
+        /// usado por compra de celula e por oferta de evento; os demais recursos sao
+        /// lidos pelo Pool.
+        /// </summary>
+        public int Gold => Pool[ResourceKind.Gold];
+
+        public int this[ResourceKind kind] => Pool[kind];
 
         public int Integrity { get; private set; }
 
@@ -167,31 +177,63 @@ namespace KingdomCollapse.Core
 
         // --- Ouro ---
 
-        public void AddGold(int amount)
+        public void AddGold(int amount) => Add(ResourceKind.Gold, amount);
+
+        /// <summary>Retira ouro sem deixar saldo negativo. Devolve quanto saiu de fato.</summary>
+        public int RemoveGold(int amount) => Remove(ResourceKind.Gold, amount);
+
+        public bool CanAfford(int amount) => Pool.Has(ResourceKind.Gold, amount);
+
+        // --- Recursos ---
+
+        public void Add(ResourceKind kind, int amount)
         {
             if (amount <= 0)
             {
                 return;
             }
 
-            Gold += amount;
-            Stats.GoldEarned += amount;
+            Pool.Add(kind, amount);
+
+            if (kind == ResourceKind.Gold)
+            {
+                Stats.GoldEarned += amount;
+            }
         }
 
-        /// <summary>Retira ouro sem deixar saldo negativo. Devolve quanto saiu de fato.</summary>
-        public int RemoveGold(int amount)
+        public void Add(ResourceAmounts amounts)
         {
-            if (amount <= 0)
+            if (amounts == null)
             {
-                return 0;
+                return;
             }
 
-            int removed = Math.Min(amount, Gold);
-            Gold -= removed;
-            return removed;
+            foreach (ResourceKind kind in amounts.NonZero())
+            {
+                int value = amounts[kind];
+                if (value > 0)
+                {
+                    Add(kind, value);
+                }
+                else
+                {
+                    Remove(kind, -value);
+                }
+            }
         }
 
-        public bool CanAfford(int amount) => Gold >= amount;
+        public int Remove(ResourceKind kind, int amount) => Pool.Remove(kind, amount);
+
+        public bool CanAfford(ResourceAmounts cost, out ResourceShortage shortage)
+        {
+            return Pool.CanAfford(cost, out shortage);
+        }
+
+        /// <summary>Paga o custo inteiro ou nao paga nada.</summary>
+        public bool TrySpend(ResourceAmounts cost, out ResourceShortage shortage)
+        {
+            return Pool.TrySpend(cost, out shortage);
+        }
 
         // --- Integridade ---
 
@@ -238,7 +280,32 @@ namespace KingdomCollapse.Core
             return value;
         }
 
-        public int TotalDefense() => ProductionCalculator.TotalDefense(Grid) + PendingDefense;
+        /// <summary>
+        /// Postura de trabalho: quem recebe gente primeiro quando ela nao da para
+        /// todos. E a decisao que faz guarnecer custar producao.
+        /// </summary>
+        public WorkerStance Stance { get; set; } = WorkerStance.Balanced;
+
+        /// <summary>Alocacao de hoje, derivada do estado atual.</summary>
+        public WorkerAllocation Allocation()
+        {
+            return WorkerAllocation.For(Grid, this[ResourceKind.Population], Stance);
+        }
+
+        public int TotalDefense() => ProductionCalculator.TotalDefense(Grid, Allocation()) + PendingDefense;
+
+        /// <summary>Teto de populacao dado pelos edificios em pe.</summary>
+        public int PopulationCapacity() => ProductionCalculator.PopulationCapacity(Grid);
+
+        /// <summary>Comida que a populacao consome por dia.</summary>
+        public int DailyFoodUpkeep()
+        {
+            double perHead = Rules.GetDouble(RuleKeys.FoodPerPopulation, DefaultFoodPerPopulation);
+            return (int)Math.Ceiling(this[ResourceKind.Population] * perHead);
+        }
+
+        /// <summary>Comida consumida por habitante por dia.</summary>
+        public const double DefaultFoodPerPopulation = 1.0;
 
         // --- Modificadores temporarios ---
 
@@ -306,10 +373,17 @@ namespace KingdomCollapse.Core
         /// Producao do dia: soma das celulas, com celulas desabilitadas fora da conta,
         /// depois os modificadores temporarios.
         /// </summary>
-        public int CollectDailyProduction(List<ProductionBreakdown> breakdowns = null)
+        /// <summary>
+        /// Producao do dia em todos os recursos. Celula desabilitada, arrasada ou sem
+        /// gente nao entra; o clima entra por terreno, e nao no total, que e o que faz
+        /// mina, rio e floresta terem personalidade em vez de numeros diferentes.
+        /// </summary>
+        public ResourceAmounts CollectDailyProductionByResource(
+            List<ProductionBreakdown> breakdowns = null)
         {
             WeatherDefinition weather = TodayWeather;
-            int raw = 0;
+            WorkerAllocation allocation = Allocation();
+            ResourceAmounts raw = new ResourceAmounts();
 
             foreach (Tile tile in Grid.OwnedTilesOrdered())
             {
@@ -318,28 +392,64 @@ namespace KingdomCollapse.Core
                     continue;
                 }
 
-                ProductionBreakdown breakdown = ProductionCalculator.ForTile(Grid, tile, Rules);
+                ProductionBreakdown breakdown = ProductionCalculator.ForTile(
+                    Grid, tile, Rules, allocation.IsStaffed(tile.Coord));
 
-                // O clima entra por terreno, e nao no total: e o que faz mina, rio e
-                // floresta terem personalidade em vez de serem numeros diferentes.
-                if (weather != null && breakdown.Total != 0)
+                if (weather != null && !breakdown.IsEmpty)
                 {
                     int byWeather = weather.ProductionFor(tile.Terrain);
                     if (byWeather != 0)
                     {
-                        breakdown.Add(weather.DisplayName, byWeather);
+                        breakdown.Add(weather.DisplayName, WeatherResourceFor(tile.Terrain), byWeather);
                     }
                 }
 
                 breakdowns?.Add(breakdown);
-                raw += breakdown.Total;
+                raw.Add(breakdown.Totals);
             }
 
             double multiplier = 1.0 + SumModifier(ModifierKeys.ProductionMultiplier)
                                 + (weather?.ProductionMultiplier ?? 0);
             int flat = (int)SumModifier(ModifierKeys.ProductionFlat);
-            int total = (int)Math.Round(raw * multiplier, MidpointRounding.AwayFromZero) + flat;
-            return Math.Max(0, total);
+
+            ResourceAmounts total = new ResourceAmounts();
+            foreach (ResourceKind kind in Resources.All)
+            {
+                int scaled = (int)Math.Round(raw[kind] * multiplier, MidpointRounding.AwayFromZero);
+
+                // O modificador plano historicamente valia ouro, e continua valendo.
+                if (kind == ResourceKind.Gold)
+                {
+                    scaled += flat;
+                }
+
+                total[kind] = Math.Max(0, scaled);
+            }
+
+            return total;
+        }
+
+        /// <summary>Qual recurso o clima favorece num terreno.</summary>
+        public static ResourceKind WeatherResourceFor(TerrainType terrain)
+        {
+            switch (terrain)
+            {
+                case TerrainType.Forest:
+                    return ResourceKind.Wood;
+                case TerrainType.Mine:
+                    return ResourceKind.Stone;
+                case TerrainType.Plain:
+                case TerrainType.River:
+                    return ResourceKind.Food;
+                default:
+                    return ResourceKind.Gold;
+            }
+        }
+
+        /// <summary>Producao do dia em ouro. Atalho para leitura antiga e UI resumida.</summary>
+        public int CollectDailyProduction(List<ProductionBreakdown> breakdowns = null)
+        {
+            return CollectDailyProductionByResource(breakdowns)[ResourceKind.Gold];
         }
 
         // --- Colapso ---

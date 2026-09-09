@@ -150,17 +150,81 @@ namespace KingdomCollapse.Core
 
     public sealed class ProductionCollectedEvent : RunEvent
     {
-        public ProductionCollectedEvent(int gold, List<ProductionBreakdown> breakdowns)
+        public ProductionCollectedEvent(ResourceAmounts produced, List<ProductionBreakdown> breakdowns)
         {
-            Gold = gold;
+            Produced = produced ?? new ResourceAmounts();
             Breakdowns = breakdowns ?? new List<ProductionBreakdown>();
         }
 
-        public int Gold { get; }
+        public ResourceAmounts Produced { get; }
+
+        /// <summary>Ouro produzido. Atalho para leitura antiga.</summary>
+        public int Gold => Produced[ResourceKind.Gold];
 
         public List<ProductionBreakdown> Breakdowns { get; }
 
         public override string Kind => "production_collected";
+    }
+
+    /// <summary>
+    /// O balanco de comida do dia. Separado da producao porque o consumo acontece
+    /// depois dela, e o jogador precisa ver os dois lados para entender o saldo.
+    /// </summary>
+    public sealed class FoodResolvedEvent : RunEvent
+    {
+        public FoodResolvedEvent(int produced, int upkeep, int starved)
+        {
+            Produced = produced;
+            Upkeep = upkeep;
+            Starved = starved;
+        }
+
+        public int Produced { get; }
+
+        public int Upkeep { get; }
+
+        /// <summary>Populacao perdida por falta de comida.</summary>
+        public int Starved { get; }
+
+        public bool Famine => Starved > 0;
+
+        public override string Kind => "food_resolved";
+    }
+
+    public sealed class PopulationGrewEvent : RunEvent
+    {
+        public PopulationGrewEvent(int amount, int total, int capacity)
+        {
+            Amount = amount;
+            Total = total;
+            Capacity = capacity;
+        }
+
+        public int Amount { get; }
+
+        public int Total { get; }
+
+        public int Capacity { get; }
+
+        public override string Kind => "population_grew";
+    }
+
+    /// <summary>Aviso de que a comida prevista nao cobre o consumo do dia seguinte.</summary>
+    public sealed class FamineWarningEvent : RunEvent
+    {
+        public FamineWarningEvent(int predictedFood, int predictedUpkeep)
+        {
+            PredictedFood = predictedFood;
+            PredictedUpkeep = predictedUpkeep;
+        }
+
+        public int PredictedFood { get; }
+
+        public int PredictedUpkeep { get; }
+
+        public int Deficit => PredictedUpkeep - PredictedFood;
+
+        public override string Kind => "famine_warning";
     }
 
     public sealed class ThreatAnnouncedEvent : RunEvent
