@@ -108,6 +108,22 @@ Cada classe de evento tem um **orçamento de severidade** declarado em dado (fra
 
 *Trade-off:* eventos ficam menos memoráveis por serem leves. Compensado pela variedade — o teto é de severidade, não de estranheza: um evento pode mudar terreno, embaralhar o deck ou revelar mapa sem custar quase nada.
 
+### D12 — Clima como sistema próprio, não como classe de evento
+Clima é a condição do dia; evento é o que às vezes acontece nele. São sistemas separados, com pools, sorteio e orçamentos independentes.
+
+*Por quê:* três coisas quebrariam se clima virasse um evento. Ele competiria pelo único slot de evento por dia; o cooldown faria "chuva" sumir por cinco dias, quando clima deve ser contínuo; e a classificação positivo/neutro/negativo não descreve algo que é bom e ruim ao mesmo tempo, que é a definição do clima aqui.
+
+*Consequência que compensa:* separado, o clima pode ter **previsão**. Isso o coloca no mesmo princípio do relógio de ameaça — o jogo avisa, o jogador decide — e transforma "tempestade amanhã, horda depois de amanhã" numa decisão em vez de azar.
+
+*Alternativa:* clima como evento de classe neutra com efeitos mistos. Reaproveitaria todo o código, mas entregaria clima esporádico e sem previsão, que é outro sistema.
+
+### D13 — Clima altera a ameaça na previsão, nunca na chegada
+Quando o clima de um dia é previsto, ele já aplica seu efeito sobre as ameaças que chegam naquele dia: reduz a força ou adia o dia de chegada, e o relógio passa a exibir o valor corrigido.
+
+*Por quê:* a spec promete que a força prevista é a força que chega. Aplicar o efeito no dia da chegada faria do número exibido uma mentira, e o jogador perderia a única informação em que ele se apoia para decidir se defende ou expande. Aplicando na previsão, a promessa continua verdadeira e a previsão do tempo ganha valor tático concreto.
+
+*Trade-off:* o relógio muda de número entre um dia e outro, o que exige que a UI destaque a alteração; um número que muda sem aviso seria pior que um número fixo.
+
 ### D11 — Estrutura de repositório
 ```
 KingdomCollapse/

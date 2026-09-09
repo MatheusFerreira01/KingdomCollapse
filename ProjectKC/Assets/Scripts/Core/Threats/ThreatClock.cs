@@ -26,7 +26,7 @@ namespace KingdomCollapse.Core
 
         public ThreatKind Kind { get; }
 
-        public int ArrivalDay { get; }
+        public int ArrivalDay { get; internal set; }
 
         /// <summary>Forca prevista. Um evento pode altera-la antes do dia de chegada.</summary>
         public int Force { get; internal set; }
@@ -193,6 +193,23 @@ namespace KingdomCollapse.Core
 
             threat.Force = Math.Max(1, threat.Force + delta);
             return true;
+        }
+
+        /// <summary>
+        /// Adia uma ameaca ja anunciada. So adia, nunca antecipa: encurtar o aviso
+        /// quebraria a antecedência minima que a spec garante. Devolve os dias
+        /// efetivamente aplicados.
+        /// </summary>
+        public int Delay(ScheduledThreat threat, int days)
+        {
+            if (threat == null || days <= 0 || !_pending.Contains(threat))
+            {
+                return 0;
+            }
+
+            threat.ArrivalDay += days;
+            _pending.Sort((a, b) => a.ArrivalDay.CompareTo(b.ArrivalDay));
+            return days;
         }
 
         public ScheduledThreat NextThreat(int currentDay)

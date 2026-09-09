@@ -104,7 +104,8 @@ namespace KingdomCollapse.Core
                 setup.ThreatIntervalDays,
                 setup.ThreatLeadDays);
 
-            RunState run = new RunState(race, grid, deck, random, threats);
+            WeatherSystem weather = new WeatherSystem(catalog.Weather);
+            RunState run = new RunState(race, grid, deck, random, threats, weather);
 
             EventPool pool = new EventPool(
                 ResolveEvents(race, catalog, tree, profile), setup.EventWeights);

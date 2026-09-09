@@ -84,8 +84,15 @@ namespace KingdomCollapse.Core
     {
         private readonly List<TimedModifier> _modifiers = new List<TimedModifier>();
 
-        public RunState(RaceDefinition race, KingdomGrid grid, RunDeck deck, RunRandom random, ThreatClock threats)
+        public RunState(
+            RaceDefinition race,
+            KingdomGrid grid,
+            RunDeck deck,
+            RunRandom random,
+            ThreatClock threats,
+            WeatherSystem weather = null)
         {
+            Weather = weather ?? new WeatherSystem();
             Race = race;
             Grid = grid;
             Deck = deck;
@@ -115,6 +122,11 @@ namespace KingdomCollapse.Core
         public RunRandom Random { get; }
 
         public ThreatClock Threats { get; }
+
+        public WeatherSystem Weather { get; }
+
+        /// <summary>Clima vigente, ou nulo se a run roda sem catalogo de clima.</summary>
+        public WeatherDefinition TodayWeather => Weather.Today;
 
         public RunStats Stats { get; }
 
@@ -292,7 +304,9 @@ namespace KingdomCollapse.Core
         /// </summary>
         public int CollectDailyProduction(List<ProductionBreakdown> breakdowns = null)
         {
+            WeatherDefinition weather = TodayWeather;
             int raw = 0;
+
             foreach (Tile tile in Grid.OwnedTilesOrdered())
             {
                 if (IsTileDisabled(tile.Coord))
@@ -301,11 +315,24 @@ namespace KingdomCollapse.Core
                 }
 
                 ProductionBreakdown breakdown = ProductionCalculator.ForTile(Grid, tile, Rules);
+
+                // O clima entra por terreno, e nao no total: e o que faz mina, rio e
+                // floresta terem personalidade em vez de serem numeros diferentes.
+                if (weather != null && breakdown.Total != 0)
+                {
+                    int byWeather = weather.ProductionFor(tile.Terrain);
+                    if (byWeather != 0)
+                    {
+                        breakdown.Add(weather.DisplayName, byWeather);
+                    }
+                }
+
                 breakdowns?.Add(breakdown);
                 raw += breakdown.Total;
             }
 
-            double multiplier = 1.0 + SumModifier(ModifierKeys.ProductionMultiplier);
+            double multiplier = 1.0 + SumModifier(ModifierKeys.ProductionMultiplier)
+                                + (weather?.ProductionMultiplier ?? 0);
             int flat = (int)SumModifier(ModifierKeys.ProductionFlat);
             int total = (int)Math.Round(raw * multiplier, MidpointRounding.AwayFromZero) + flat;
             return Math.Max(0, total);

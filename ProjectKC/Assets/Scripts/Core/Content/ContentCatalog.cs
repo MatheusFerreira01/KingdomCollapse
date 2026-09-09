@@ -13,6 +13,7 @@ namespace KingdomCollapse.Core
         private readonly Dictionary<string, BuildingDefinition> _buildings = new Dictionary<string, BuildingDefinition>();
         private readonly Dictionary<string, EventDefinition> _events = new Dictionary<string, EventDefinition>();
         private readonly Dictionary<string, RaceDefinition> _races = new Dictionary<string, RaceDefinition>();
+        private readonly List<WeatherDefinition> _weather = new List<WeatherDefinition>();
 
         private readonly HashSet<string> _startingCards = new HashSet<string>();
         private readonly HashSet<string> _startingBuildings = new HashSet<string>();
@@ -26,6 +27,22 @@ namespace KingdomCollapse.Core
         public IReadOnlyDictionary<string, EventDefinition> Events => _events;
 
         public IReadOnlyDictionary<string, RaceDefinition> Races => _races;
+
+        /// <summary>
+        /// Climas disponiveis. Nao passam por desbloqueio: clima e a condicao do dia,
+        /// e um jogo sem clima nenhum nao teria dia.
+        /// </summary>
+        public IReadOnlyList<WeatherDefinition> Weather => _weather;
+
+        public ContentCatalog AddWeather(WeatherDefinition weather)
+        {
+            if (weather != null)
+            {
+                _weather.Add(weather);
+            }
+
+            return this;
+        }
 
         public ContentCatalog AddCard(CardDefinition card, bool unlockedFromStart = false)
         {

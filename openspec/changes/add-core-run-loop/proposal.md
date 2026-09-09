@@ -11,6 +11,7 @@ Esta mudança estabelece a **fatia vertical jogável**: uma run completa, do in�
 - **Grid de reino**: jogador começa com 1 quadrado e compra quadrados adjacentes com ouro. Cada quadrado tem um **terreno** (planície, floresta, mina, rio, ruína) que define o que pode ser construído ali e cria sinergias de adjacência.
 - **Sistema de cartas**: deck de run, mão de 5 cartas por dia, custo de energia (3/dia), descarte no fim do dia. Cartas constroem, produzem, defendem ou manipulam o grid.
 - **Relógio de ameaça telegrafado**: ataques e catástrofes são anunciados com pelo menos 2 dias de antecedência, com força prevista visível. Essa é a única fonte de pressão que escala e a única que pode encerrar a run.
+- **Clima diário**, separado dos eventos: todo dia tem um, sempre com vantagem e desvantagem juntas, previsto um dia antes. É a única coisa que pode adiar ou enfraquecer uma ameaça agendada, e faz isso no momento da previsão, para que a força exibida no relógio continue sendo a força que chega.
 - **Eventos aleatórios de fim de dia**, separados do relógio de ameaça: um por dia, classificados em positivos, neutros e negativos, com mistura equilibrada ao longo da run. Existem para diversificar as runs, não para dificultá-las — cada classe tem um orçamento de severidade fixo, e um evento negativo nunca destrói um quadrado construído, nunca encerra a run e não fica mais forte com o passar dos dias.
 - **Colapso como fim previsto, não derrota**: toda run termina em Colapso. A run é pontuada (dias sobrevividos, reino construído, marcos), e a pontuação vira moeda de meta.
 - **Raças jogáveis** escolhidas antes da run, cada uma alterando uma **regra** do jogo (não apenas números). A fatia vertical entrega 1 raça (Humanos); as outras 3 vêm em mudança posterior.
@@ -26,6 +27,7 @@ Esta mudança estabelece a **fatia vertical jogável**: uma run completa, do in�
 - `card-system`: deck de run, compra/mão/descarte, energia diária, resolução de efeitos de carta sobre o grid.
 - `threat-clock`: agendamento e telegrafia de ameaças, resolução de ataque, dano à base e destruição de quadrados.
 - `day-events`: pool de eventos de fim de dia (positivos, negativos, neutros), sorteio ponderado e aplicação de efeitos.
+- `weather`: condição natural de cada dia, sempre mista, prevista com um dia de antecedência, capaz de adiar ou enfraquecer uma ameaça já anunciada.
 - `races`: definição de raça, seleção antes da run, regras próprias que alteram o comportamento dos outros sistemas.
 - `meta-progression`: moeda de meta, árvore de desbloqueio geral e galhos por raça, persistência entre runs.
 

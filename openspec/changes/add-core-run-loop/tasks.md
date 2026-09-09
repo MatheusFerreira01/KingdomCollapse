@@ -107,6 +107,17 @@
 - [ ] 12.4 Corrigir os problemas de ritmo apontados pelo playtest e confirmar por uma segunda rodada de 5 runs registrada no mesmo documento
 - [ ] 12.5 Verificar que a suíte completa de EditMode passa e que o jogo roda uma run do dia 1 ao Colapso sem erro no Console
 
+## 14. Clima
+
+- [x] 14.1 Implementar `WeatherDefinition` (bônus por terreno, multiplicador de produção, custo de construção, energia, dano limitado, bloqueios, efeito sobre ameaça) e o pool de sorteio, verificando por teste que todo clima do catálogo declara vantagem e desvantagem (spec `weather`)
+- [x] 14.2 Implementar o clima vigente e a previsão de um dia no ciclo de dia, verificando por teste que todo dia tem clima e que o clima previsto é exatamente o que vigora no dia seguinte
+- [x] 14.3 Aplicar os efeitos do clima sobre produção por terreno, multiplicador do dia, custo de construção e energia, verificando por teste que chuva favorece rio e encarece obra, e que seca inverte o favorecimento
+- [x] 14.4 Aplicar o efeito do clima sobre ameaças no momento da previsão — redução de força e adiamento — verificando por teste que a força resolvida é igual à última força exibida no relógio (design D13, spec `weather`)
+- [x] 14.5 Implementar bloqueios de ação por clima com motivo comunicado, verificando por teste que a neblina recusa a compra de célula informando a razão
+- [x] 14.6 Adicionar verificação automatizada do catálogo de climas que falha se algum clima destruir célula, remover carta, ser letal, exceder o teto de produção ou não ter os dois lados
+- [ ] 14.7 [Editor] Criar os 6 climas iniciais — sol, chuva, seca, tempestade, neblina, dia limpo — verificando em jogo que cada um aparece, é previsto e resolve corretamente
+- [ ] 14.8 Exibir clima de hoje e previsão de amanhã no HUD, destacando quando o clima alterou a força ou o dia de uma ameaça anunciada
+
 ## 13. Preparação comercial
 
 - [x] 13.1 Registrar em `docs/steam.md` o checklist do Steam Direct — taxa, formulários fiscais, requisitos de página, capsules, política de demo e Next Fest — verificando que o documento cobre cada item com prazo estimado

@@ -13,7 +13,8 @@ namespace KingdomCollapse.Core
         CardNotInHand,
         InvalidTarget,
         TargetRequired,
-        GridRefused
+        GridRefused,
+        WeatherBlocked
     }
 
     public readonly struct CommandResult
@@ -126,6 +127,8 @@ namespace KingdomCollapse.Core
             Run.ActedAggressivelyToday = false;
             CompletePendingBuilds();
 
+            AdvanceWeather();
+
             // O relogio anuncia antes do Planejamento: o jogador nunca planeja um dia
             // sem enxergar a fila inteira de ameacas (spec threat-clock).
             List<ScheduledThreat> announced = Run.Threats.AnnounceDue(
@@ -136,7 +139,8 @@ namespace KingdomCollapse.Core
             }
 
             int energyPenalty = (int)Run.SumModifier(ModifierKeys.EnergyPenalty);
-            Run.Energy = Math.Max(0, Run.EnergyPerDay - energyPenalty);
+            int weatherEnergy = Run.TodayWeather?.EnergyDelta ?? 0;
+            Run.Energy = Math.Max(0, Run.EnergyPerDay - energyPenalty + weatherEnergy);
 
             int extraDraw = (int)Run.SumModifier(ModifierKeys.ExtraDraw);
             int drawn = Run.Deck.DrawUpTo(
@@ -146,6 +150,47 @@ namespace KingdomCollapse.Core
             CheckMilestones();
 
             SetPhase(DayPhase.Planning);
+        }
+
+        /// <summary>
+        /// Vira o dia do clima e aplica o que a nova previsao faz com as ameacas.
+        /// Roda antes do Planejamento para que o relogio ja mostre o numero corrigido
+        /// quando o jogador for decidir (design D13).
+        /// </summary>
+        private void AdvanceWeather()
+        {
+            if (!Run.Weather.HasWeather)
+            {
+                return;
+            }
+
+            IRandomSource random = Run.Random.Channel(RandomChannel.Events);
+
+            List<ThreatWeatherEffect> effects = Run.Weather.Today == null
+                ? Run.Weather.Begin(Run, random)
+                : Run.Weather.Advance(Run, random);
+
+            Emit(new WeatherChangedEvent(Run.Weather.Today, Run.Weather.Tomorrow));
+
+            for (int i = 0; i < effects.Count; i++)
+            {
+                if (effects[i].ForceDelta != 0 || effects[i].DelayDays != 0)
+                {
+                    Emit(new ThreatWeatheredEvent(effects[i]));
+                }
+            }
+
+            // Dano de clima e pequeno e nunca letal: o clima da textura ao dia, nao
+            // encerra a run (spec weather).
+            int damage = Run.TodayWeather?.BaseDamage ?? 0;
+            if (damage > 0)
+            {
+                int allowed = Math.Min(damage, Math.Max(0, Run.Integrity - 1));
+                if (allowed > 0)
+                {
+                    Run.Damage(allowed);
+                }
+            }
         }
 
         private void CompletePendingBuilds()
@@ -191,6 +236,11 @@ namespace KingdomCollapse.Core
                 return phase;
             }
 
+            if (Run.TodayWeather != null && Run.TodayWeather.BlocksPurchase)
+            {
+                return CommandResult.Fail(CommandRejection.WeatherBlocked);
+            }
+
             GridResult check = Run.Grid.CanPurchase(coord, Run.Rules);
             if (!check.Ok)
             {
@@ -231,12 +281,13 @@ namespace KingdomCollapse.Core
                 return CommandResult.FailGrid(check.Rejection);
             }
 
-            if (!Run.CanAfford(building.GoldCost))
+            int buildCost = BuildCostOf(building);
+            if (!Run.CanAfford(buildCost))
             {
                 return CommandResult.Fail(CommandRejection.NotEnoughGold);
             }
 
-            Run.RemoveGold(building.GoldCost);
+            Run.RemoveGold(buildCost);
 
             int delay = Run.Rules.GetInt(RuleKeys.BuildDelayDays, 0);
             if (delay > 0)
@@ -289,6 +340,13 @@ namespace KingdomCollapse.Core
             Run.Grid.Repair(coord);
             Emit(new TileRepairedEvent(coord, cost));
             return CommandResult.Success;
+        }
+
+        /// <summary>Custo de obra do dia, ja com o efeito do clima.</summary>
+        public int BuildCostOf(BuildingDefinition building)
+        {
+            double multiplier = Run.TodayWeather?.BuildCostMultiplier ?? 1.0;
+            return Math.Max(0, (int)Math.Round(building.GoldCost * multiplier, MidpointRounding.AwayFromZero));
         }
 
         public CommandResult Demolish(Coord coord)

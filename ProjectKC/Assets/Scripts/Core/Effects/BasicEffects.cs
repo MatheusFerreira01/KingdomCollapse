@@ -349,6 +349,11 @@ namespace KingdomCollapse.Core
         {
             RunState run = context.Run;
 
+            if (run.TodayWeather != null && run.TodayWeather.BlocksReveal)
+            {
+                return EffectResult.NoOp(run.TodayWeather.DisplayName + " impede enxergar hoje");
+            }
+
             if (context.HasTarget && _radius <= 0)
             {
                 run.Grid.Reveal(context.Target.Value);

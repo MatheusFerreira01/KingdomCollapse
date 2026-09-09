@@ -86,6 +86,35 @@ namespace KingdomCollapse.Core
         public override string Kind => "building_placed";
     }
 
+    public sealed class WeatherChangedEvent : RunEvent
+    {
+        public WeatherChangedEvent(WeatherDefinition today, WeatherDefinition tomorrow)
+        {
+            Today = today;
+            Tomorrow = tomorrow;
+        }
+
+        public WeatherDefinition Today { get; }
+
+        /// <summary>Previsao. E o que permite decidir hoje em funcao de amanha.</summary>
+        public WeatherDefinition Tomorrow { get; }
+
+        public override string Kind => "weather_changed";
+    }
+
+    /// <summary>O clima mexeu numa ameaca ja anunciada. A UI precisa destacar.</summary>
+    public sealed class ThreatWeatheredEvent : RunEvent
+    {
+        public ThreatWeatheredEvent(ThreatWeatherEffect effect)
+        {
+            Effect = effect;
+        }
+
+        public ThreatWeatherEffect Effect { get; }
+
+        public override string Kind => "threat_weathered";
+    }
+
     public sealed class TileRepairedEvent : RunEvent
     {
         public TileRepairedEvent(Coord coord, int cost)
