@@ -1,0 +1,61 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+/ProjectKC/[Ll]ibrary/
+/ProjectKC/[Tt]emp/
+/ProjectKC/[Oo]bj/
+/ProjectKC/[Bb]uild/
+/ProjectKC/[Bb]uilds/
+/ProjectKC/[Ll]ogs/
+/ProjectKC/[Uu]ser[Ss]ettings/
+
+# Nunca versionar meta de pasta ignorada
+/[Aa]ssets/AssetStoreTools*
+/ProjectKC/[Aa]ssets/AssetStoreTools*
+
+# Projetos e solucoes gerados pelo Unity
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Excecao: o harness de testes fora do Unity e versionado
+!/tools/**/*.csproj
+!/tools/**/*.sln
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crash reports
+sysinfo.txt
+crashlytics-build.properties
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Saidas do harness de simulacao
+/tools/**/bin/
+/tools/**/obj/
+/artifacts/

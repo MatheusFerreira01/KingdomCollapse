@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compila KingdomCollapse.Core como assembly SEPARADO, com o mesmo nome que o
+    asmdef usa no Unity. A separacao nao e cosmetica: com Core e Tests no mesmo
+    assembly, todo `internal` ficava visivel e o harness passava em codigo que o
+    Unity recusa. O nome tem que bater com o InternalsVisibleTo do Core.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>KingdomCollapse.Core</RootNamespace>
+    <AssemblyName>KingdomCollapse.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\ProjectKC\Assets\Scripts\Core\**\*.cs" LinkBase="Core" />
+  </ItemGroup>
+
+</Project>

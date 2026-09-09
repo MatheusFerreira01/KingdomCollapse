@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Roda os MESMOS arquivos de teste do EditMode fora do Unity, contra o Core
+    compilado como assembly separado (CoreLib). Espelhar a fronteira de assembly
+    do Unity e o que faz este harness valer como verificacao: sem isso ele aprova
+    acesso a `internal` que o Editor recusa.
+
+    O AssemblyName precisa bater com o asmdef de teste do Unity, porque o Core
+    libera seus internals justamente para este nome.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>KingdomCollapse.Tests</RootNamespace>
+    <AssemblyName>KingdomCollapse.Tests.EditMode</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\ProjectKC\Assets\Scripts\Tests\**\*.cs" LinkBase="Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoreLib\CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+  </ItemGroup>
+
+</Project>

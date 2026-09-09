@@ -1,0 +1,26 @@
+* text=auto
+
+# Arquivos de projeto Unity sao YAML: marcar como texto evita que o git os trate
+# como binario e permite diff legivel de cena e prefab.
+*.cs text diff=csharp
+*.asmdef text
+*.unity text
+*.prefab text
+*.asset text
+*.mat text
+*.meta text
+*.json text
+*.md text
+*.csproj text
+*.inputactions text
+
+# Binarios: nunca normalizar.
+*.png binary
+*.jpg binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.dll binary
+*.unitypackage binary
