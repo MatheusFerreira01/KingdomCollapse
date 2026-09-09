@@ -1,0 +1,121 @@
+using KingdomCollapse.Core;
+using UnityEngine;
+
+namespace KingdomCollapse.Game
+{
+    /// <summary>
+    /// Aparencia provisoria do reino: blocos primitivos com cor chapada. Serve para
+    /// provar o loop antes de existir arte (design D9 e a mitigacao de risco de arte
+    /// no design). Quando os prefabs baixo-poli chegarem, o GridView troca a fonte
+    /// dos objetos e esta classe sai.
+    /// </summary>
+    public static class TerrainVisuals
+    {
+        public const float TileSize = 1f;
+
+        /// <summary>Folga entre blocos, para a silhueta do territorio ficar legivel.</summary>
+        public const float TileGap = 0.06f;
+
+        public const float TileStep = TileSize + TileGap;
+
+        public static Color ColorFor(TerrainType terrain)
+        {
+            switch (terrain)
+            {
+                case TerrainType.Plain:
+                    return new Color(0.55f, 0.72f, 0.36f);
+                case TerrainType.Forest:
+                    return new Color(0.22f, 0.47f, 0.28f);
+                case TerrainType.Mine:
+                    return new Color(0.45f, 0.44f, 0.50f);
+                case TerrainType.River:
+                    return new Color(0.30f, 0.56f, 0.78f);
+                case TerrainType.Ruin:
+                    return new Color(0.52f, 0.44f, 0.36f);
+                default:
+                    return Color.magenta;
+            }
+        }
+
+        /// <summary>Altura do bloco. Da relevo ao diorama sem precisar de malha.</summary>
+        public static float HeightFor(TerrainType terrain)
+        {
+            switch (terrain)
+            {
+                case TerrainType.River:
+                    return 0.18f;
+                case TerrainType.Ruin:
+                    return 0.26f;
+                case TerrainType.Mine:
+                    return 0.45f;
+                case TerrainType.Forest:
+                    return 0.38f;
+                default:
+                    return 0.32f;
+            }
+        }
+
+        public static readonly Color UnownedTint = new Color(0.30f, 0.30f, 0.32f);
+        public static readonly Color HiddenTint = new Color(0.20f, 0.20f, 0.22f);
+        public static readonly Color DestroyedTint = new Color(0.28f, 0.20f, 0.18f);
+        public static readonly Color BuildingColor = new Color(0.88f, 0.78f, 0.52f);
+        public static readonly Color HallColor = new Color(0.92f, 0.62f, 0.30f);
+        public static readonly Color SelectionColor = new Color(1f, 0.95f, 0.55f);
+        public static readonly Color PurchasableColor = new Color(0.95f, 0.85f, 0.40f);
+
+        public static Vector3 WorldPosition(Coord coord, float height)
+        {
+            return new Vector3(coord.X * TileStep, height * 0.5f, coord.Y * TileStep);
+        }
+
+        /// <summary>
+        /// Material do pipeline em uso. Procura o shader do URP e cai no padrao se o
+        /// projeto nao estiver em URP, para a cena nunca aparecer toda magenta.
+        /// </summary>
+        public static Material CreateMaterial(Color color, bool transparent = false)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            Material material = new Material(shader) { hideFlags = HideFlags.DontSave };
+            SetColor(material, color);
+
+            if (transparent)
+            {
+                MakeTransparent(material);
+                SetColor(material, color);
+            }
+
+            return material;
+        }
+
+        public static void SetColor(Material material, Color color)
+        {
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", color);
+            }
+        }
+
+        private static void MakeTransparent(Material material)
+        {
+            // Chaves do URP/Lit para modo transparente. Sem elas o alpha e ignorado.
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_ZWrite", 0f);
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.DisableKeyword("_ALPHATEST_ON");
+        }
+    }
+}

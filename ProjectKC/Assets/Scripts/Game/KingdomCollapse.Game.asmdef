@@ -2,7 +2,8 @@
     "name": "KingdomCollapse.Game",
     "rootNamespace": "KingdomCollapse.Game",
     "references": [
-        "KingdomCollapse.Core"
+        "KingdomCollapse.Core",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
