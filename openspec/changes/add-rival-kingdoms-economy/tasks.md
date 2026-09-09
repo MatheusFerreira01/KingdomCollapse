@@ -18,11 +18,11 @@
 
 ## 2. Efeitos e conteúdo sobre recursos
 
-- [ ] 2.1 Generalizar os efeitos de ouro para qualquer recurso (`GainResource`, `LoseResource`), mantendo os demais efeitos, verificando por teste que cada recurso é creditado e debitado isoladamente
-- [ ] 2.2 Implementar efeitos de população — recrutar, realocar entre produção e guarnição — verificando por teste que realocar sobe a defesa e derruba a produção prevista (spec `card-system`)
-- [ ] 2.3 Atualizar o orçamento de severidade de eventos para cobrir população e cada recurso, verificando por teste que um evento não zera a população e respeita o teto da classe (spec `day-events`)
-- [ ] 2.4 Atualizar o clima para agir por recurso e poder pressionar a comida, verificando por teste que chuva aumenta a comida do rio e que o efeito aparece na previsão (spec `weather`)
-- [ ] 2.5 Atualizar `EffectEntry` e os assets de conteúdo para os efeitos novos, verificando que o menu Create expõe os campos de recurso
+- [x] 2.1 Generalizar os efeitos de ouro para qualquer recurso (`GainResource`, `LoseResource`), mantendo os demais efeitos, verificando por teste que cada recurso é creditado e debitado isoladamente
+- [x] 2.2 Implementar efeitos de população — recrutar, realocar entre produção e guarnição — verificando por teste que realocar sobe a defesa e derruba a produção prevista (spec `card-system`)
+- [x] 2.3 Atualizar o orçamento de severidade de eventos para cobrir população e cada recurso, verificando por teste que um evento não zera a população e respeita o teto da classe (spec `day-events`)
+- [x] 2.4 Atualizar o clima para agir por recurso e poder pressionar a comida, verificando por teste que chuva aumenta a comida do rio e que o efeito aparece na previsão (spec `weather`)
+- [x] 2.5 Atualizar `EffectEntry` e os assets de conteúdo para os efeitos novos, verificando que o menu Create expõe os campos de recurso
 
 ## 3. Retorno visual
 

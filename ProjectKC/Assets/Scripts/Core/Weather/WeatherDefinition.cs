@@ -24,8 +24,10 @@ namespace KingdomCollapse.Core
             int threatDelayDays = 0,
             double weight = 1.0,
             string flavorText = null,
-            bool isCalmDay = false)
+            bool isCalmDay = false,
+            double foodUpkeepMultiplier = 1.0)
         {
+            FoodUpkeepMultiplier = foodUpkeepMultiplier;
             Id = id;
             DisplayName = displayName;
             TerrainProduction = terrainProduction ?? new Dictionary<TerrainType, int>();
@@ -72,6 +74,13 @@ namespace KingdomCollapse.Core
         /// <summary>Dias de adiamento das ameacas que chegariam neste dia.</summary>
         public int ThreatDelayDays { get; }
 
+        /// <summary>
+        /// Multiplica o consumo de comida do dia. Frio faz comer mais; o efeito entra
+        /// no consumo, e nao na producao, porque sao coisas que o jogador responde de
+        /// formas diferentes: estoque contra consumo, terreno contra producao.
+        /// </summary>
+        public double FoodUpkeepMultiplier { get; }
+
         public double Weight { get; }
 
         public string FlavorText { get; }
@@ -97,6 +106,11 @@ namespace KingdomCollapse.Core
                 return true;
             }
 
+            if (FoodUpkeepMultiplier < 1.0)
+            {
+                return true;
+            }
+
             if (ThreatForceDelta < 0 || ThreatDelayDays > 0)
             {
                 return true;
@@ -117,6 +131,11 @@ namespace KingdomCollapse.Core
         public bool HasDownside()
         {
             if (ProductionMultiplier < 0 || EnergyDelta < 0 || BuildCostMultiplier > 1.0)
+            {
+                return true;
+            }
+
+            if (FoodUpkeepMultiplier > 1.0)
             {
                 return true;
             }
@@ -156,6 +175,9 @@ namespace KingdomCollapse.Core
 
         /// <summary>Variacao maxima do custo de construcao.</summary>
         public const double MaxBuildCostSwing = 0.50;
+
+        /// <summary>Variacao maxima do consumo de comida.</summary>
+        public const double MaxFoodUpkeepSwing = 0.50;
 
         public const int MaxBaseDamage = 2;
 
@@ -206,6 +228,14 @@ namespace KingdomCollapse.Core
                     violations.Add(new CatalogViolation(
                         weather.Id, "custo de obra",
                         "multiplicador " + weather.BuildCostMultiplier.ToString("0.##") + " excede o teto"));
+                }
+
+                if (Math.Abs(weather.FoodUpkeepMultiplier - 1.0) > WeatherLimits.MaxFoodUpkeepSwing)
+                {
+                    violations.Add(new CatalogViolation(
+                        weather.Id, "consumo de comida",
+                        "multiplicador " + weather.FoodUpkeepMultiplier.ToString("0.##") +
+                        " excede o teto"));
                 }
 
                 if (weather.BaseDamage > WeatherLimits.MaxBaseDamage)

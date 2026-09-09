@@ -304,7 +304,19 @@ namespace KingdomCollapse.Core
         public int DailyFoodUpkeep()
         {
             double perHead = Rules.GetDouble(RuleKeys.FoodPerPopulation, DefaultFoodPerPopulation);
-            return (int)Math.Ceiling(this[ResourceKind.Population] * perHead);
+            double weather = TodayWeather?.FoodUpkeepMultiplier ?? 1.0;
+            return (int)Math.Ceiling(this[ResourceKind.Population] * perHead * weather);
+        }
+
+        /// <summary>
+        /// Consumo previsto para amanha, ja com o clima previsto. E o que permite o
+        /// aviso de fome sair antes de o jogador decidir.
+        /// </summary>
+        public int PredictedFoodUpkeep()
+        {
+            double perHead = Rules.GetDouble(RuleKeys.FoodPerPopulation, DefaultFoodPerPopulation);
+            double weather = Weather.Tomorrow?.FoodUpkeepMultiplier ?? 1.0;
+            return (int)Math.Ceiling(this[ResourceKind.Population] * perHead * weather);
         }
 
         /// <summary>Comida consumida por habitante por dia.</summary>

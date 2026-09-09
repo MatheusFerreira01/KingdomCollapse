@@ -20,6 +20,9 @@ namespace KingdomCollapse.Game
             public string BuildingId;
 
             public int GoldPerMatch = 1;
+
+            [Tooltip("Qual recurso o bonus soma. Adjacencia age no recurso do edificio.")]
+            public ResourceKind Resource = ResourceKind.Gold;
         }
 
         [SerializeField] private string _displayName = "Edificio";
@@ -32,6 +35,37 @@ namespace KingdomCollapse.Game
         [SerializeField] private int _defense;
         [SerializeField] private List<Adjacency> _adjacencyBonuses = new List<Adjacency>();
 
+        [Header("Recursos")]
+        [Tooltip("Custo de construir, alem do ouro acima.")]
+        [SerializeField] private List<ResourceEntry> _cost = new List<ResourceEntry>();
+
+        [Tooltip("Producao por dia, alem do ouro acima.")]
+        [SerializeField] private List<ResourceEntry> _production = new List<ResourceEntry>();
+
+        [Tooltip("Trabalhadores para operar. Sem eles o edificio fica ocioso, e nao e destruido.")]
+        [SerializeField] private int _workersRequired;
+
+        [Tooltip("Quanto este edificio soma ao teto de populacao do reino.")]
+        [SerializeField] private int _populationCapacity;
+
+        [Serializable]
+        public sealed class ResourceEntry
+        {
+            public ResourceKind Resource = ResourceKind.Wood;
+            public int Amount = 1;
+        }
+
+        private static ResourceAmounts ToAmounts(List<ResourceEntry> entries)
+        {
+            ResourceAmounts amounts = new ResourceAmounts();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                amounts[entries[i].Resource] += entries[i].Amount;
+            }
+
+            return amounts;
+        }
+
         public BuildingDefinition ToDefinition()
         {
             List<AdjacencyBonus> bonuses = new List<AdjacencyBonus>();
@@ -39,12 +73,13 @@ namespace KingdomCollapse.Game
             {
                 Adjacency entry = _adjacencyBonuses[i];
                 bonuses.Add(entry.Match == AdjacencyMatch.Terrain
-                    ? AdjacencyBonus.ForTerrain(entry.Terrain, entry.GoldPerMatch)
-                    : AdjacencyBonus.ForBuilding(entry.BuildingId, entry.GoldPerMatch));
+                    ? AdjacencyBonus.ForTerrain(entry.Terrain, entry.GoldPerMatch, entry.Resource)
+                    : AdjacencyBonus.ForBuilding(entry.BuildingId, entry.GoldPerMatch, entry.Resource));
             }
 
             return new BuildingDefinition(
-                Id, _displayName, _allowedTerrains, _goldCost, _baseGoldProduction, _defense, bonuses);
+                Id, _displayName, _allowedTerrains, _goldCost, _baseGoldProduction, _defense, bonuses,
+                ToAmounts(_cost), ToAmounts(_production), _workersRequired, _populationCapacity);
         }
     }
 }

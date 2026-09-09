@@ -111,7 +111,8 @@ namespace KingdomCollapse.Core
             int tilesDestroyed = 0,
             bool destroysBuiltTile = false,
             int cardsRemoved = 0,
-            bool scalesWithDay = false)
+            bool scalesWithDay = false,
+            double populationLossFraction = 0)
         {
             GoldLossFraction = goldLossFraction;
             BaseDamageFraction = baseDamageFraction;
@@ -119,7 +120,15 @@ namespace KingdomCollapse.Core
             DestroysBuiltTile = destroysBuiltTile;
             CardsRemoved = cardsRemoved;
             ScalesWithDay = scalesWithDay;
+            PopulationLossFraction = populationLossFraction;
         }
+
+        /// <summary>
+        /// Fracao da populacao que o efeito tira. Contada a parte do ouro porque
+        /// perder gente derruba producao e defesa ao mesmo tempo: e um golpe de outra
+        /// natureza, e merece teto proprio.
+        /// </summary>
+        public double PopulationLossFraction { get; }
 
         public double GoldLossFraction { get; }
 
@@ -148,7 +157,8 @@ namespace KingdomCollapse.Core
             int maxTilesDestroyed,
             bool canDestroyBuiltTile,
             int maxCardsRemoved,
-            bool allowsLethalDamage = false)
+            bool allowsLethalDamage = false,
+            double maxPopulationLossFraction = 0)
         {
             MaxGoldLossFraction = maxGoldLossFraction;
             MaxBaseDamageFraction = maxBaseDamageFraction;
@@ -156,6 +166,27 @@ namespace KingdomCollapse.Core
             CanDestroyBuiltTile = canDestroyBuiltTile;
             MaxCardsRemoved = maxCardsRemoved;
             AllowsLethalDamage = allowsLethalDamage;
+            MaxPopulationLossFraction = maxPopulationLossFraction;
+        }
+
+        /// <summary>Fracao maxima da populacao que um efeito pode tirar.</summary>
+        public double MaxPopulationLossFraction { get; }
+
+        /// <summary>
+        /// Recorta a perda de um recurso pelo teto da sua natureza. Populacao tem teto
+        /// proprio e nunca chega a zero: um reino sem gente nao opera nada, e zerar
+        /// populacao por evento seria encerrar a run pela porta dos fundos.
+        /// </summary>
+        public int ClampResourceLoss(ResourceKind kind, int requested, int current)
+        {
+            if (kind == ResourceKind.Population)
+            {
+                int byFraction = (int)Math.Floor(current * MaxPopulationLossFraction);
+                int survivors = Math.Max(0, current - 1);
+                return Math.Max(0, Math.Min(requested, Math.Min(byFraction, survivors)));
+            }
+
+            return ClampGoldLoss(requested, current);
         }
 
         /// <summary>
@@ -175,15 +206,16 @@ namespace KingdomCollapse.Core
         public int MaxCardsRemoved { get; }
 
         /// <summary>Sem teto. Usado por cartas, ameacas e efeitos de sistema.</summary>
-        public static readonly SeverityBudget Unlimited =
-            new SeverityBudget(1.0, 1.0, int.MaxValue, true, int.MaxValue, allowsLethalDamage: true);
+        public static readonly SeverityBudget Unlimited = new SeverityBudget(
+            1.0, 1.0, int.MaxValue, true, int.MaxValue,
+            allowsLethalDamage: true, maxPopulationLossFraction: 1.0);
 
         /// <summary>
         /// Orcamento de evento negativo: no maximo 30% do ouro, 15% da integridade,
         /// uma celula vazia e uma carta. Nunca uma celula construida.
         /// </summary>
-        public static readonly SeverityBudget NegativeEvent =
-            new SeverityBudget(0.30, 0.15, 1, false, 1);
+        public static readonly SeverityBudget NegativeEvent = new SeverityBudget(
+            0.30, 0.15, 1, false, 1, maxPopulationLossFraction: 0.20);
 
         /// <summary>Eventos neutros nao impoem perda liquida.</summary>
         public static readonly SeverityBudget NeutralEvent =
@@ -199,13 +231,17 @@ namespace KingdomCollapse.Core
         /// </summary>
         public SeverityBudget AsOffer()
         {
+            // O preco aceito e isento; dano, destruicao e perda de gente continuam
+            // limitados. Uma oferta que cobrasse populacao sem teto seria dano com
+            // outro nome.
             return new SeverityBudget(
                 1.0,
                 MaxBaseDamageFraction,
                 MaxTilesDestroyed,
                 CanDestroyBuiltTile,
                 MaxCardsRemoved,
-                AllowsLethalDamage);
+                AllowsLethalDamage,
+                MaxPopulationLossFraction);
         }
 
         public static SeverityBudget ForClass(EventClass eventClass)

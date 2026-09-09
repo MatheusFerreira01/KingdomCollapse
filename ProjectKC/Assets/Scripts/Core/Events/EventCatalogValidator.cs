@@ -70,6 +70,7 @@ namespace KingdomCollapse.Core
                 EventOption option = definition.Options[optionIndex];
                 double goldLoss = 0;
                 double baseDamage = 0;
+                double populationLoss = 0;
                 int tilesDestroyed = 0;
                 int cardsRemoved = 0;
 
@@ -83,6 +84,7 @@ namespace KingdomCollapse.Core
                     SeverityClaim claim = declaring.DeclareSeverity();
                     goldLoss += claim.GoldLossFraction;
                     baseDamage += claim.BaseDamageFraction;
+                    populationLoss += claim.PopulationLossFraction;
                     tilesDestroyed += claim.TilesDestroyed;
                     cardsRemoved += claim.CardsRemoved;
 
@@ -108,6 +110,8 @@ namespace KingdomCollapse.Core
                 // Preco aceito nao conta como severidade; dano continua contando.
                 if (option.IsOffer && definition.HasDeclineOption)
                 {
+                    // Preco aceito nao conta; populacao continua contando, porque
+                    // gente nao e moeda.
                     goldLoss = 0;
                 }
 
@@ -135,6 +139,15 @@ namespace KingdomCollapse.Core
                         definition.Id,
                         "territorio",
                         where + " arrasa " + tilesDestroyed + " celulas, teto e " + budget.MaxTilesDestroyed));
+                }
+
+                if (populationLoss > budget.MaxPopulationLossFraction)
+                {
+                    violations.Add(new CatalogViolation(
+                        definition.Id,
+                        "populacao",
+                        where + " tira " + populationLoss.ToString("0.##") +
+                        " da populacao, teto e " + budget.MaxPopulationLossFraction.ToString("0.##")));
                 }
 
                 if (cardsRemoved > budget.MaxCardsRemoved)

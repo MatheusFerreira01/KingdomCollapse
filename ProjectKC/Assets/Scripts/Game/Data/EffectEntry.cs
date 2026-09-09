@@ -27,7 +27,13 @@ namespace KingdomCollapse.Game
         RemoveCard = 12,
         SetTerrain = 13,
         DisableTile = 14,
-        RepairTile = 15
+        RepairTile = 15,
+
+        // --- Recursos ---
+        GainResource = 16,
+        LoseResource = 17,
+        Recruit = 18,
+        SetStance = 19
     }
 
     /// <summary>
@@ -76,6 +82,15 @@ namespace KingdomCollapse.Game
         [Tooltip("RevealTile: quantas celulas da fronteira revelar. Zero revela todas.")]
         public int RevealCount;
 
+        [Tooltip("GainResource/LoseResource: qual dos cinco recursos o efeito move.")]
+        public ResourceKind Resource = ResourceKind.Gold;
+
+        [Tooltip("SetStance: para onde a populacao vai primeiro quando falta gente.")]
+        public WorkerStance Stance = WorkerStance.Balanced;
+
+        [Tooltip("Recruit: trazer gente mesmo sem alojamento para ela.")]
+        public bool IgnoreCapacity;
+
         /// <summary>Converte para o efeito puro do Core. Retorna null quando falta dado obrigatorio.</summary>
         public IEffect ToEffect()
         {
@@ -113,6 +128,14 @@ namespace KingdomCollapse.Game
                     return new DisableTileEffect(Days);
                 case EffectEntryKind.RepairTile:
                     return new RepairTileEffect();
+                case EffectEntryKind.GainResource:
+                    return new GainResourceEffect(Resource, Amount, Scaling);
+                case EffectEntryKind.LoseResource:
+                    return new LoseResourceEffect(Resource, Amount, Scaling);
+                case EffectEntryKind.Recruit:
+                    return new RecruitEffect(Mathf.RoundToInt(Amount), IgnoreCapacity);
+                case EffectEntryKind.SetStance:
+                    return new SetStanceEffect(Stance);
                 default:
                     return null;
             }

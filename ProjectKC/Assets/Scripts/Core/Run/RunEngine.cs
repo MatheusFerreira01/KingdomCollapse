@@ -561,7 +561,9 @@ namespace KingdomCollapse.Core
         /// </summary>
         private void WarnAboutFamine()
         {
-            int upkeep = Run.DailyFoodUpkeep();
+            // Usa o consumo previsto, e nao o de hoje: se amanha vem um clima que
+            // faz comer mais, o aviso precisa refletir isso enquanto ainda da tempo.
+            int upkeep = Run.PredictedFoodUpkeep();
             if (upkeep <= 0)
             {
                 return;

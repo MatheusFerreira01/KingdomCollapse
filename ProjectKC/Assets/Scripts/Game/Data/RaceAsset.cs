@@ -22,6 +22,16 @@ namespace KingdomCollapse.Game
         [TextArea]
         [SerializeField] private string _description;
 
+        [Serializable]
+        public sealed class ResourceEntry
+        {
+            public ResourceKind Resource = ResourceKind.Food;
+            public int Amount = 10;
+        }
+
+        [Tooltip("Recursos com que a run comeca, alem do ouro abaixo.")]
+        [SerializeField] private List<ResourceEntry> _startingResources = new List<ResourceEntry>();
+
         [SerializeField] private int _startingGold = 50;
         [SerializeField] private int _startingIntegrity = 20;
         [SerializeField] private int _handSize = 5;
@@ -60,6 +70,12 @@ namespace KingdomCollapse.Game
                 }
             }
 
+            ResourceAmounts starting = new ResourceAmounts();
+            for (int i = 0; i < _startingResources.Count; i++)
+            {
+                starting[_startingResources[i].Resource] += _startingResources[i].Amount;
+            }
+
             return new RaceDefinition(
                 Id,
                 _displayName,
@@ -71,7 +87,8 @@ namespace KingdomCollapse.Game
                 new RuleModifiers(rules),
                 _forbiddenCardIds,
                 _forbiddenBuildingIds,
-                _forbiddenEventIds);
+                _forbiddenEventIds,
+                starting);
         }
     }
 }
