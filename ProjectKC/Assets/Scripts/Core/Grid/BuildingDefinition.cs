@@ -121,9 +121,6 @@ namespace KingdomCollapse.Core
         /// <summary>Quanto este edificio soma ao teto de populacao do reino.</summary>
         public int PopulationCapacity { get; }
 
-        /// <summary>Edificio que existe para abrigar gente, e nao para produzir.</summary>
-        public bool IsHousing => PopulationCapacity > 0;
-
         /// <summary>Edificio cujo papel principal e defender.</summary>
         public bool IsDefensive => Defense > 0;
 

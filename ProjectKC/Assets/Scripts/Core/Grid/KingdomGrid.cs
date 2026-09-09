@@ -264,15 +264,6 @@ namespace KingdomCollapse.Core
             TileAt(coord).Revealed = true;
         }
 
-        public void Hide(Coord coord)
-        {
-            Tile tile = TileAt(coord);
-            if (!tile.Owned)
-            {
-                tile.Revealed = false;
-            }
-        }
-
         public GridResult CanBuild(Coord coord, BuildingDefinition building)
         {
             if (!_tiles.TryGetValue(coord, out Tile tile) || !tile.Owned)

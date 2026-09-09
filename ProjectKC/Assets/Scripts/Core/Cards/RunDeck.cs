@@ -167,25 +167,6 @@ namespace KingdomCollapse.Core
             return removed;
         }
 
-        public bool RemoveCardById(string cardId)
-        {
-            return RemoveFrom(_discardPile, cardId) || RemoveFrom(_drawPile, cardId) || RemoveFrom(_hand, cardId);
-        }
-
-        private static bool RemoveFrom(List<CardDefinition> pile, string cardId)
-        {
-            for (int i = 0; i < pile.Count; i++)
-            {
-                if (pile[i].Id == cardId)
-                {
-                    pile.RemoveAt(i);
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>Todas as cartas da run, em qualquer pilha. Usado por testes e placar.</summary>
         public List<CardDefinition> AllCards()
         {

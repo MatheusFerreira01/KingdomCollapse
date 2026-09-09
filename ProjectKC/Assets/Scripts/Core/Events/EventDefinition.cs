@@ -241,18 +241,6 @@ namespace KingdomCollapse.Core
             return true;
         }
 
-        /// <summary>Todos os efeitos de todas as opcoes. Usado pela validacao de catalogo.</summary>
-        public List<IEffect> AllEffects()
-        {
-            List<IEffect> all = new List<IEffect>();
-            for (int i = 0; i < Options.Count; i++)
-            {
-                all.AddRange(Options[i].Effects);
-            }
-
-            return all;
-        }
-
         public override string ToString() => Id + " (" + Class + ")";
     }
 }

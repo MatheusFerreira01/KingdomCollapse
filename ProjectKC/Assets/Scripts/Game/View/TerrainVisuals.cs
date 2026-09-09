@@ -55,7 +55,6 @@ namespace KingdomCollapse.Game
             }
         }
 
-        public static readonly Color UnownedTint = new Color(0.30f, 0.30f, 0.32f);
         public static readonly Color HiddenTint = new Color(0.20f, 0.20f, 0.22f);
         public static readonly Color DestroyedTint = new Color(0.28f, 0.20f, 0.18f);
         public static readonly Color BuildingColor = new Color(0.88f, 0.78f, 0.52f);

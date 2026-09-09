@@ -105,8 +105,6 @@ namespace KingdomCollapse.Core
             _lastSeenDay[chosen.Id] = run.Day;
             return chosen;
         }
-
-        public void ResetCooldowns() => _lastSeenDay.Clear();
     }
 
     /// <summary>

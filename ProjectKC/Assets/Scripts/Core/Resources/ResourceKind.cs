@@ -138,11 +138,6 @@ namespace KingdomCollapse.Core
             }
         }
 
-        public void Clear()
-        {
-            Array.Clear(_values, 0, _values.Length);
-        }
-
         /// <summary>Recursos com quantidade diferente de zero, em ordem estavel.</summary>
         public IEnumerable<ResourceKind> NonZero()
         {

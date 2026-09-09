@@ -21,8 +21,6 @@ namespace KingdomCollapse.Core
         /// </summary>
         public int Gold { get; }
 
-        public int Amount => Gold;
-
         public override string ToString()
         {
             return Reason + ": " + (Gold >= 0 ? "+" : string.Empty) + Gold + " " +
@@ -178,21 +176,6 @@ namespace KingdomCollapse.Core
             }
 
             return matches;
-        }
-
-        /// <summary>Producao total do reino em ouro. Atalho para leitura antiga.</summary>
-        public static int TotalProduction(
-            KingdomGrid grid, RuleModifiers rules, List<ProductionBreakdown> breakdowns = null)
-        {
-            int total = 0;
-            foreach (Tile tile in grid.OwnedTilesOrdered())
-            {
-                ProductionBreakdown breakdown = ForTile(grid, tile, rules);
-                breakdowns?.Add(breakdown);
-                total += breakdown.Total;
-            }
-
-            return total;
         }
 
         /// <summary>Defesa somada dos edificios em pe e guarnecidos.</summary>
