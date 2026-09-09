@@ -12,21 +12,17 @@ namespace KingdomCollapse.Game
     /// </summary>
     public abstract class ContentAsset : ScriptableObject
     {
-        [Tooltip("Id estavel. Nao mudar depois que o conteudo estiver em uso: saves e nos de meta apontam para ele.")]
+        [Tooltip("Deixe vazio para usar o nome do arquivo. Preencha so para fixar um id " +
+                 "diferente do nome. Nao mudar depois que o conteudo estiver em uso: " +
+                 "saves e nos de meta apontam para ele.")]
         [SerializeField] private string _id;
 
+        /// <summary>
+        /// Id vazio cai no nome do arquivo. Deliberadamente sem auto-preenchimento no
+        /// OnValidate: na criacao o asset ainda tem o nome padrao do template, entao
+        /// preencher ali gravaria o mesmo id em todo conteudo do mesmo tipo.
+        /// </summary>
         public string Id => string.IsNullOrEmpty(_id) ? name : _id;
-
-#if UNITY_EDITOR
-        /// <summary>Preenche o id com o nome do arquivo quando estiver vazio.</summary>
-        protected virtual void OnValidate()
-        {
-            if (string.IsNullOrEmpty(_id))
-            {
-                _id = name;
-            }
-        }
-#endif
     }
 
     [CreateAssetMenu(menuName = "Kingdom Collapse/Edificio", fileName = "Building_")]
