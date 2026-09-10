@@ -127,6 +127,34 @@ namespace KingdomCollapse.Tests
                 new RuleModifiers(new Dictionary<string, double>(rules)));
         }
 
+        // --- Rivais ---
+
+        public static RivalIdentity AssaultIdentity()
+        {
+            return new RivalIdentity("assault", "Assalto", "Ataca as muralhas e come a borda.", PressureAxis.Territory);
+        }
+
+        public static RivalIdentity FoodRaidIdentity()
+        {
+            return new RivalIdentity(
+                "food-raid", "Saque", "Leva a comida dos celeiros.", PressureAxis.Resource, ResourceKind.Food);
+        }
+
+        public static RivalDefinition Rival(
+            string id = "rival",
+            RivalIdentity identity = null,
+            int attacks = 3,
+            int firstForce = 6,
+            double growth = 3)
+        {
+            return new RivalDefinition(
+                id,
+                id,
+                identity ?? AssaultIdentity(),
+                attacks,
+                new RivalCampaignCurve(firstForce, growth));
+        }
+
         // --- Runs completas ---
 
         /// <summary>
@@ -159,7 +187,8 @@ namespace KingdomCollapse.Tests
             ContentCatalog catalog = null,
             int seed = 1234,
             int firstThreatDay = 999,
-            EventClassWeights weights = null)
+            EventClassWeights weights = null,
+            IReadOnlyList<RivalDefinition> rivals = null)
         {
             RaceDefinition chosen = race ?? Humans();
             ContentCatalog content = catalog ?? Catalog(chosen);
@@ -167,7 +196,8 @@ namespace KingdomCollapse.Tests
             RunSetup setup = new RunSetup(chosen.Id, seed)
             {
                 FirstThreatDay = firstThreatDay,
-                EventWeights = weights
+                EventWeights = weights,
+                Rivals = rivals
             };
 
             RunBundle bundle = RunBuilder.Build(setup, content);

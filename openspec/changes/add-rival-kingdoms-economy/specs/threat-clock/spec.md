@@ -8,11 +8,15 @@
 ## MODIFIED Requirements
 
 ### Requirement: Resolução de ataque
-Na Resolução, a força do ataque SHALL ser confrontada com a defesa guarnecida do reino. A força excedente SHALL causar perdas no eixo declarado pela identidade do rival. Um ataque cuja força não exceda a defesa SHALL contar como repelido para a campanha.
+Na Resolução, a força do ataque SHALL ser confrontada com a defesa guarnecida do reino. A força excedente SHALL causar perdas no eixo declarado pela identidade do rival. Um ataque cuja força não exceda a defesa SHALL contar como repelido para a campanha, qualquer que seja a identidade do rival. Um rival econômico SHALL saquear uma parte da força declarada pela identidade mesmo quando o ataque é repelido: contra ele, a defesa decide se o jogador vence a guerra, e o estoque decide se ele aguenta.
 
 #### Scenario: Defesa suficiente anula o ataque
-- **WHEN** a defesa guarnecida do reino é maior ou igual à força do ataque
+- **WHEN** a defesa guarnecida do reino é maior ou igual à força do ataque de um rival de assalto
 - **THEN** nenhuma perda acontece e o ataque conta como repelido para a campanha do rival
+
+#### Scenario: Saque econômico acontece mesmo repelido
+- **WHEN** a defesa guarnecida do reino é maior ou igual à força do ataque de um rival econômico
+- **THEN** o ataque conta como repelido para a campanha, e ainda assim o recurso declarado pela identidade perde a parte saqueada
 
 #### Scenario: Excedente destrói quadrados
 - **WHEN** a força de um rival de assalto excede a defesa do reino

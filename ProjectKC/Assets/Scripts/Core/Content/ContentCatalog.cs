@@ -14,6 +14,7 @@ namespace KingdomCollapse.Core
         private readonly Dictionary<string, EventDefinition> _events = new Dictionary<string, EventDefinition>();
         private readonly Dictionary<string, RaceDefinition> _races = new Dictionary<string, RaceDefinition>();
         private readonly List<WeatherDefinition> _weather = new List<WeatherDefinition>();
+        private readonly Dictionary<string, RivalDefinition> _rivals = new Dictionary<string, RivalDefinition>();
 
         private readonly HashSet<string> _startingCards = new HashSet<string>();
         private readonly HashSet<string> _startingBuildings = new HashSet<string>();
@@ -39,6 +40,22 @@ namespace KingdomCollapse.Core
             if (weather != null)
             {
                 _weather.Add(weather);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Rivais existentes. Tambem nao passam por desbloqueio: quem decide que
+        /// rivais uma run enfrenta e o nivel de dificuldade, nao a arvore de meta.
+        /// </summary>
+        public IReadOnlyDictionary<string, RivalDefinition> Rivals => _rivals;
+
+        public ContentCatalog AddRival(RivalDefinition rival)
+        {
+            if (rival != null)
+            {
+                _rivals[rival.Id] = rival;
             }
 
             return this;

@@ -57,10 +57,7 @@ namespace KingdomCollapse.EditorTools
             GameDatabase database = AssetDatabase.LoadAssetAtPath<GameDatabase>(
                 AssetDatabase.GUIDToAssetPath(guids[0]));
 
-            List<CatalogViolation> violations = new List<CatalogViolation>();
-            violations.AddRange(EventCatalogValidator.Validate(database.BuildEventDefinitions()));
-            violations.AddRange(WeatherCatalogValidator.Validate(database.BuildCatalog().Weather));
-            violations.AddRange(MetaCatalogValidator.Validate(database.BuildMetaTree()));
+            List<CatalogViolation> violations = database.CollectViolations();
 
             if (violations.Count == 0)
             {

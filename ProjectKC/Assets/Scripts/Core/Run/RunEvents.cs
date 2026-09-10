@@ -251,6 +251,43 @@ namespace KingdomCollapse.Core
         public override string Kind => "attack_resolved";
     }
 
+    /// <summary>
+    /// Um rival teve a campanha inteira repelida. E momento proprio, e nao linha de
+    /// log: e o que a apresentacao usa para interromper o fluxo do dia.
+    /// </summary>
+    public sealed class RivalDefeatedEvent : RunEvent
+    {
+        public RivalDefeatedEvent(RivalCampaign campaign)
+        {
+            Campaign = campaign;
+        }
+
+        public RivalCampaign Campaign { get; }
+
+        public RivalDefinition Rival => Campaign.Rival;
+
+        public override string Kind => "rival_defeated";
+    }
+
+    /// <summary>
+    /// Um rival entra em guerra: o primeiro no comeco da run, os seguintes depois de
+    /// cada derrota. Carrega a identidade para que o jogador saiba o que esperar
+    /// antes do primeiro ataque (spec rival-kingdoms).
+    /// </summary>
+    public sealed class RivalDeclaredWarEvent : RunEvent
+    {
+        public RivalDeclaredWarEvent(RivalCampaign campaign)
+        {
+            Campaign = campaign;
+        }
+
+        public RivalCampaign Campaign { get; }
+
+        public RivalDefinition Rival => Campaign.Rival;
+
+        public override string Kind => "rival_declared_war";
+    }
+
     /// <summary>Recursos tirados de um ataque repelido, para racas que vivem do saque.</summary>
     public sealed class PlunderCollectedEvent : RunEvent
     {
@@ -319,6 +356,19 @@ namespace KingdomCollapse.Core
         public string Label { get; }
 
         public override string Kind => "milestone_reached";
+    }
+
+    /// <summary>O ultimo rival caiu. Desfecho distinto do Colapso, com placar proprio.</summary>
+    public sealed class RunWonEvent : RunEvent
+    {
+        public RunWonEvent(RunScore score)
+        {
+            Score = score;
+        }
+
+        public RunScore Score { get; }
+
+        public override string Kind => "run_won";
     }
 
     public sealed class RunCollapsedEvent : RunEvent

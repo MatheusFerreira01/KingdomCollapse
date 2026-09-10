@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace KingdomCollapse.Core
@@ -16,6 +17,7 @@ namespace KingdomCollapse.Core
             Force = force;
             Defense = defense;
             TilesDestroyed = new List<Coord>();
+            ResourcesLost = new ResourceAmounts();
         }
 
         public ThreatKind Kind { get; }
@@ -33,12 +35,29 @@ namespace KingdomCollapse.Core
 
         public int BaseDamage { get; internal set; }
 
+        /// <summary>
+        /// Forca que o rival economico saqueou sem passar pela defesa. Repelir nao
+        /// zera isto: e o que o estoque existe para absorver.
+        /// </summary>
+        public int RaidForce { get; internal set; }
+
+        /// <summary>Recursos levados pelo ataque, saque e excedente somados.</summary>
+        public ResourceAmounts ResourcesLost { get; }
+
+        /// <summary>
+        /// Conta para a campanha quando a defesa segura a forca, qualquer que seja o
+        /// rival. Um ataque repelido ainda pode ter levado recurso por saque.
+        /// </summary>
         public bool Repelled => Overflow <= 0;
+
+        public bool CausedLoss =>
+            TilesDestroyed.Count > 0 || BaseDamage > 0 || !ResourcesLost.IsEmpty;
 
         public override string ToString()
         {
+            string lost = ResourcesLost.IsEmpty ? string.Empty : ", levou " + ResourcesLost;
             return Kind + " dia " + Day + ": forca " + Force + " vs defesa " + Defense +
-                   " => " + TilesDestroyed.Count + " celula(s), " + BaseDamage + " de dano";
+                   " => " + TilesDestroyed.Count + " celula(s), " + BaseDamage + " de dano" + lost;
         }
     }
 
@@ -58,14 +77,20 @@ namespace KingdomCollapse.Core
 
             run.ConsumePendingDefense();
 
-            int overflow = threat.Force - defense;
-            if (overflow <= 0)
+            int overflow = Math.Max(0, threat.Force - defense);
+            report.Overflow = overflow;
+
+            RivalIdentity identity = threat.Rival?.Identity;
+            if (identity != null)
             {
-                report.Overflow = 0;
+                ResolveByAxis(run, report, identity, threat.Force, overflow);
                 return report;
             }
 
-            report.Overflow = overflow;
+            if (overflow <= 0)
+            {
+                return report;
+            }
 
             // Incendio e colapso estrutural ferem a base direto; a horda come
             // territorio primeiro. A diferenca existe para que os tipos exijam
@@ -81,6 +106,62 @@ namespace KingdomCollapse.Core
             }
 
             return report;
+        }
+
+        /// <summary>
+        /// Ataque de rival: o eixo da identidade decide onde a perda cai (design D4).
+        /// Assalto so fere o que a defesa deixou passar; o rival economico saqueia
+        /// sempre, e o excedente, se houver, soma ao saque.
+        /// </summary>
+        private static void ResolveByAxis(
+            RunState run, AttackReport report, RivalIdentity identity, int force, int overflow)
+        {
+            switch (identity.Axis)
+            {
+                case PressureAxis.Territory:
+                    overflow = DestroyBorderTiles(run, report, overflow);
+                    if (overflow > 0)
+                    {
+                        report.BaseDamage = run.Damage(overflow);
+                    }
+
+                    return;
+
+                case PressureAxis.Integrity:
+                    if (overflow > 0)
+                    {
+                        report.BaseDamage = run.Damage(overflow);
+                    }
+
+                    return;
+
+                case PressureAxis.Population:
+                case PressureAxis.Resource:
+                    Raid(run, report, identity, force, overflow);
+                    return;
+            }
+        }
+
+        private static void Raid(RunState run, AttackReport report, RivalIdentity identity, int force, int overflow)
+        {
+            if (identity.LostResource == null)
+            {
+                return;
+            }
+
+            report.RaidForce = (int)Math.Round(force * identity.RaidFraction, MidpointRounding.AwayFromZero);
+
+            int loss = (int)Math.Round(
+                (report.RaidForce + overflow) * identity.LossPerForce, MidpointRounding.AwayFromZero);
+            if (loss <= 0)
+            {
+                return;
+            }
+
+            // Leva o que houver: saque sobre celeiro vazio nao vira divida nem dano.
+            // Quem nao estocou perde tudo, e isso ja e a punicao.
+            ResourceKind kind = identity.LostResource.Value;
+            report.ResourcesLost[kind] = run.Remove(kind, loss);
         }
 
         private static int DestroyBorderTiles(RunState run, AttackReport report, int overflow)

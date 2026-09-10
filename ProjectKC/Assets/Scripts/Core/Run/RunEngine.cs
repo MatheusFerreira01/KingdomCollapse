@@ -132,6 +132,11 @@ namespace KingdomCollapse.Core
         /// <summary>Abre a run: resolve o primeiro Inicio do Dia e para no Planejamento.</summary>
         public void StartRun()
         {
+            if (Run.Threats.CurrentCampaign != null)
+            {
+                Emit(new RivalDeclaredWarEvent(Run.Threats.CurrentCampaign));
+            }
+
             BeginDay();
         }
 
@@ -452,7 +457,8 @@ namespace KingdomCollapse.Core
             ResolveProduction();
             ResolveThreats();
 
-            if (Run.CheckCollapse())
+            // Os ataques sao o unico passo que pode vencer a run, alem de derruba-la.
+            if (Run.IsOver || Run.CheckCollapse())
             {
                 FinishRun();
                 return CommandResult.Success;
@@ -583,6 +589,13 @@ namespace KingdomCollapse.Core
             List<ScheduledThreat> due = Run.Threats.DueOn(Run.Day);
             for (int i = 0; i < due.Count; i++)
             {
+                // Um ataque anterior do mesmo dia pode ter derrotado o rival, e a
+                // derrota limpa a campanha dele da fila.
+                if (!Run.Threats.IsPending(due[i]))
+                {
+                    continue;
+                }
+
                 AttackReport report = CombatResolver.Resolve(Run, due[i]);
                 Run.Threats.MarkResolved(due[i]);
                 Run.ActedAggressivelyToday = true;
@@ -603,6 +616,28 @@ namespace KingdomCollapse.Core
                 }
 
                 Emit(new AttackResolvedEvent(report));
+
+                RivalCampaign defeated = Run.Threats.RecordOutcome(due[i], report.Repelled);
+                if (defeated != null)
+                {
+                    Run.Stats.RivalsDefeated++;
+                    Emit(new RivalDefeatedEvent(defeated));
+
+                    if (Run.Threats.AllRivalsDefeated)
+                    {
+                        // Vitoria encerra na hora, sem esperar o fim do dia: nada que
+                        // viesse depois (evento, fome) pode tirar do jogador o
+                        // triunfo que ele acabou de conquistar (spec rival-kingdoms).
+                        Run.DeclareVictory();
+                        return;
+                    }
+
+                    RivalCampaign next = Run.Threats.DeclareNextWar(Run.Day);
+                    if (next != null)
+                    {
+                        Emit(new RivalDeclaredWarEvent(next));
+                    }
+                }
 
                 if (Run.CheckCollapse())
                 {
@@ -685,7 +720,15 @@ namespace KingdomCollapse.Core
         {
             Run.Stats.DaysSurvived = Run.Day;
             FinalScore = ScoreCalculator.Calculate(Run);
-            Emit(new RunCollapsedEvent(Run.Collapse, FinalScore));
+
+            if (Run.Outcome == RunOutcome.Victory)
+            {
+                Emit(new RunWonEvent(FinalScore));
+            }
+            else
+            {
+                Emit(new RunCollapsedEvent(Run.Collapse, FinalScore));
+            }
         }
     }
 }

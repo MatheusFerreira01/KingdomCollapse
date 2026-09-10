@@ -349,7 +349,19 @@ namespace KingdomCollapse.Game
                         Log("ATAQUE " + attack.Report.Kind + ": forca " + attack.Report.Force +
                             " vs defesa " + attack.Report.Defense + " => " +
                             attack.Report.TilesDestroyed.Count + " celula(s), " +
-                            attack.Report.BaseDamage + " de dano.");
+                            attack.Report.BaseDamage + " de dano" +
+                            (attack.Report.ResourcesLost.IsEmpty ? string.Empty : ", levou " + attack.Report.ResourcesLost) +
+                            (attack.Report.Repelled ? " (repelido)." : "."));
+                        break;
+
+                    case RivalDeclaredWarEvent declared:
+                        Log("GUERRA: " + declared.Rival.DisplayName + " (" + declared.Rival.Identity.DisplayName +
+                            ") — " + declared.Rival.Identity.Description + " Repelir " +
+                            declared.Rival.AttacksToDefeat + " ataques para derrota-lo.");
+                        break;
+
+                    case RivalDefeatedEvent defeated:
+                        Log("DERROTADO: " + defeated.Rival.DisplayName + ".");
                         break;
 
                     case DayEventResolvedEvent dayEvent:
@@ -359,6 +371,11 @@ namespace KingdomCollapse.Game
 
                     case MilestoneReachedEvent milestone:
                         Log("MARCO: " + milestone.Label);
+                        break;
+
+                    case RunWonEvent won:
+                        Log("=== VITORIA === " + won.Score.TotalPoints + " pts, " +
+                            won.Score.MetaCurrency + " moedas de meta.");
                         break;
 
                     case RunCollapsedEvent collapsed:
@@ -693,7 +710,8 @@ namespace KingdomCollapse.Game
             for (int i = 0; i < pending.Count; i++)
             {
                 ScheduledThreat threat = pending[i];
-                GUILayout.Label(threat.Kind + " em " + threat.DaysUntil(run.Day) +
+                string origin = threat.Rival != null ? threat.Rival.DisplayName + ": " : string.Empty;
+                GUILayout.Label(origin + threat.Kind + " em " + threat.DaysUntil(run.Day) +
                                 " dia(s), forca " + threat.Force);
             }
         }
@@ -783,7 +801,9 @@ namespace KingdomCollapse.Game
         {
             RunScore score = _bundle.Engine.FinalScore;
 
-            GUILayout.Label("=== COLAPSO: " + _bundle.Run.Collapse + " ===");
+            GUILayout.Label(_bundle.Run.Outcome == RunOutcome.Victory
+                ? "=== VITORIA ==="
+                : "=== COLAPSO: " + _bundle.Run.Collapse + " ===");
 
             if (score != null)
             {

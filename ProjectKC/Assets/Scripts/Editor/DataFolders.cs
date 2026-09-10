@@ -20,12 +20,13 @@ namespace KingdomCollapse.EditorTools
         public const string Weather = Root + "/Clima";
         public const string Races = Root + "/Racas";
         public const string Meta = Root + "/Meta";
+        public const string Rivals = Root + "/Rivais";
 
         /// <summary>
         /// GameDatabase e Balance ficam na raiz de propósito: sao os pontos de entrada,
         /// e enterra-los numa subpasta os tornaria tao dificeis de achar quanto antes.
         /// </summary>
-        public static readonly string[] All = { Buildings, Cards, Events, Weather, Races, Meta };
+        public static readonly string[] All = { Buildings, Cards, Events, Weather, Races, Meta, Rivals };
 
         public static void EnsureAll()
         {
@@ -78,6 +79,13 @@ namespace KingdomCollapse.EditorTools
                 return Meta;
             }
 
+            // Identidade mora junto do rival: e so lendo os dois lado a lado que se
+            // ve se a sucessao repete o tipo de pressao.
+            if (asset is RivalAsset || asset is RivalIdentityAsset)
+            {
+                return Rivals;
+            }
+
             return null;
         }
     }
@@ -103,6 +111,8 @@ namespace KingdomCollapse.EditorTools
             moved += MoveAll<WeatherAsset>(problems);
             moved += MoveAll<RaceAsset>(problems);
             moved += MoveAll<MetaNodeAsset>(problems);
+            moved += MoveAll<RivalAsset>(problems);
+            moved += MoveAll<RivalIdentityAsset>(problems);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

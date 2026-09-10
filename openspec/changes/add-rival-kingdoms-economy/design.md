@@ -57,6 +57,10 @@ Cada identidade declara onde o excedente de um ataque bem-sucedido cai: territó
 
 *Consequência:* a spec exige que ao menos um rival não seja resolvido por defesa. Sem essa exigência, o desenho degenera de volta para o jogo de hoje.
 
+*Como a defesa age contra um rival econômico (decidido na implementação da 4.5):* defesa maior ou igual à força continua contando como ataque repelido, para qualquer rival, porque é repelindo que se derrota a campanha. Mas o rival econômico saqueia sempre uma fração da força, declarada na identidade, do recurso que ele pressiona; se a defesa ceder, o excedente soma à perda. A defesa decide se o jogador **vence** a guerra, e o estoque decide se ele **aguenta** até lá.
+
+*Alternativas descartadas:* comparar a força com o estoque em vez da defesa deixaria a muralha inútil contra esse rival e criaria uma segunda regra de "repelir"; fazer a defesa só reduzir o saque mantém a muralha como resposta suficiente, e é justamente isso que a identidade econômica existe para impedir.
+
 ### D5 — Vitória como desfecho de primeira classe, não como "sobreviveu o bastante"
 `RunOutcome` passa a ser `Victory` ou `Collapse`, e a pontuação considera o desfecho, os rivais derrotados e o nível.
 

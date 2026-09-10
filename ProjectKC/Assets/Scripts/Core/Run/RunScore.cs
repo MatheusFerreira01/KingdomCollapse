@@ -25,9 +25,9 @@ namespace KingdomCollapse.Core
     }
 
     /// <summary>
-    /// Placar de Colapso. Discriminado por exigencia da spec: o jogador precisa ver
-    /// de onde veio cada ponto, ou o fim de run vira uma tela de derrota com um
-    /// numero solto.
+    /// Placar de fim de run, de Vitoria ou de Colapso. Discriminado por exigencia da
+    /// spec: o jogador precisa ver de onde veio cada ponto, ou o fim de run vira uma
+    /// tela com um numero solto.
     /// </summary>
     public sealed class RunScore
     {
@@ -40,6 +40,8 @@ namespace KingdomCollapse.Core
         public int MetaCurrency { get; internal set; }
 
         public CollapseReason Reason { get; internal set; }
+
+        public RunOutcome Outcome { get; internal set; }
 
         internal void Add(string label, int quantity, int pointsEach)
         {
@@ -64,6 +66,18 @@ namespace KingdomCollapse.Core
         public const int PointsPerAttackSurvived = 15;
         public const int PointsPerMilestone = 25;
 
+        /// <summary>
+        /// Um rival derrotado vale bem mais que os ataques que o derrotaram: a spec
+        /// exige que derrotar rivais pese mais que durar dias.
+        /// </summary>
+        public const int PointsPerRivalDefeated = 75;
+
+        /// <summary>
+        /// Bonus da Vitoria. E o que garante que vencer rende mais que colapsar com
+        /// o mesmo reino, e nao so por ter derrotado um rival a mais.
+        /// </summary>
+        public const int VictoryBonus = 150;
+
         /// <summary>Quantos pontos valem uma moeda de meta.</summary>
         public const int PointsPerMetaCoin = 20;
 
@@ -75,7 +89,7 @@ namespace KingdomCollapse.Core
 
         public static RunScore Calculate(RunState run)
         {
-            RunScore score = new RunScore { Reason = run.Collapse };
+            RunScore score = new RunScore { Reason = run.Collapse, Outcome = run.Outcome };
 
             int standingTiles = run.StandingTileCount();
             int buildings = CountBuildings(run.Grid);
@@ -85,6 +99,12 @@ namespace KingdomCollapse.Core
             score.Add("Edificios erguidos", buildings, PointsPerBuilding);
             score.Add("Ataques repelidos", run.Stats.AttacksSurvived, PointsPerAttackSurvived);
             score.Add("Marcos alcancados", run.Stats.MilestonesReached, PointsPerMilestone);
+            score.Add("Rivais derrotados", run.Stats.RivalsDefeated, PointsPerRivalDefeated);
+
+            if (run.Outcome == RunOutcome.Victory)
+            {
+                score.Add("Vitoria", 1, VictoryBonus);
+            }
 
             score.MetaCurrency = Math.Max(
                 MinimumMetaCoins,

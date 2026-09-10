@@ -39,13 +39,13 @@
 
 ## 4. Reinos rivais
 
-- [ ] 4.1 Implementar `RivalDefinition` (nome, identidade, número de ataques, curva da campanha, eixo pressionado) e `RivalIdentity`, verificando por teste que toda identidade do catálogo declara o eixo que pressiona
-- [ ] 4.2 Implementar a campanha do rival preenchendo o relógio de ameaça, verificando por teste que todo ataque continua sendo anunciado com a antecedência mínima e que o relógio indica de qual rival vem (spec `rival-kingdoms`)
-- [ ] 4.3 Implementar a contagem de ataques repelidos e a derrota do rival, verificando por teste que repelir todos derrota, que falhar não perde a campanha, e que derrotar limpa os ataques restantes daquela campanha
-- [ ] 4.4 Implementar a sucessão de rivais com intervalo de respiro e campanha mais forte, verificando por teste que o próximo rival é anunciado e que existe ao menos um dia sem ataque entre campanhas
-- [ ] 4.5 Implementar a resolução de ataque por eixo de identidade, verificando por teste que um rival econômico causa perda mesmo com defesa alta e que um rival de assalto é anulado por defesa suficiente (design D4)
-- [ ] 4.6 Implementar Vitória como desfecho da run, com placar próprio, verificando por teste que derrotar o último rival encerra imediatamente e que Vitória rende mais moeda que Colapso (spec `run-loop`)
-- [ ] 4.7 Adicionar verificação automatizada do catálogo de rivais que falha se nenhum rival pressionar um eixo diferente de defesa
+- [x] 4.1 Implementar `RivalDefinition` (nome, identidade, número de ataques, curva da campanha, eixo pressionado) e `RivalIdentity`, verificando por teste que toda identidade do catálogo declara o eixo que pressiona
+- [x] 4.2 Implementar a campanha do rival preenchendo o relógio de ameaça, verificando por teste que todo ataque continua sendo anunciado com a antecedência mínima e que o relógio indica de qual rival vem (spec `rival-kingdoms`)
+- [x] 4.3 Implementar a contagem de ataques repelidos e a derrota do rival, verificando por teste que repelir todos derrota, que falhar não perde a campanha, e que derrotar limpa os ataques restantes daquela campanha
+- [x] 4.4 Implementar a sucessão de rivais com intervalo de respiro e campanha mais forte, verificando por teste que o próximo rival é anunciado e que existe ao menos um dia sem ataque entre campanhas
+- [x] 4.5 Implementar a resolução de ataque por eixo de identidade, verificando por teste que um rival econômico causa perda mesmo com defesa alta e que um rival de assalto é anulado por defesa suficiente (design D4)
+- [x] 4.6 Implementar Vitória como desfecho da run, com placar próprio, verificando por teste que derrotar o último rival encerra imediatamente e que Vitória rende mais moeda que Colapso (spec `run-loop`)
+- [x] 4.7 Adicionar verificação automatizada do catálogo de rivais que falha se nenhum rival pressionar um eixo diferente de defesa
 
 ## 5. Escada de dificuldade
 

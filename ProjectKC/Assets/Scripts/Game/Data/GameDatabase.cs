@@ -21,6 +21,9 @@ namespace KingdomCollapse.Game
         [Tooltip("Climas do jogo. Nao passam por desbloqueio: todo dia tem um.")]
         [SerializeField] private List<WeatherAsset> _weather = new List<WeatherAsset>();
 
+        [Tooltip("Rivais, na ordem em que declaram guerra. Vazio cai na ameaca anonima.")]
+        [SerializeField] private List<RivalAsset> _rivals = new List<RivalAsset>();
+
         [Header("Desbloqueado desde o inicio")]
         [Tooltip("O que aparece numa run sem nenhum no de meta comprado.")]
         [SerializeField] private List<BuildingAsset> _startingBuildings = new List<BuildingAsset>();
@@ -93,7 +96,45 @@ namespace KingdomCollapse.Game
                 catalog.AddRace(_races[i].ToDefinition(), startingRaces.Contains(_races[i].Id));
             }
 
+            List<RivalDefinition> rivals = BuildRivalDefinitions();
+            for (int i = 0; i < rivals.Count; i++)
+            {
+                catalog.AddRival(rivals[i]);
+            }
+
             return catalog;
+        }
+
+        /// <summary>Rivais na ordem da lista, que e a ordem em que declaram guerra.</summary>
+        public List<RivalDefinition> BuildRivalDefinitions()
+        {
+            List<RivalDefinition> definitions = new List<RivalDefinition>();
+            for (int i = 0; i < _rivals.Count; i++)
+            {
+                if (_rivals[i] != null)
+                {
+                    definitions.Add(_rivals[i].ToDefinition());
+                }
+            }
+
+            return definitions;
+        }
+
+        /// <summary>
+        /// Todas as regras de catalogo de uma vez. O Editor e o gerador de conteudo
+        /// chamam isto, para que uma regra nova nao precise ser lembrada em dois lugares.
+        /// </summary>
+        public List<CatalogViolation> CollectViolations()
+        {
+            List<RivalDefinition> rivals = BuildRivalDefinitions();
+
+            List<CatalogViolation> violations = new List<CatalogViolation>();
+            violations.AddRange(EventCatalogValidator.Validate(BuildEventDefinitions()));
+            violations.AddRange(MetaCatalogValidator.Validate(BuildMetaTree()));
+            violations.AddRange(WeatherCatalogValidator.Validate(BuildCatalog().Weather));
+            violations.AddRange(RivalCatalogValidator.Validate(rivals));
+            violations.AddRange(RivalCatalogValidator.ValidateSuccession(name, rivals));
+            return violations;
         }
 
         public MetaTree BuildMetaTree()
@@ -128,6 +169,7 @@ namespace KingdomCollapse.Game
         public RunSetup CreateSetup(string raceId, int seed)
         {
             RunSetup setup = new RunSetup(raceId, seed);
+            setup.Rivals = BuildRivalDefinitions();
 
             if (_balance == null)
             {
@@ -166,14 +208,11 @@ namespace KingdomCollapse.Game
         [ContextMenu("Validar catalogo")]
         public void ValidateCatalog()
         {
-            List<CatalogViolation> violations = new List<CatalogViolation>();
-            violations.AddRange(EventCatalogValidator.Validate(BuildEventDefinitions()));
-            violations.AddRange(MetaCatalogValidator.Validate(BuildMetaTree()));
-            violations.AddRange(WeatherCatalogValidator.Validate(BuildCatalog().Weather));
+            List<CatalogViolation> violations = CollectViolations();
 
             if (violations.Count == 0)
             {
-                Debug.Log("Catalogo valido: nenhum evento ou no fora do orcamento.", this);
+                Debug.Log("Catalogo valido: nenhum conteudo fora do orcamento.", this);
                 return;
             }
 

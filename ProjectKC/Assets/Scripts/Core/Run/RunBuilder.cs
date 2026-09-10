@@ -27,6 +27,15 @@ namespace KingdomCollapse.Core
         public int ThreatIntervalDays { get; set; } = 4;
 
         public int ThreatLeadDays { get; set; } = 3;
+
+        /// <summary>
+        /// Rivais da run, na ordem em que declaram guerra. Vazio cai na ameaca
+        /// anonima por dia, que so existe enquanto o conteudo nao traz rivais.
+        /// </summary>
+        public IReadOnlyList<RivalDefinition> Rivals { get; set; }
+
+        /// <summary>Dias sem ataque entre a derrota de um rival e o primeiro ataque do proximo.</summary>
+        public int RivalBreatherDays { get; set; } = 4;
     }
 
     public sealed class RunBundle
@@ -102,7 +111,9 @@ namespace KingdomCollapse.Core
                 setup.ThreatCurve,
                 setup.FirstThreatDay,
                 setup.ThreatIntervalDays,
-                setup.ThreatLeadDays);
+                setup.ThreatLeadDays,
+                setup.Rivals,
+                setup.RivalBreatherDays);
 
             WeatherSystem weather = new WeatherSystem(catalog.Weather);
             RunState run = new RunState(race, grid, deck, random, threats, weather);

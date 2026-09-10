@@ -124,9 +124,19 @@ namespace KingdomCollapse.Core
 
                 case AttackResolvedEvent attack:
                     return new DayStep(DayStepKind.Attack, attack,
-                        attack.Report.Repelled
-                            ? "Ataque repelido"
-                            : "As defesas cedem");
+                        !attack.Report.Repelled
+                            ? "As defesas cedem"
+                            : attack.Report.ResourcesLost.IsEmpty
+                                ? "Ataque repelido"
+                                : "Repelido, mas levaram " + attack.Report.ResourcesLost);
+
+                case RivalDefeatedEvent defeated:
+                    return new DayStep(DayStepKind.RivalDefeated, defeated,
+                        defeated.Rival.DisplayName + " foi derrotado");
+
+                case RivalDeclaredWarEvent declared:
+                    return new DayStep(DayStepKind.Threat, declared,
+                        declared.Rival.DisplayName + " declara guerra");
 
                 case PlunderCollectedEvent plunder:
                     return new DayStep(DayStepKind.Plunder, plunder, "Saque: " + plunder.Plunder);
@@ -137,6 +147,9 @@ namespace KingdomCollapse.Core
 
                 case MilestoneReachedEvent milestone:
                     return new DayStep(DayStepKind.Milestone, milestone, milestone.Label);
+
+                case RunWonEvent won:
+                    return new DayStep(DayStepKind.Outcome, won, "Vitória");
 
                 case RunCollapsedEvent collapsed:
                     return new DayStep(DayStepKind.Outcome, collapsed, "Colapso");

@@ -10,7 +10,8 @@ namespace KingdomCollapse.Core
         Resolution = 2,
         Event = 3,
         DayEnd = 4,
-        Collapsed = 5
+        Collapsed = 5,
+        Won = 6
     }
 
     public enum CollapseReason
@@ -18,6 +19,17 @@ namespace KingdomCollapse.Core
         None = 0,
         IntegrityLost,
         TerritoryLost
+    }
+
+    /// <summary>
+    /// Como a run terminou (design D5). O Colapso continua sendo a derrota; a Vitoria
+    /// e desfecho de primeira classe, e nao "sobreviveu o bastante".
+    /// </summary>
+    public enum RunOutcome
+    {
+        None = 0,
+        Victory = 1,
+        Collapse = 2
     }
 
     /// <summary>Modificador com prazo. Some sozinho quando os dias acabam.</summary>
@@ -71,6 +83,8 @@ namespace KingdomCollapse.Core
 
         public int AttacksSurvived { get; internal set; }
 
+        public int RivalsDefeated { get; internal set; }
+
         public int MilestonesReached { get; internal set; }
 
         public int EventsSeen { get; internal set; }
@@ -123,6 +137,9 @@ namespace KingdomCollapse.Core
 
         public ThreatClock Threats { get; }
 
+        /// <summary>Rival vigente, ou nulo na run sem rivais.</summary>
+        public RivalDefinition CurrentRival => Threats.CurrentCampaign?.Rival;
+
         public WeatherSystem Weather { get; }
 
         /// <summary>Clima vigente, ou nulo se a run roda sem catalogo de clima.</summary>
@@ -163,7 +180,12 @@ namespace KingdomCollapse.Core
         /// </summary>
         public int PendingDefense { get; private set; }
 
-        public bool IsOver => Phase == DayPhase.Collapsed;
+        public bool IsOver => Phase == DayPhase.Collapsed || Phase == DayPhase.Won;
+
+        public RunOutcome Outcome =>
+            Phase == DayPhase.Won ? RunOutcome.Victory
+            : Phase == DayPhase.Collapsed ? RunOutcome.Collapse
+            : RunOutcome.None;
 
         public CollapseReason Collapse { get; private set; } = CollapseReason.None;
 
@@ -465,6 +487,23 @@ namespace KingdomCollapse.Core
         public int CollectDailyProduction(List<ProductionBreakdown> breakdowns = null)
         {
             return CollectDailyProductionByResource(breakdowns)[ResourceKind.Gold];
+        }
+
+        // --- Vitoria ---
+
+        /// <summary>
+        /// Encerra a run em Vitoria. So o motor chama, ao derrotar o ultimo rival;
+        /// uma run ja encerrada nao muda de desfecho.
+        /// </summary>
+        internal bool DeclareVictory()
+        {
+            if (IsOver)
+            {
+                return false;
+            }
+
+            Phase = DayPhase.Won;
+            return true;
         }
 
         // --- Colapso ---
