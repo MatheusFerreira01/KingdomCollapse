@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using KingdomCollapse.Core;
 using NUnit.Framework;
 
@@ -143,7 +144,7 @@ namespace KingdomCollapse.Tests
 
             RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: new[] { rival });
 
-            Assert.That(bundle.Run.CurrentRival, Is.SameAs(rival));
+            Assert.That(bundle.Run.RivalsAtWar(), Is.EqualTo(new[] { rival }));
         }
 
         [Test]
@@ -196,6 +197,7 @@ namespace KingdomCollapse.Tests
             List<ScheduledThreat> announced = new List<ScheduledThreat>();
             for (int day = 1; day <= 12; day++)
             {
+                clock.AdmitDue(day);
                 announced.AddRange(clock.AnnounceDue(day, 1, new XorShiftRandom(1)));
             }
 
@@ -203,7 +205,7 @@ namespace KingdomCollapse.Tests
             Assert.That(announced[0].Force, Is.EqualTo(rival.Campaign.ForceFor(0)));
             Assert.That(announced[1].Force, Is.EqualTo(rival.Campaign.ForceFor(1)));
             Assert.That(announced[2].Force, Is.EqualTo(rival.Campaign.ForceFor(2)));
-            Assert.That(clock.CurrentCampaign.AttacksLaunched, Is.EqualTo(3));
+            Assert.That(clock.Campaigns[0].AttacksLaunched, Is.EqualTo(3));
         }
 
         [Test]
@@ -211,7 +213,7 @@ namespace KingdomCollapse.Tests
         {
             RunBundle bundle = TestContent.Run(firstThreatDay: 4);
 
-            Assert.That(bundle.Run.CurrentRival, Is.Null);
+            Assert.That(bundle.Run.RivalsAtWar(), Is.Empty);
             Assert.That(bundle.Run.Threats.Pending.Count, Is.GreaterThan(0));
             Assert.That(bundle.Run.Threats.Pending[0].Rival, Is.Null);
         }
@@ -265,7 +267,9 @@ namespace KingdomCollapse.Tests
         {
             // Antecedencia longa para que haja mais de um ataque anunciado ao mesmo tempo.
             RivalDefinition rival = TestContent.Rival(attacks: 1);
-            ThreatClock clock = new ThreatClock(firstThreatDay: 3, intervalDays: 2, leadDays: 6, rivals: new[] { rival });
+            ThreatClock clock = new ThreatClock(
+                firstThreatDay: 3, leadDays: 6, rivals: new[] { rival }, windowIntervals: new[] { 2 });
+            clock.AdmitDue(1);
             clock.AnnounceDue(1, 1, new XorShiftRandom(1));
 
             Assert.That(clock.Pending.Count, Is.GreaterThan(1), "o arranjo precisa de mais de um ataque na fila");
@@ -283,6 +287,7 @@ namespace KingdomCollapse.Tests
         {
             RivalDefinition rival = TestContent.Rival(attacks: 1);
             ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: new[] { rival });
+            clock.AdmitDue(1);
             clock.AnnounceDue(1, 1, new XorShiftRandom(1));
 
             ScheduledThreat first = clock.Pending[0];
@@ -291,6 +296,7 @@ namespace KingdomCollapse.Tests
 
             for (int day = 2; day <= 30; day++)
             {
+                Assert.That(clock.AdmitDue(day), Is.Empty, "dia " + day);
                 Assert.That(clock.AnnounceDue(day, 1, new XorShiftRandom(day)), Is.Empty, "dia " + day);
             }
         }
@@ -311,15 +317,15 @@ namespace KingdomCollapse.Tests
             }
 
             Assert.That(bundle.Run.Stats.RivalsDefeated, Is.EqualTo(1));
-            Assert.That(bundle.Run.Threats.CurrentCampaign.AttacksSuffered, Is.EqualTo(0));
+            Assert.That(bundle.Run.Threats.Campaigns[0].AttacksSuffered, Is.EqualTo(0));
             Assert.That(events.Exists(e => e is RivalDefeatedEvent d && d.Rival == rival), Is.True);
             Assert.That(bundle.Run.Threats.Pending, Is.Empty);
         }
 
-        // --- Sucessao (4.4) ---
+        // --- Entrada escalonada (4.4) ---
 
-        /// <summary>Dois rivais que caem facil, para exercitar a troca de campanha.</summary>
-        private static RivalDefinition[] WeakSuccession()
+        /// <summary>Dois rivais que caem facil, para exercitar a entrada de campanhas.</summary>
+        private static RivalDefinition[] WeakPair()
         {
             return new[]
             {
@@ -328,49 +334,106 @@ namespace KingdomCollapse.Tests
             };
         }
 
-        [Test]
-        public void PrimeiroRivalEApresentadoAoComecarARun()
+        /// <summary>
+        /// Tres rivais de forca 1 com campanhas longas: nenhum cai durante o teste, e o
+        /// reino nunca sofre, para medir so o relogio.
+        /// </summary>
+        private static RivalDefinition[] ThreeAtWar(int attacks = 50)
         {
-            RivalDefinition[] rivals = WeakSuccession();
-            RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: rivals);
-
-            List<RunEvent> events = bundle.Engine.DrainEvents();
-
-            RivalDeclaredWarEvent declared = (RivalDeclaredWarEvent)events.Find(e => e is RivalDeclaredWarEvent);
-            Assert.That(declared, Is.Not.Null);
-            Assert.That(declared.Rival, Is.SameAs(rivals[0]));
-            Assert.That(declared.Rival.Identity.Description, Is.Not.Empty);
-            Assert.That(declared.Campaign.AttacksRemaining, Is.EqualTo(rivals[0].AttacksToDefeat));
+            return new[]
+            {
+                TestContent.Rival("a", TestContent.AssaultIdentity(), attacks: attacks, firstForce: 1, growth: 0.01),
+                TestContent.Rival("b", TestContent.FoodRaidIdentity(), attacks: attacks, firstForce: 1, growth: 0.02),
+                TestContent.Rival("c", new RivalIdentity("arson", "Incendio", "Queima.", PressureAxis.Integrity),
+                    attacks: attacks, firstForce: 1, growth: 0.03)
+            };
         }
 
         [Test]
-        public void DerrotadoORivalOProximoDeclaraGuerra()
+        public void SoOPrimeiroRivalComecaEmGuerra()
         {
-            RivalDefinition[] rivals = WeakSuccession();
+            RivalDefinition[] rivals = WeakPair();
             RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: rivals);
-            bundle.Engine.DrainEvents();
 
-            List<RunEvent> events = new List<RunEvent>();
-            for (int i = 0; i < 20 && bundle.Run.Stats.RivalsDefeated == 0; i++)
+            List<RunEvent> events = bundle.Engine.DrainEvents();
+            List<RunEvent> declarations = events.FindAll(e => e is RivalDeclaredWarEvent);
+
+            Assert.That(declarations.Count, Is.EqualTo(1));
+            RivalDeclaredWarEvent declared = (RivalDeclaredWarEvent)declarations[0];
+            Assert.That(declared.Rival, Is.SameAs(rivals[0]));
+            Assert.That(declared.Rival.Identity.Description, Is.Not.Empty);
+            Assert.That(declared.Campaign.AttacksRemaining, Is.EqualTo(rivals[0].AttacksToDefeat));
+            Assert.That(bundle.Run.Threats.NextRivalToEnter, Is.SameAs(rivals[1]));
+            Assert.That(bundle.Run.Threats.NextEntryDay, Is.EqualTo(ThreatClock.DefaultEntrySpacingDays));
+        }
+
+        [Test]
+        public void EntrarNaoSubstituiQuemJaEstaEmGuerra()
+        {
+            RivalDefinition[] rivals = ThreeAtWar();
+            ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: rivals, entryDays: new[] { 1, 5, 9 });
+
+            Assert.That(clock.AdmitDue(1).Count, Is.EqualTo(1));
+            for (int day = 2; day <= 4; day++)
+            {
+                Assert.That(clock.AdmitDue(day), Is.Empty, "ninguem entra antes do dia com alguem em guerra");
+            }
+
+            List<RivalCampaign> second = clock.AdmitDue(5);
+
+            Assert.That(second.Count, Is.EqualTo(1));
+            Assert.That(second[0].Rival, Is.SameAs(rivals[1]));
+            Assert.That(second[0].EnteredOnDay, Is.EqualTo(5));
+            Assert.That(clock.ActiveCampaigns().Count, Is.EqualTo(2), "o segundo soma, nao substitui");
+        }
+
+        [Test]
+        public void EntradaEAnunciadaAntesDoPrimeiroAtaqueDoRival()
+        {
+            RivalDefinition[] rivals = ThreeAtWar();
+            RunSetup setup = new RunSetup("humans", 77)
+            {
+                FirstThreatDay = 4,
+                Rivals = rivals,
+                RivalEntryDays = new[] { 1, 5, 9 }
+            };
+            RunBundle bundle = RunBuilder.Build(setup, TestContent.Catalog(TestContent.Humans(integrity: 1000)));
+            bundle.Engine.StartRun();
+
+            List<RunEvent> events = new List<RunEvent>(bundle.Engine.DrainEvents());
+            for (int i = 0; i < 30 && !bundle.Run.IsOver; i++)
             {
                 bundle.Engine.EndDay();
                 events.AddRange(bundle.Engine.DrainEvents());
             }
 
-            int defeatedAt = events.FindIndex(e => e is RivalDefeatedEvent);
-            int declaredAt = events.FindIndex(e => e is RivalDeclaredWarEvent);
+            for (int r = 0; r < rivals.Length; r++)
+            {
+                int declaredAt = events.FindIndex(e => e is RivalDeclaredWarEvent d && d.Rival == rivals[r]);
+                int firstAnnounce = events.FindIndex(e => e is ThreatAnnouncedEvent a && a.Threat.Rival == rivals[r]);
 
-            Assert.That(defeatedAt, Is.GreaterThanOrEqualTo(0));
-            Assert.That(declaredAt, Is.GreaterThan(defeatedAt), "o proximo declara depois da derrota");
-            Assert.That(((RivalDeclaredWarEvent)events[declaredAt]).Rival, Is.SameAs(rivals[1]));
-            Assert.That(bundle.Run.CurrentRival, Is.SameAs(rivals[1]));
+                Assert.That(declaredAt, Is.GreaterThanOrEqualTo(0), rivals[r] + " nunca entrou");
+                if (firstAnnounce >= 0)
+                {
+                    Assert.That(firstAnnounce, Is.GreaterThan(declaredAt), rivals[r] + " atacou antes de ser apresentado");
+                }
+            }
         }
 
         [Test]
-        public void HaAoMenosUmDiaSemAtaqueEntreCampanhas()
+        public void SemNinguemEmGuerraOProximoEntraAntesDoSeuDia()
         {
-            RivalDefinition[] rivals = WeakSuccession();
-            RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: rivals);
+            // O segundo so entraria no dia 50; com o primeiro derrotado cedo, esperar
+            // ate la deixaria a run com dezenas de dias mortos.
+            RivalDefinition[] rivals = WeakPair();
+            RunSetup setup = new RunSetup("humans", 1234)
+            {
+                FirstThreatDay = 4,
+                Rivals = rivals,
+                RivalEntryDays = new[] { 1, 50 }
+            };
+            RunBundle bundle = RunBuilder.Build(setup, TestContent.Catalog());
+            bundle.Engine.StartRun();
 
             for (int i = 0; i < 40 && !bundle.Run.IsOver && bundle.Run.Stats.RivalsDefeated < 2; i++)
             {
@@ -378,85 +441,191 @@ namespace KingdomCollapse.Tests
             }
 
             IReadOnlyList<ScheduledThreat> resolved = bundle.Run.Threats.Resolved;
-            ScheduledThreat lastOfFirst = resolved[0];
-            ScheduledThreat firstOfSecond = null;
-            for (int i = 0; i < resolved.Count; i++)
-            {
-                if (resolved[i].Rival == rivals[1])
-                {
-                    firstOfSecond = resolved[i];
-                    break;
-                }
-
-                lastOfFirst = resolved[i];
-            }
+            ScheduledThreat lastOfFirst = resolved.First(t => t.Rival == rivals[0]);
+            ScheduledThreat firstOfSecond = resolved.FirstOrDefault(t => t.Rival == rivals[1]);
+            RivalCampaign secondCampaign = bundle.Run.Threats.Campaigns[1];
 
             Assert.That(firstOfSecond, Is.Not.Null, "o segundo rival nunca atacou");
+            Assert.That(secondCampaign.EnteredOnDay, Is.EqualTo(lastOfFirst.ArrivalDay + 1));
             Assert.That(firstOfSecond.ArrivalDay - lastOfFirst.ArrivalDay, Is.GreaterThanOrEqualTo(2),
-                "precisa haver ao menos um dia sem ataque entre campanhas");
+                "precisa haver ao menos um dia sem ataque antes da entrada antecipada");
             Assert.That(firstOfSecond.LeadTime, Is.GreaterThanOrEqualTo(ThreatClock.MinimumLeadDays));
         }
 
         [Test]
-        public void RespiroDeclaradoEOQueSeparaAsCampanhas()
-        {
-            RivalDefinition[] rivals = WeakSuccession();
-            ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: rivals, breatherDays: 6);
-            clock.AnnounceDue(1, 1, new XorShiftRandom(1));
-
-            ScheduledThreat first = clock.Pending[0];
-            clock.MarkResolved(first);
-            clock.RecordOutcome(first, true);
-            clock.DeclareNextWar(first.ArrivalDay);
-
-            List<ScheduledThreat> next = new List<ScheduledThreat>();
-            for (int day = first.ArrivalDay + 1; next.Count == 0 && day < 40; day++)
-            {
-                next.AddRange(clock.AnnounceDue(day, 1, new XorShiftRandom(day)));
-            }
-
-            Assert.That(next[0].Rival, Is.SameAs(rivals[1]));
-            Assert.That(next[0].ArrivalDay, Is.EqualTo(first.ArrivalDay + 6 + 1));
-        }
-
-        [Test]
-        public void SemRivaisRestantesNaoHaProximaGuerra()
+        public void TodosEntraramECairamSoEntaoAcabou()
         {
             RivalDefinition rival = TestContent.Rival(attacks: 1);
             ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: new[] { rival });
+            clock.AdmitDue(1);
             clock.AnnounceDue(1, 1, new XorShiftRandom(1));
+
+            Assert.That(clock.AllRivalsDefeated, Is.False);
 
             ScheduledThreat first = clock.Pending[0];
             clock.MarkResolved(first);
             clock.RecordOutcome(first, true);
 
-            Assert.That(clock.DeclareNextWar(first.ArrivalDay), Is.Null);
             Assert.That(clock.AllRivalsDefeated, Is.True);
+            Assert.That(clock.NextRivalToEnter, Is.Null);
+            Assert.That(clock.AdmitDue(first.ArrivalDay + 1), Is.Empty);
         }
 
         [Test]
-        public void NaoHaProximaGuerraSemDerrota()
-        {
-            ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: WeakSuccession());
-
-            Assert.That(clock.DeclareNextWar(1), Is.Null);
-            Assert.That(clock.CurrentCampaign.Rival.Id, Is.EqualTo("primeiro"));
-        }
-
-        [Test]
-        public void SucessaoExigeCampanhaMaisForteEIdentidadeDiferente()
+        public void OrdemDeEntradaExigeCampanhaMaisForteEIdentidadeUnica()
         {
             RivalDefinition weak = TestContent.Rival("fraco", TestContent.AssaultIdentity(), attacks: 3, firstForce: 6);
             RivalDefinition strong = TestContent.Rival("forte", TestContent.FoodRaidIdentity(), attacks: 3, firstForce: 12);
-            RivalDefinition sameIdentity = TestContent.Rival("clone", TestContent.FoodRaidIdentity(), attacks: 3, firstForce: 20);
+            RivalDefinition stronger = TestContent.Rival("clone", TestContent.AssaultIdentity(), attacks: 3, firstForce: 20);
 
-            Assert.That(RivalCatalogValidator.ValidateSuccession("ok", new[] { weak, strong }), Is.Empty);
+            Assert.That(RivalCatalogValidator.ValidateEntryOrder("ok", new[] { weak, strong }), Is.Empty);
 
-            List<CatalogViolation> weaker = RivalCatalogValidator.ValidateSuccession("invertida", new[] { strong, weak });
+            List<CatalogViolation> weaker = RivalCatalogValidator.ValidateEntryOrder("invertida", new[] { strong, weak });
             Assert.That(weaker.Exists(v => v.Detail.Contains("nao exige mais")), Is.True);
 
-            List<CatalogViolation> repeated = RivalCatalogValidator.ValidateSuccession("repetida", new[] { strong, sameIdentity });
+            // A repeticao e proibida no nivel inteiro, e nao so entre vizinhos: com
+            // rivais lutando juntos, o primeiro e o terceiro podem estar em guerra ao
+            // mesmo tempo.
+            List<CatalogViolation> repeated = RivalCatalogValidator.ValidateEntryOrder(
+                "repetida", new[] { weak, strong, stronger });
             Assert.That(repeated.Exists(v => v.Detail.Contains("repete a identidade")), Is.True);
+        }
+
+        // --- Sorteio entre rivais em guerra (4.8) ---
+
+        /// <summary>Roda so o relogio, dia a dia, com os tres rivais entrando cedo.</summary>
+        private static List<ScheduledThreat> RunClock(int seed, int days, ThreatClock clock = null)
+        {
+            clock = clock ?? new ThreatClock(firstThreatDay: 4, rivals: ThreeAtWar(), entryDays: new[] { 1, 3, 5 });
+            IRandomSource random = new XorShiftRandom(seed);
+            List<ScheduledThreat> announced = new List<ScheduledThreat>();
+
+            for (int day = 1; day <= days; day++)
+            {
+                clock.AdmitDue(day);
+                announced.AddRange(clock.AnnounceDue(day, 1, random));
+                foreach (ScheduledThreat due in clock.DueOn(day))
+                {
+                    clock.MarkResolved(due);
+                    clock.RecordOutcome(due, true);
+                }
+            }
+
+            return announced;
+        }
+
+        [Test]
+        public void MesmaSementeMesmaGuerra()
+        {
+            List<ScheduledThreat> a = RunClock(seed: 42, days: 60);
+            List<ScheduledThreat> b = RunClock(seed: 42, days: 60);
+
+            Assert.That(a.Count, Is.EqualTo(b.Count));
+            for (int i = 0; i < a.Count; i++)
+            {
+                Assert.That(b[i].Rival.Id, Is.EqualTo(a[i].Rival.Id), "ataque " + i);
+                Assert.That(b[i].ArrivalDay, Is.EqualTo(a[i].ArrivalDay), "ataque " + i);
+            }
+        }
+
+        [Test]
+        public void TodoRivalEmGuerraApareceNoSorteio()
+        {
+            List<ScheduledThreat> announced = RunClock(seed: 7, days: 60);
+
+            HashSet<string> attackers = new HashSet<string>(announced.Select(t => t.Rival.Id));
+
+            Assert.That(attackers, Is.EquivalentTo(new[] { "a", "b", "c" }));
+        }
+
+        [Test]
+        public void MaisRivaisEmGuerraEncurtamAsJanelas()
+        {
+            ThreatClock clock = new ThreatClock();
+
+            Assert.That(clock.WindowIntervalFor(1), Is.EqualTo(4));
+            Assert.That(clock.WindowIntervalFor(2), Is.EqualTo(3));
+            Assert.That(clock.WindowIntervalFor(3), Is.EqualTo(2));
+            Assert.That(clock.WindowIntervalFor(7), Is.EqualTo(2), "alem da tabela vale o ultimo intervalo");
+
+            // Com os tres ja em guerra, os ataques vem a cada 2 dias.
+            List<ScheduledThreat> announced = RunClock(seed: 3, days: 40);
+            List<ScheduledThreat> late = announced.FindAll(t => t.ArrivalDay >= 12);
+            for (int i = 1; i < late.Count; i++)
+            {
+                Assert.That(late[i].ArrivalDay - late[i - 1].ArrivalDay, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
+        public void NuncaDoisAtaquesNoMesmoDia()
+        {
+            RivalDefinition[] rivals = ThreeAtWar();
+            RunSetup setup = new RunSetup("humans", 99)
+            {
+                FirstThreatDay = 4,
+                Rivals = rivals,
+                RivalEntryDays = new[] { 1, 2, 3 },
+                RivalWindowIntervals = new[] { 1 }
+            };
+            RunBundle bundle = RunBuilder.Build(setup, TestContent.Catalog(TestContent.Humans(integrity: 1000)));
+            bundle.Engine.StartRun();
+
+            for (int i = 0; i < 40 && !bundle.Run.IsOver; i++)
+            {
+                bundle.Engine.EndDay();
+            }
+
+            IReadOnlyList<ScheduledThreat> resolved = bundle.Run.Threats.Resolved;
+            Assert.That(resolved.Count, Is.GreaterThan(20), "janela diaria deveria gerar ataque quase todo dia");
+            Assert.That(resolved.Select(t => t.ArrivalDay).Distinct().Count(), Is.EqualTo(resolved.Count));
+            for (int i = 0; i < resolved.Count; i++)
+            {
+                Assert.That(resolved[i].LeadTime, Is.GreaterThanOrEqualTo(ThreatClock.MinimumLeadDays), resolved[i].ToString());
+            }
+        }
+
+        [Test]
+        public void AdiamentoNaoEmpilhaAtaques()
+        {
+            RivalDefinition[] rivals = ThreeAtWar();
+            ThreatClock clock = new ThreatClock(
+                firstThreatDay: 4, leadDays: 6, rivals: rivals, entryDays: new[] { 1, 1, 1 }, windowIntervals: new[] { 1 });
+            clock.AdmitDue(1);
+            clock.AnnounceDue(1, 1, new XorShiftRandom(1));
+
+            // Fila: dias 4, 5, 6 e 7. Adiar o do dia 4 em 1 cairia no dia 5.
+            ScheduledThreat first = clock.DueOn(4)[0];
+            int applied = clock.Delay(first, 1);
+
+            Assert.That(first.ArrivalDay, Is.EqualTo(8), "segue para o primeiro dia livre");
+            Assert.That(applied, Is.EqualTo(4));
+            Assert.That(clock.Pending.Select(t => t.ArrivalDay).Distinct().Count(), Is.EqualTo(clock.Pending.Count));
+
+            // A janela seguinte pula o dia que o adiamento ocupou.
+            List<ScheduledThreat> next = clock.AnnounceDue(3, 1, new XorShiftRandom(3));
+            Assert.That(next.Count, Is.EqualTo(1));
+            Assert.That(next[0].ArrivalDay, Is.EqualTo(9));
+        }
+
+        [Test]
+        public void RivalDerrotadoSaiDoSorteio()
+        {
+            RivalDefinition[] rivals =
+            {
+                TestContent.Rival("cai", TestContent.AssaultIdentity(), attacks: 1, firstForce: 1, growth: 0),
+                TestContent.Rival("fica", TestContent.FoodRaidIdentity(), attacks: 50, firstForce: 1, growth: 0.1)
+            };
+            ThreatClock clock = new ThreatClock(firstThreatDay: 4, rivals: rivals, entryDays: new[] { 1, 1 });
+            clock.AdmitDue(1);
+
+            RivalCampaign falling = clock.Campaigns[0];
+            clock.RecordOutcome(new ScheduledThreat(ThreatKind.Horde, 1, 1, 1, falling), true);
+
+            Assert.That(clock.ActiveCampaigns().Count, Is.EqualTo(1));
+            List<ScheduledThreat> announced = RunClock(seed: 5, days: 40, clock);
+            Assert.That(announced.Count, Is.GreaterThan(0));
+            Assert.That(announced.TrueForAll(t => t.Rival.Id == "fica"), Is.True);
         }
 
         // --- Resolucao por eixo (4.5) ---
@@ -624,7 +793,7 @@ namespace KingdomCollapse.Tests
         [Test]
         public void DerrotarOUltimoRivalEncerraImediatamenteEmVitoria()
         {
-            RivalDefinition[] rivals = WeakSuccession();
+            RivalDefinition[] rivals = WeakPair();
             RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: rivals);
             bundle.Engine.DrainEvents();
 
@@ -706,7 +875,7 @@ namespace KingdomCollapse.Tests
 
             Assert.That(bundle.Run.Outcome, Is.EqualTo(RunOutcome.Collapse));
             Assert.That(bundle.Run.Stats.RivalsDefeated, Is.EqualTo(0));
-            Assert.That(bundle.Run.Threats.CurrentCampaign.IsDefeated, Is.False);
+            Assert.That(bundle.Run.Threats.Campaigns[0].IsDefeated, Is.False);
         }
 
         // --- Contra-jogo no catalogo (4.7) ---

@@ -67,40 +67,49 @@ namespace KingdomCollapse.Core
         }
 
         /// <summary>
-        /// Verifica uma sequencia de rivais na ordem em que declaram guerra: cada um
-        /// exige mais que o anterior e pressiona de outro jeito (spec rival-kingdoms).
-        /// Repetir a identidade faria o segundo rival ser respondido com a mesma
-        /// build que venceu o primeiro, e a sucessao viraria so um numero maior.
+        /// Verifica os rivais de um nivel na ordem em que entram em guerra: cada um
+        /// exige mais que o que entrou antes, e nenhuma identidade se repete (spec
+        /// rival-kingdoms). Com rivais lutando juntos, dois da mesma identidade seriam
+        /// respondidos pela mesma build, e o nivel teria um tipo de pressao a menos
+        /// do que parece.
         /// </summary>
-        public static List<CatalogViolation> ValidateSuccession(string sequenceId, IReadOnlyList<RivalDefinition> ordered)
+        public static List<CatalogViolation> ValidateEntryOrder(string levelId, IReadOnlyList<RivalDefinition> ordered)
         {
             List<CatalogViolation> violations = new List<CatalogViolation>();
+            Dictionary<string, string> identityOwner = new Dictionary<string, string>();
 
-            for (int i = 1; i < ordered.Count; i++)
+            for (int i = 0; i < ordered.Count; i++)
             {
-                RivalDefinition previous = ordered[i - 1];
-                RivalDefinition next = ordered[i];
-                if (previous == null || next == null)
+                RivalDefinition rival = ordered[i];
+                if (rival == null)
                 {
-                    violations.Add(new CatalogViolation(sequenceId, "sucessao", "posicao " + i + " sem rival"));
+                    violations.Add(new CatalogViolation(levelId, "entrada", "posicao " + i + " sem rival"));
                     continue;
                 }
 
-                if (next.PeakForce <= previous.PeakForce)
+                if (rival.Identity != null)
                 {
-                    violations.Add(new CatalogViolation(
-                        sequenceId,
-                        "sucessao",
-                        next.Id + " (pico " + next.PeakForce + ") nao exige mais que " +
-                        previous.Id + " (pico " + previous.PeakForce + ")"));
+                    if (identityOwner.TryGetValue(rival.Identity.Id, out string owner))
+                    {
+                        violations.Add(new CatalogViolation(
+                            levelId,
+                            "entrada",
+                            rival.Id + " repete a identidade " + rival.Identity.Id + " de " + owner));
+                    }
+                    else
+                    {
+                        identityOwner[rival.Identity.Id] = rival.Id;
+                    }
                 }
 
-                if (previous.Identity != null && next.Identity != null && previous.Identity.Id == next.Identity.Id)
+                RivalDefinition previous = i > 0 ? ordered[i - 1] : null;
+                if (previous != null && rival.PeakForce <= previous.PeakForce)
                 {
                     violations.Add(new CatalogViolation(
-                        sequenceId,
-                        "sucessao",
-                        next.Id + " repete a identidade " + next.Identity.Id + " do rival anterior"));
+                        levelId,
+                        "entrada",
+                        rival.Id + " (pico " + rival.PeakForce + ") nao exige mais que " +
+                        previous.Id + " (pico " + previous.PeakForce + "), que entra antes"));
                 }
             }
 

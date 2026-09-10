@@ -3,7 +3,7 @@
 ### Requirement: Escalada de pressão
 **Reason**: A força passava a crescer com o número de quadrados possuídos, o que era uma penalidade artificial por expandir — inventada porque nada na economia impedia crescer para sempre. Com população que come e guarnece, o teto de expansão passa a ser econômico, e punir o tamanho vira dupla cobrança.
 
-**Migration**: Substituída por "Escalada da campanha", abaixo, que faz a força crescer dentro da campanha de um rival e entre rivais sucessivos. O termo por célula sai da curva.
+**Migration**: Substituída por "Escalada da campanha", abaixo, que faz a força crescer dentro da campanha de um rival e a cada rival que entra em guerra. O termo por célula sai da curva.
 
 ## MODIFIED Requirements
 
@@ -37,22 +37,22 @@ Na Resolução, a força do ataque SHALL ser confrontada com a defesa guarnecida
 ## ADDED Requirements
 
 ### Requirement: Escalada da campanha
-A força dos ataques SHALL crescer ao longo da campanha de um rival e entre rivais sucessivos, de modo que cada rival exija mais do reino que o anterior. A força SHALL NOT depender do número de quadrados possuídos.
+A força dos ataques SHALL crescer ao longo da campanha de um rival e a cada rival que entra em guerra, de modo que cada rival exija mais do reino que o que entrou antes dele. A força SHALL NOT depender do número de quadrados possuídos.
 
 #### Scenario: Ataques ficam mais fortes dentro da campanha
 - **WHEN** o primeiro e o último ataque da campanha de um rival são comparados
 - **THEN** o último exige mais defesa que o primeiro
 
 #### Scenario: Cada rival exige mais que o anterior
-- **WHEN** as campanhas de dois rivais consecutivos são comparadas
-- **THEN** a do rival mais tardio exige mais defesa
+- **WHEN** as campanhas de dois rivais consecutivos na ordem de entrada são comparadas
+- **THEN** a do rival que entra depois exige mais defesa
 
 #### Scenario: Território não é punido por si só
 - **WHEN** dois jogadores enfrentam o mesmo ataque, um com 4 quadrados e outro com 12
 - **THEN** a força do ataque é a mesma para os dois, e a diferença de resultado vem do que cada reino consegue operar e guarnecer
 
-### Requirement: O relógio é a campanha do rival
-As ameaças pendentes SHALL pertencer à campanha do rival vigente, e o relógio SHALL exibir a que campanha cada ataque pertence.
+### Requirement: O relógio reúne as campanhas em guerra
+As ameaças pendentes SHALL pertencer às campanhas dos rivais em guerra, e o relógio SHALL exibir de qual rival vem cada ataque.
 
 #### Scenario: Relógio mostra a origem do ataque
 - **WHEN** o jogador consulta o relógio de ameaça
@@ -60,4 +60,4 @@ As ameaças pendentes SHALL pertencer à campanha do rival vigente, e o relógio
 
 #### Scenario: Derrotar o rival limpa a campanha dele
 - **WHEN** um rival é derrotado
-- **THEN** nenhum ataque restante daquela campanha permanece agendado
+- **THEN** nenhum ataque restante daquela campanha permanece agendado, e os ataques já anunciados dos demais rivais continuam

@@ -137,8 +137,22 @@ namespace KingdomCollapse.Core
 
         public ThreatClock Threats { get; }
 
-        /// <summary>Rival vigente, ou nulo na run sem rivais.</summary>
-        public RivalDefinition CurrentRival => Threats.CurrentCampaign?.Rival;
+        /// <summary>Nivel de dificuldade da run. Nulo so em run montada sem escada, como nos testes de regra.</summary>
+        public DifficultyLevel Level { get; internal set; }
+
+        public int LevelRank => Level?.Rank ?? 1;
+
+        /// <summary>Rivais em guerra agora, em ordem de entrada. Vazio na run sem rivais.</summary>
+        public List<RivalDefinition> RivalsAtWar()
+        {
+            List<RivalDefinition> rivals = new List<RivalDefinition>();
+            foreach (RivalCampaign campaign in Threats.ActiveCampaigns())
+            {
+                rivals.Add(campaign.Rival);
+            }
+
+            return rivals;
+        }
 
         public WeatherSystem Weather { get; }
 

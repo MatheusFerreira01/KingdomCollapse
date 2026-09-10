@@ -31,7 +31,7 @@ Vencer uma run SHALL desbloquear o próximo nível de dificuldade, e apenas a vi
 - **THEN** o nível continua disponível
 
 ### Requirement: Cada nível endurece algo declarado
-Cada nível SHALL declarar o que endurece em relação ao anterior — número de rivais, força das campanhas, escassez inicial ou pressão econômica — e o jogador SHALL poder ler isso antes de escolher o nível.
+Cada nível SHALL declarar o que endurece em relação ao anterior — número de rivais, força das campanhas, ritmo de entrada dos rivais, escassez inicial ou pressão econômica — e o jogador SHALL poder ler isso antes de escolher o nível.
 
 #### Scenario: O jogador sabe no que está se metendo
 - **WHEN** o jogador escolhe um nível na tela de seleção

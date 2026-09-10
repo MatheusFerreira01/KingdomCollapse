@@ -51,6 +51,7 @@ namespace KingdomCollapse.Core
                 { "runsPlayed", profile.RunsPlayed },
                 { "bestDay", profile.BestDayReached },
                 { "bestScore", profile.BestScore },
+                { "unlockedLevel", profile.HighestUnlockedLevel },
                 { "nodes", nodes }
             };
 
@@ -76,6 +77,10 @@ namespace KingdomCollapse.Core
             profile.RunsPlayed = ReadInt(map, "runsPlayed");
             profile.BestDayReached = ReadInt(map, "bestDay");
             profile.BestScore = ReadInt(map, "bestScore");
+
+            // A versao 1 nao tinha escada: le como nivel 1 em vez de tratar o save
+            // como corrompido e jogar fora a moeda e os nos do jogador.
+            profile.HighestUnlockedLevel = version >= 2 ? System.Math.Max(1, ReadInt(map, "unlockedLevel")) : 1;
 
             if (!map.TryGetValue("nodes", out object rawNodes) || !(rawNodes is List<object> nodes))
             {

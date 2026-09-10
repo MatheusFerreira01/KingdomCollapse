@@ -102,18 +102,32 @@ namespace KingdomCollapse.Core
     /// Fila visivel de ameacas. Toda ameaca e agendada com antecedencia e fica
     /// consultavel durante o Planejamento; nada e sorteado no momento da resolucao.
     ///
-    /// Com rivais, a fila e a campanha do rival vigente (design D3): o relogio
-    /// continua cuidando de quando e com que antecedencia, e a campanha passa a dizer
-    /// com que forca e de quem. Sem rivais, cai na curva anonima por dia, que so
-    /// existe enquanto o conteudo ainda nao declara rivais.
+    /// Com rivais, a fila reune as campanhas dos rivais em guerra (design D3, D12):
+    /// o relogio continua cuidando de quando e com que antecedencia, e cada janela
+    /// sorteia qual rival em guerra vem, com a forca da campanha dele. Sem rivais,
+    /// cai na curva anonima por dia, que so existe enquanto o conteudo ainda nao
+    /// declara rivais.
     /// </summary>
     public sealed class ThreatClock
     {
         /// <summary>Antecedencia minima exigida pela spec.</summary>
         public const int MinimumLeadDays = 2;
 
+        /// <summary>Distancia entre as entradas quando o nivel nao declara os dias.</summary>
+        public const int DefaultEntrySpacingDays = 8;
+
+        /// <summary>
+        /// Intervalo entre janelas por numero de rivais em guerra: 1 rival a cada 4
+        /// dias, 2 a cada 3, 3 ou mais a cada 2. E o que faz mais rivais apertarem de
+        /// verdade, e nao so variarem quem aparece.
+        /// </summary>
+        public static readonly int[] DefaultWindowIntervals = { 4, 3, 2 };
+
         private readonly List<ScheduledThreat> _pending = new List<ScheduledThreat>();
         private readonly List<ScheduledThreat> _resolved = new List<ScheduledThreat>();
+        private readonly List<RivalCampaign> _campaigns = new List<RivalCampaign>();
+        private readonly int[] _entryDays;
+        private readonly int[] _windowIntervals;
 
         public ThreatClock(
             ThreatCurve curve = null,
@@ -121,7 +135,8 @@ namespace KingdomCollapse.Core
             int intervalDays = 4,
             int leadDays = 3,
             IReadOnlyList<RivalDefinition> rivals = null,
-            int breatherDays = 4)
+            IReadOnlyList<int> entryDays = null,
+            IReadOnlyList<int> windowIntervals = null)
         {
             Curve = curve ?? new ThreatCurve();
             FirstThreatDay = firstThreatDay;
@@ -129,57 +144,100 @@ namespace KingdomCollapse.Core
             LeadDays = Math.Max(MinimumLeadDays, leadDays);
             Rivals = rivals ?? new List<RivalDefinition>();
 
-            // Ao menos um dia sem ataque entre campanhas e exigencia da spec, e nao
-            // gosto de autoria: sem ele a derrota de um rival e a chegada do proximo
-            // se fundem, e a vitoria parcial nao tem onde ser sentida.
-            BreatherDays = Math.Max(1, breatherDays);
-
-            if (Rivals.Count > 0)
+            _entryDays = new int[Rivals.Count];
+            for (int i = 0; i < Rivals.Count; i++)
             {
-                CurrentCampaign = new RivalCampaign(Rivals[0]);
-                _campaigns.Add(CurrentCampaign);
+                // O primeiro rival sempre abre a run: um nivel que o fizesse esperar
+                // comecaria com dias sem ninguem em guerra.
+                int declared = entryDays != null && i < entryDays.Count
+                    ? entryDays[i]
+                    : i * DefaultEntrySpacingDays;
+                _entryDays[i] = i == 0 ? 1 : Math.Max(1, declared);
+            }
+
+            IReadOnlyList<int> intervals = windowIntervals != null && windowIntervals.Count > 0
+                ? windowIntervals
+                : DefaultWindowIntervals;
+            _windowIntervals = new int[intervals.Count];
+            for (int i = 0; i < intervals.Count; i++)
+            {
+                _windowIntervals[i] = Math.Max(1, intervals[i]);
             }
         }
 
-        private readonly List<RivalCampaign> _campaigns = new List<RivalCampaign>();
-
         public ThreatCurve Curve { get; }
 
-        /// <summary>Rivais da run, na ordem em que declaram guerra.</summary>
+        /// <summary>Rivais da run, na ordem em que entram em guerra.</summary>
         public IReadOnlyList<RivalDefinition> Rivals { get; }
 
-        /// <summary>Dias sem ataque entre a derrota de um rival e o primeiro ataque do proximo.</summary>
-        public int BreatherDays { get; }
-
-        /// <summary>Campanha do rival vigente. Nula so na run sem rivais.</summary>
-        public RivalCampaign CurrentCampaign { get; private set; }
-
-        /// <summary>Campanhas ja travadas na run, a vigente inclusive, em ordem.</summary>
+        /// <summary>Campanhas ja abertas na run, em ordem de entrada, derrotadas inclusive.</summary>
         public IReadOnlyList<RivalCampaign> Campaigns => _campaigns;
 
         public bool HasRivals => Rivals.Count > 0;
 
-        /// <summary>Rival vigente derrotado e nenhum outro por vir.</summary>
-        public bool AllRivalsDefeated =>
-            HasRivals && _campaigns.Count == Rivals.Count && CurrentCampaign.IsDefeated;
-
-        /// <summary>
-        /// Passa a guerra para o proximo rival depois de uma derrota. O primeiro
-        /// ataque dele so chega depois do respiro, e ainda assim com a antecedencia
-        /// minima, porque quem agenda continua sendo AnnounceDue. Devolve a nova
-        /// campanha, ou nulo se nao ha derrota a suceder ou nenhum rival restante.
-        /// </summary>
-        public RivalCampaign DeclareNextWar(int defeatDay)
+        /// <summary>Campanhas de rivais em guerra: entraram e ainda nao foram derrotadas.</summary>
+        public List<RivalCampaign> ActiveCampaigns()
         {
-            if (CurrentCampaign == null || !CurrentCampaign.IsDefeated || _campaigns.Count >= Rivals.Count)
+            List<RivalCampaign> active = new List<RivalCampaign>();
+            for (int i = 0; i < _campaigns.Count; i++)
             {
-                return null;
+                if (!_campaigns[i].IsDefeated)
+                {
+                    active.Add(_campaigns[i]);
+                }
             }
 
-            CurrentCampaign = new RivalCampaign(Rivals[_campaigns.Count]);
-            _campaigns.Add(CurrentCampaign);
-            _nextArrivalDay = defeatDay + BreatherDays + 1;
-            return CurrentCampaign;
+            return active;
+        }
+
+        /// <summary>Proximo rival a entrar em guerra, ou nulo se todos ja entraram.</summary>
+        public RivalDefinition NextRivalToEnter => _campaigns.Count < Rivals.Count ? Rivals[_campaigns.Count] : null;
+
+        /// <summary>
+        /// Dia declarado da proxima entrada, ou -1. Pode chegar antes: se ninguem
+        /// estiver em guerra, o proximo entra no dia seguinte (spec rival-kingdoms).
+        /// </summary>
+        public int NextEntryDay => _campaigns.Count < Rivals.Count ? _entryDays[_campaigns.Count] : -1;
+
+        public int EntryDayOf(int rivalIndex) => _entryDays[rivalIndex];
+
+        /// <summary>Todo rival do nivel entrou e caiu.</summary>
+        public bool AllRivalsDefeated => HasRivals && _campaigns.Count == Rivals.Count && ActiveCampaigns().Count == 0;
+
+        /// <summary>
+        /// Coloca em guerra os rivais cujo dia chegou, somando-os aos que ja lutam.
+        /// Se ninguem estiver em guerra, o proximo entra hoje sem esperar o seu dia:
+        /// a run nao fica com dias mortos entre campanhas. Chamado no Inicio do Dia,
+        /// antes de AnnounceDue, para que quem entra ja possa ser sorteado, e sempre
+        /// com a antecedencia minima, o que garante o dia sem ataque antes do
+        /// primeiro ataque dele.
+        /// </summary>
+        public List<RivalCampaign> AdmitDue(int currentDay)
+        {
+            List<RivalCampaign> admitted = new List<RivalCampaign>();
+
+            while (_campaigns.Count < Rivals.Count)
+            {
+                bool dayArrived = _entryDays[_campaigns.Count] <= currentDay;
+                bool nobodyAtWar = ActiveCampaigns().Count == 0;
+                if (!dayArrived && !nobodyAtWar)
+                {
+                    break;
+                }
+
+                RivalCampaign campaign = new RivalCampaign(Rivals[_campaigns.Count], currentDay);
+                _campaigns.Add(campaign);
+                admitted.Add(campaign);
+            }
+
+            return admitted;
+        }
+
+        /// <summary>Intervalo ate a proxima janela com tantos rivais em guerra.</summary>
+        public int WindowIntervalFor(int rivalsAtWar)
+        {
+            int index = Math.Max(1, rivalsAtWar) - 1;
+            return _windowIntervals[Math.Min(index, _windowIntervals.Length - 1)];
         }
 
         public int FirstThreatDay { get; }
@@ -210,9 +268,11 @@ namespace KingdomCollapse.Core
 
             while (_nextArrivalDay - currentDay <= LeadDays)
             {
-                // Rival derrotado nao agenda mais nada. Sem esta parada a run cairia
+                List<RivalCampaign> active = ActiveCampaigns();
+
+                // Sem ninguem em guerra, nada e agendado. Sem esta parada a run cairia
                 // na ameaca anonima, que so existe para quem nao tem rival nenhum.
-                if (HasRivals && (CurrentCampaign == null || CurrentCampaign.IsDefeated))
+                if (HasRivals && active.Count == 0)
                 {
                     break;
                 }
@@ -225,23 +285,54 @@ namespace KingdomCollapse.Core
                     continue;
                 }
 
-                ScheduledThreat threat = CurrentCampaign != null
-                    ? new ScheduledThreat(
-                        KindFor(CurrentCampaign.Rival.Axis),
+                // Um ataque adiado pelo clima pode ter ocupado o dia da janela. Dois
+                // ataques no mesmo dia derrubariam a run sem erro do jogador.
+                if (IsOccupied(_nextArrivalDay, null))
+                {
+                    _nextArrivalDay++;
+                    continue;
+                }
+
+                ScheduledThreat threat;
+                if (HasRivals)
+                {
+                    // O sorteio acontece aqui, no anuncio, e nunca na resolucao: a
+                    // aleatoriedade esta em quem vem, nao em quando se fica sabendo.
+                    RivalCampaign attacker = active[random.NextInt(0, active.Count)];
+                    threat = new ScheduledThreat(
+                        KindFor(attacker.Rival.Axis),
                         _nextArrivalDay,
-                        CurrentCampaign.LaunchNextAttack(),
+                        attacker.LaunchNextAttack(),
                         currentDay,
-                        CurrentCampaign)
-                    : new ScheduledThreat(
+                        attacker);
+                    _nextArrivalDay += WindowIntervalFor(active.Count);
+                }
+                else
+                {
+                    threat = new ScheduledThreat(
                         PickKind(random), _nextArrivalDay, Curve.ForceFor(_nextArrivalDay, ownedTiles), currentDay);
+                    _nextArrivalDay += IntervalDays;
+                }
 
                 _pending.Add(threat);
                 announced.Add(threat);
-                _nextArrivalDay += IntervalDays;
             }
 
             _pending.Sort((a, b) => a.ArrivalDay.CompareTo(b.ArrivalDay));
             return announced;
+        }
+
+        private bool IsOccupied(int day, ScheduledThreat except)
+        {
+            for (int i = 0; i < _pending.Count; i++)
+            {
+                if (_pending[i] != except && _pending[i].ArrivalDay == day)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -338,8 +429,9 @@ namespace KingdomCollapse.Core
 
         /// <summary>
         /// Adia uma ameaca ja anunciada. So adia, nunca antecipa: encurtar o aviso
-        /// quebraria a antecedência minima que a spec garante. Devolve os dias
-        /// efetivamente aplicados.
+        /// quebraria a antecedência minima que a spec garante. Se o dia de destino ja
+        /// tem ataque, segue para o primeiro dia livre, para nao empilhar dois
+        /// ataques. Devolve os dias efetivamente aplicados.
         /// </summary>
         public int Delay(ScheduledThreat threat, int days)
         {
@@ -348,9 +440,16 @@ namespace KingdomCollapse.Core
                 return 0;
             }
 
-            threat.ArrivalDay += days;
+            int original = threat.ArrivalDay;
+            int target = original + days;
+            while (IsOccupied(target, threat))
+            {
+                target++;
+            }
+
+            threat.ArrivalDay = target;
             _pending.Sort((a, b) => a.ArrivalDay.CompareTo(b.ArrivalDay));
-            return days;
+            return target - original;
         }
 
         public ScheduledThreat NextThreat(int currentDay)

@@ -58,10 +58,10 @@ O ritmo da run SHALL ser calibrado para que uma campanha completa seja vencida p
 
 #### Scenario: A run não se estende indefinidamente
 - **WHEN** o jogador evita o confronto e apenas acumula
-- **THEN** a campanha do rival vigente continua avançando e a run chega a um desfecho
+- **THEN** as campanhas dos rivais em guerra continuam avançando, novos rivais continuam entrando, e a run chega a um desfecho
 
 #### Scenario: Escalada garante o fim
-- **WHEN** o jogador sobrevive a muitos ataques sem derrotar o rival vigente
+- **WHEN** o jogador sobrevive a muitos ataques sem derrotar os rivais em guerra
 - **THEN** os ataques seguintes da campanha continuam ficando mais fortes, de modo que a run não pode ser sustentada indefinidamente
 
 ## ADDED Requirements

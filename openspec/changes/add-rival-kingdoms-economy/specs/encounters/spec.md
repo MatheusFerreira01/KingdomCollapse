@@ -71,7 +71,7 @@ Encontros SHALL obedecer aos mesmos tetos de severidade dos eventos de fim de di
 - **THEN** o custo por cobrança respeita o teto da categoria, e o jogador sempre tem como encerrá-la
 
 ### Requirement: Encontros não substituem a campanha
-Encontros SHALL ser independentes da campanha do rival vigente, e SHALL NOT agendar, cancelar nem resolver ataques de rival.
+Encontros SHALL ser independentes das campanhas dos rivais em guerra, e SHALL NOT agendar, cancelar nem resolver ataques de rival.
 
 #### Scenario: Encontro não vira ataque
 - **WHEN** qualquer encontro é resolvido

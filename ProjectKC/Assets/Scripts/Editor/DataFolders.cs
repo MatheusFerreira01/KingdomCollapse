@@ -21,12 +21,13 @@ namespace KingdomCollapse.EditorTools
         public const string Races = Root + "/Racas";
         public const string Meta = Root + "/Meta";
         public const string Rivals = Root + "/Rivais";
+        public const string Levels = Root + "/Niveis";
 
         /// <summary>
         /// GameDatabase e Balance ficam na raiz de propósito: sao os pontos de entrada,
         /// e enterra-los numa subpasta os tornaria tao dificeis de achar quanto antes.
         /// </summary>
-        public static readonly string[] All = { Buildings, Cards, Events, Weather, Races, Meta, Rivals };
+        public static readonly string[] All = { Buildings, Cards, Events, Weather, Races, Meta, Rivals, Levels };
 
         public static void EnsureAll()
         {
@@ -80,10 +81,15 @@ namespace KingdomCollapse.EditorTools
             }
 
             // Identidade mora junto do rival: e so lendo os dois lado a lado que se
-            // ve se a sucessao repete o tipo de pressao.
+            // ve se dois rivais do nivel repetem o tipo de pressao.
             if (asset is RivalAsset || asset is RivalIdentityAsset)
             {
                 return Rivals;
+            }
+
+            if (asset is DifficultyLevelAsset)
+            {
+                return Levels;
             }
 
             return null;
@@ -113,6 +119,7 @@ namespace KingdomCollapse.EditorTools
             moved += MoveAll<MetaNodeAsset>(problems);
             moved += MoveAll<RivalAsset>(problems);
             moved += MoveAll<RivalIdentityAsset>(problems);
+            moved += MoveAll<DifficultyLevelAsset>(problems);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

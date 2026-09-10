@@ -9,7 +9,11 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class MetaProfile
     {
-        public const int CurrentVersion = 1;
+        /// <summary>
+        /// 2 acrescentou o nivel de dificuldade liberado. Um save da versao 1 ainda e
+        /// lido, e comeca no nivel 1, que e o que ele teria de qualquer forma.
+        /// </summary>
+        public const int CurrentVersion = 2;
 
         private readonly HashSet<string> _purchasedNodes = new HashSet<string>();
 
@@ -27,6 +31,9 @@ namespace KingdomCollapse.Core
         public int BestDayReached { get; internal set; }
 
         public int BestScore { get; internal set; }
+
+        /// <summary>Nivel de dificuldade mais alto que o perfil ja pode jogar. Comeca em 1.</summary>
+        public int HighestUnlockedLevel { get; internal set; } = 1;
 
         public IReadOnlyCollection<string> PurchasedNodes => _purchasedNodes;
 
@@ -69,6 +76,14 @@ namespace KingdomCollapse.Core
             if (score.TotalPoints > BestScore)
             {
                 BestScore = score.TotalPoints;
+            }
+
+            // So a Vitoria abre o degrau seguinte; placar alto num Colapso nao abre
+            // nada (spec difficulty-ladder). O teto real e a escada, que ignora
+            // niveis alem do ultimo.
+            if (score.Outcome == RunOutcome.Victory && score.LevelRank + 1 > HighestUnlockedLevel)
+            {
+                HighestUnlockedLevel = score.LevelRank + 1;
             }
         }
 

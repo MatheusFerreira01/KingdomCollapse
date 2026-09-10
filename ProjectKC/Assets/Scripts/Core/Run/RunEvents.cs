@@ -270,9 +270,9 @@ namespace KingdomCollapse.Core
     }
 
     /// <summary>
-    /// Um rival entra em guerra: o primeiro no comeco da run, os seguintes depois de
-    /// cada derrota. Carrega a identidade para que o jogador saiba o que esperar
-    /// antes do primeiro ataque (spec rival-kingdoms).
+    /// Um rival entra em guerra: o primeiro no comeco da run, os seguintes no dia de
+    /// entrada deles, somando-se aos que ja lutam. Carrega a identidade para que o
+    /// jogador saiba o que esperar antes do primeiro ataque (spec rival-kingdoms).
     /// </summary>
     public sealed class RivalDeclaredWarEvent : RunEvent
     {

@@ -21,8 +21,12 @@ namespace KingdomCollapse.Game
         [Tooltip("Climas do jogo. Nao passam por desbloqueio: todo dia tem um.")]
         [SerializeField] private List<WeatherAsset> _weather = new List<WeatherAsset>();
 
-        [Tooltip("Rivais, na ordem em que declaram guerra. Vazio cai na ameaca anonima.")]
+        [Tooltip("Todos os rivais do jogo. Sem niveis, esta lista vira a run, na ordem de entrada. " +
+                 "Vazio cai na ameaca anonima.")]
         [SerializeField] private List<RivalAsset> _rivals = new List<RivalAsset>();
+
+        [Tooltip("A escada de dificuldade, do nivel 1 para cima. A posicao na lista e o numero do nivel.")]
+        [SerializeField] private List<DifficultyLevelAsset> _levels = new List<DifficultyLevelAsset>();
 
         [Header("Desbloqueado desde o inicio")]
         [Tooltip("O que aparece numa run sem nenhum no de meta comprado.")]
@@ -133,8 +137,36 @@ namespace KingdomCollapse.Game
             violations.AddRange(MetaCatalogValidator.Validate(BuildMetaTree()));
             violations.AddRange(WeatherCatalogValidator.Validate(BuildCatalog().Weather));
             violations.AddRange(RivalCatalogValidator.Validate(rivals));
-            violations.AddRange(RivalCatalogValidator.ValidateSuccession(name, rivals));
+
+            // Com escada, a ordem de entrada e a de cada nivel; sem ela, a lista de
+            // rivais e a propria run, e e ela que precisa estar em ordem.
+            if (_levels.Count > 0)
+            {
+                violations.AddRange(DifficultyLadderValidator.Validate(BuildLadder()));
+            }
+            else
+            {
+                violations.AddRange(RivalCatalogValidator.ValidateEntryOrder(name, rivals));
+            }
+
             return violations;
+        }
+
+        /// <summary>A escada, com o numero de cada nivel dado pela posicao na lista.</summary>
+        public DifficultyLadder BuildLadder()
+        {
+            List<DifficultyLevel> levels = new List<DifficultyLevel>();
+            int rank = 1;
+            for (int i = 0; i < _levels.Count; i++)
+            {
+                if (_levels[i] != null)
+                {
+                    levels.Add(_levels[i].ToDefinition(rank));
+                    rank++;
+                }
+            }
+
+            return new DifficultyLadder(levels);
         }
 
         public MetaTree BuildMetaTree()
@@ -165,11 +197,18 @@ namespace KingdomCollapse.Game
             return definitions;
         }
 
-        /// <summary>Monta o RunSetup ja com as curvas do asset de balanceamento.</summary>
-        public RunSetup CreateSetup(string raceId, int seed)
+        /// <summary>
+        /// Monta o RunSetup ja com as curvas do asset de balanceamento e o nivel
+        /// pedido. Sem escada autorada, a lista de rivais vira a run inteira.
+        /// </summary>
+        public RunSetup CreateSetup(string raceId, int seed, int levelRank = 1)
         {
             RunSetup setup = new RunSetup(raceId, seed);
-            setup.Rivals = BuildRivalDefinitions();
+            setup.Level = BuildLadder().LevelOfRank(levelRank);
+            if (setup.Level == null)
+            {
+                setup.Rivals = BuildRivalDefinitions();
+            }
 
             if (_balance == null)
             {

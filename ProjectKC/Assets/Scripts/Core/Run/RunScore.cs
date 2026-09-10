@@ -43,6 +43,9 @@ namespace KingdomCollapse.Core
 
         public RunOutcome Outcome { get; internal set; }
 
+        /// <summary>Nivel em que a run foi jogada. E o que diz qual degrau a Vitoria abre.</summary>
+        public int LevelRank { get; internal set; } = 1;
+
         internal void Add(string label, int quantity, int pointsEach)
         {
             if (quantity <= 0 || pointsEach == 0)
@@ -78,6 +81,13 @@ namespace KingdomCollapse.Core
         /// </summary>
         public const int VictoryBonus = 150;
 
+        /// <summary>
+        /// Percentual somado ao placar por nivel acima do primeiro. Multiplica em vez
+        /// de somar fixo para que o mesmo resultado valha proporcionalmente mais num
+        /// degrau mais duro, qualquer que seja o tamanho da run.
+        /// </summary>
+        public const int LevelBonusPercentPerRank = 25;
+
         /// <summary>Quantos pontos valem uma moeda de meta.</summary>
         public const int PointsPerMetaCoin = 20;
 
@@ -89,7 +99,7 @@ namespace KingdomCollapse.Core
 
         public static RunScore Calculate(RunState run)
         {
-            RunScore score = new RunScore { Reason = run.Collapse, Outcome = run.Outcome };
+            RunScore score = new RunScore { Reason = run.Collapse, Outcome = run.Outcome, LevelRank = run.LevelRank };
 
             int standingTiles = run.StandingTileCount();
             int buildings = CountBuildings(run.Grid);
@@ -105,6 +115,11 @@ namespace KingdomCollapse.Core
             {
                 score.Add("Vitoria", 1, VictoryBonus);
             }
+
+            // Por ultimo, sobre tudo que veio antes: e um bonus sobre o resultado, e
+            // nao mais uma fonte de pontos.
+            int percent = (run.LevelRank - 1) * LevelBonusPercentPerRank;
+            score.Add("Nivel " + run.LevelRank + " (+" + percent + "%)", 1, score.TotalPoints * percent / 100);
 
             score.MetaCurrency = Math.Max(
                 MinimumMetaCoins,

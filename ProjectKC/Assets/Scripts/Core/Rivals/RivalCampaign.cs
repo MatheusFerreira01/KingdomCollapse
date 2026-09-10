@@ -9,12 +9,16 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class RivalCampaign
     {
-        public RivalCampaign(RivalDefinition rival)
+        public RivalCampaign(RivalDefinition rival, int enteredOnDay = 1)
         {
             Rival = rival ?? throw new ArgumentNullException(nameof(rival));
+            EnteredOnDay = enteredOnDay;
         }
 
         public RivalDefinition Rival { get; }
+
+        /// <summary>Dia em que o rival entrou em guerra.</summary>
+        public int EnteredOnDay { get; }
 
         /// <summary>
         /// Ataques ja agendados nesta campanha. E o indice da curva: a forca segue a

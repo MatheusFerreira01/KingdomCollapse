@@ -29,13 +29,25 @@ namespace KingdomCollapse.Core
         public int ThreatLeadDays { get; set; } = 3;
 
         /// <summary>
-        /// Rivais da run, na ordem em que declaram guerra. Vazio cai na ameaca
+        /// Rivais da run, na ordem em que entram em guerra. Vazio cai na ameaca
         /// anonima por dia, que so existe enquanto o conteudo nao traz rivais.
         /// </summary>
         public IReadOnlyList<RivalDefinition> Rivals { get; set; }
 
-        /// <summary>Dias sem ataque entre a derrota de um rival e o primeiro ataque do proximo.</summary>
-        public int RivalBreatherDays { get; set; } = 4;
+        /// <summary>
+        /// Dia de entrada de cada rival, na mesma ordem. Nulo usa o espacamento
+        /// padrao do relogio; o primeiro rival sempre entra no dia 1.
+        /// </summary>
+        public IReadOnlyList<int> RivalEntryDays { get; set; }
+
+        /// <summary>Intervalo entre janelas por numero de rivais em guerra. Nulo usa o padrao.</summary>
+        public IReadOnlyList<int> RivalWindowIntervals { get; set; }
+
+        /// <summary>
+        /// Nivel de dificuldade da run. Quando presente, e ele quem decide rivais,
+        /// dias de entrada e escassez inicial, e Rivals/RivalEntryDays sao ignorados.
+        /// </summary>
+        public DifficultyLevel Level { get; set; }
     }
 
     public sealed class RunBundle
@@ -107,16 +119,23 @@ namespace KingdomCollapse.Core
             RunDeck deck = new RunDeck(ResolveStartingDeck(race, catalog, tree, profile));
             deck.Shuffle(random.Channel(RandomChannel.Cards));
 
+            DifficultyLevel level = setup.Level;
             ThreatClock threats = new ThreatClock(
                 setup.ThreatCurve,
                 setup.FirstThreatDay,
                 setup.ThreatIntervalDays,
                 setup.ThreatLeadDays,
-                setup.Rivals,
-                setup.RivalBreatherDays);
+                level != null ? level.Rivals : setup.Rivals,
+                level != null ? EntryDaysOf(level) : setup.RivalEntryDays,
+                setup.RivalWindowIntervals);
 
             WeatherSystem weather = new WeatherSystem(catalog.Weather);
-            RunState run = new RunState(race, grid, deck, random, threats, weather);
+            RunState run = new RunState(race, grid, deck, random, threats, weather) { Level = level };
+
+            if (level != null)
+            {
+                ApplyStartingScarcity(run, level.StartingResourceFactor);
+            }
 
             EventPool pool = new EventPool(
                 ResolveEvents(race, catalog, tree, profile), setup.EventWeights);
@@ -126,6 +145,41 @@ namespace KingdomCollapse.Core
             HashSet<string> buildings = ResolveBuildingIds(race, catalog, tree, profile);
 
             return new RunBundle(run, engine, catalog, buildings);
+        }
+
+        private static List<int> EntryDaysOf(DifficultyLevel level)
+        {
+            List<int> days = new List<int>();
+            for (int i = 0; i < level.Rivals.Count; i++)
+            {
+                days.Add(level.EntryDayAt(i));
+            }
+
+            return days;
+        }
+
+        /// <summary>
+        /// Corta o saldo inicial pelo fator do nivel, em todo recurso menos
+        /// populacao: gente a menos no dia 1 trava o comeco em vez de aperta-lo.
+        /// </summary>
+        private static void ApplyStartingScarcity(RunState run, double factor)
+        {
+            if (factor >= 1.0)
+            {
+                return;
+            }
+
+            foreach (ResourceKind kind in ResourceKinds.All)
+            {
+                if (kind == ResourceKind.Population)
+                {
+                    continue;
+                }
+
+                int current = run[kind];
+                int kept = (int)Math.Round(current * factor, MidpointRounding.AwayFromZero);
+                run.Remove(kind, current - kept);
+            }
         }
 
         private static BuildingDefinition ResolveHall(ContentCatalog catalog)

@@ -42,16 +42,17 @@
 - [x] 4.1 Implementar `RivalDefinition` (nome, identidade, número de ataques, curva da campanha, eixo pressionado) e `RivalIdentity`, verificando por teste que toda identidade do catálogo declara o eixo que pressiona
 - [x] 4.2 Implementar a campanha do rival preenchendo o relógio de ameaça, verificando por teste que todo ataque continua sendo anunciado com a antecedência mínima e que o relógio indica de qual rival vem (spec `rival-kingdoms`)
 - [x] 4.3 Implementar a contagem de ataques repelidos e a derrota do rival, verificando por teste que repelir todos derrota, que falhar não perde a campanha, e que derrotar limpa os ataques restantes daquela campanha
-- [x] 4.4 Implementar a sucessão de rivais com intervalo de respiro e campanha mais forte, verificando por teste que o próximo rival é anunciado e que existe ao menos um dia sem ataque entre campanhas
+- [x] 4.4 Implementar a entrada escalonada: o primeiro rival em guerra desde o dia 1 e os seguintes entrando no dia declarado (no setup da run até o nível existir, 5.1), somando-se aos que já lutam, ou antes do dia se nenhum rival estiver em guerra; verificando por teste que a entrada é anunciada antes do primeiro ataque, que entrar não substitui os rivais ativos, que existe ao menos um dia sem ataque antes da entrada antecipada, e que a validação reprova identidade repetida no nível (design D12 — substitui a sucessão estrita implementada antes)
 - [x] 4.5 Implementar a resolução de ataque por eixo de identidade, verificando por teste que um rival econômico causa perda mesmo com defesa alta e que um rival de assalto é anulado por defesa suficiente (design D4)
 - [x] 4.6 Implementar Vitória como desfecho da run, com placar próprio, verificando por teste que derrotar o último rival encerra imediatamente e que Vitória rende mais moeda que Colapso (spec `run-loop`)
 - [x] 4.7 Adicionar verificação automatizada do catálogo de rivais que falha se nenhum rival pressionar um eixo diferente de defesa
+- [x] 4.8 Implementar o sorteio do atacante a cada janela entre os rivais em guerra, com janelas mais frequentes conforme mais rivais estão ativos e no máximo um ataque de rival por dia, inclusive quando o clima adia; verificando por teste que a mesma semente repete a sequência, que todo ataque sorteado é anunciado com antecedência mínima, que dois ataques nunca caem no mesmo dia e que um rival derrotado sai do sorteio (design D12)
 
 ## 5. Escada de dificuldade
 
-- [ ] 5.1 Implementar `DifficultyLevel` (rivais do nível, endurecimentos declarados, teto de poder da meta) e a seleção de nível, verificando por teste que um perfil novo só tem o primeiro nível
-- [ ] 5.2 Implementar o desbloqueio por Vitória, persistido no perfil, verificando por teste que colapsar não desbloqueia e que o desbloqueio sobrevive a serializar e desserializar
-- [ ] 5.3 Verificar por teste que os níveis são monotonicamente mais duros em ao menos um eixo e mais fáceis em nenhum
+- [x] 5.1 Implementar `DifficultyLevel` (rivais do nível em ordem de entrada, dia de entrada de cada um, endurecimentos declarados, teto de poder da meta) e a seleção de nível, verificando por teste que um perfil novo só tem o primeiro nível
+- [x] 5.2 Implementar o desbloqueio por Vitória, persistido no perfil, verificando por teste que colapsar não desbloqueia e que o desbloqueio sobrevive a serializar e desserializar
+- [x] 5.3 Verificar por teste que os níveis são monotonicamente mais duros em ao menos um eixo e mais fáceis em nenhum
 - [ ] 5.4 Exibir o que cada nível endurece na seleção, verificando que o texto vem do dado do nível e não de código
 
 ## 6. Meta com poder permanente
@@ -64,7 +65,7 @@
 
 - [ ] 7.1 Ensinar a `GreedyPolicy` a alocar trabalhadores entre produção e guarnição conforme a ameaça iminente, verificando por teste que ela guarnece antes de um ataque e devolve gente à produção depois
 - [ ] 7.2 Ensinar o bot a vigiar o saldo de comida e priorizar produção de comida antes de passar fome, verificando por teste que ele não deixa a população cair por descuido em condições folgadas
-- [ ] 7.3 Ensinar o bot a reagir à identidade do rival vigente, verificando por teste que contra um rival econômico ele estoca em vez de erguer torre (design D8)
+- [ ] 7.3 Ensinar o bot a reagir às identidades dos rivais em guerra e a priorizar qual derrubar primeiro, verificando por teste que contra um rival econômico ele estoca em vez de erguer torre (design D8, D12)
 - [ ] 7.4 Estender o diagnóstico estrutural para os recursos novos — recurso parado, população ociosa, edifício sem gente, comida no limite — verificando que cada aviso aparece quando a condição existe e some quando ela deixa de existir
 - [ ] 7.5 Trocar a métrica alvo do relatório de "dia mediano de Colapso" para "fração de runs que vencem a campanha" e duração da campanha vencida, verificando pelo relatório (design D7)
 
@@ -90,7 +91,7 @@
 
 - [ ] 10.1 Exibir os cinco recursos com produção e consumo previstos do dia, verificando em jogo que o saldo previsto bate com o que acontece ao encerrar o dia
 - [ ] 10.2 Exibir população total, alocada e ociosa, e permitir realocar, verificando em jogo que realocar muda defesa e produção na hora
-- [ ] 10.3 Exibir o rival vigente, sua identidade e o progresso da campanha, verificando em jogo que repelir um ataque avança o progresso visivelmente
+- [ ] 10.3 Exibir os rivais em guerra, a identidade e o progresso da campanha de cada um, e qual rival entra a seguir e em que dia, verificando em jogo que repelir um ataque avança o progresso do rival certo visivelmente
 - [ ] 10.4 Implementar as telas de Vitória e de seleção de dificuldade, verificando em jogo que vencer desbloqueia o nível seguinte
 - [ ] 10.5 Exibir clima de hoje e previsão de amanhã, com o impacto na comida, verificando em jogo que a previsão bate com o dia seguinte
 

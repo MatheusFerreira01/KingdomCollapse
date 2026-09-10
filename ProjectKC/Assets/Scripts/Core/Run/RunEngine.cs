@@ -132,11 +132,6 @@ namespace KingdomCollapse.Core
         /// <summary>Abre a run: resolve o primeiro Inicio do Dia e para no Planejamento.</summary>
         public void StartRun()
         {
-            if (Run.Threats.CurrentCampaign != null)
-            {
-                Emit(new RivalDeclaredWarEvent(Run.Threats.CurrentCampaign));
-            }
-
             BeginDay();
         }
 
@@ -150,6 +145,14 @@ namespace KingdomCollapse.Core
             CompletePendingBuilds();
 
             AdvanceWeather();
+
+            // Quem entra em guerra hoje entra antes do anuncio, para ja poder ser
+            // sorteado, e e apresentado antes de qualquer ataque dele.
+            List<RivalCampaign> admitted = Run.Threats.AdmitDue(Run.Day);
+            for (int i = 0; i < admitted.Count; i++)
+            {
+                Emit(new RivalDeclaredWarEvent(admitted[i]));
+            }
 
             // O relogio anuncia antes do Planejamento: o jogador nunca planeja um dia
             // sem enxergar a fila inteira de ameacas (spec threat-clock).
@@ -630,12 +633,6 @@ namespace KingdomCollapse.Core
                         // triunfo que ele acabou de conquistar (spec rival-kingdoms).
                         Run.DeclareVictory();
                         return;
-                    }
-
-                    RivalCampaign next = Run.Threats.DeclareNextWar(Run.Day);
-                    if (next != null)
-                    {
-                        Emit(new RivalDeclaredWarEvent(next));
                     }
                 }
 

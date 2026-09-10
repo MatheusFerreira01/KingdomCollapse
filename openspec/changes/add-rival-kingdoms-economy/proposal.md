@@ -13,7 +13,7 @@ Esta mudança ataca os dois: uma economia de cinco recursos onde população é 
 - **Cinco recursos** no lugar do ouro único: ouro, madeira, pedra, comida e população. Edifícios custam madeira e pedra; a população opera edifícios e guarnece defesas; a comida é consumida pela população todo dia.
   - **População é o teto natural de expansão**: cada edifício exige trabalhadores, cada pessoa come, mais comida exige mais terra, mais terra exige mais gente. Isso substitui a penalidade artificial por célula que existe hoje.
   - **Defesa deixa de ser número solto** e passa a exigir guarnição: uma torre sem gente não defende.
-- **Reinos rivais nomeados** substituem a ameaça anônima. Cada rival tem identidade própria e uma campanha de ataques; repelir todos os ataques de um rival o derrota e o próximo declara guerra.
+- **Reinos rivais nomeados** substituem a ameaça anônima. Cada rival tem identidade própria e uma campanha de ataques; repelir todos os ataques de um rival o derrota. Os rivais entram em guerra de forma escalonada e se somam aos que já lutam, e cada ataque sorteia qual deles vem, sempre anunciado com antecedência.
   - **Vitória de run** ao derrotar todos os rivais. **BREAKING** em relação à decisão original de que toda run termina em Colapso — o Colapso continua sendo a derrota, mas passa a existir triunfo.
   - Cada rival pressiona um recurso diferente, o que é o que torna os cinco recursos necessários em vez de decorativos. Um rival que ataca a comida não é respondido com muralha.
 - **Escada de dificuldade**: vencer desbloqueia o próximo nível, que adiciona rivais ou endurece os existentes.
@@ -28,14 +28,14 @@ Esta mudança ataca os dois: uma economia de cinco recursos onde população é 
 
 ### New Capabilities
 - `resources`: os cinco recursos, produção por terreno, consumo diário de comida, crescimento e alocação de população, e as regras de escassez.
-- `rival-kingdoms`: identidade de cada rival, campanha de ataques, condição de derrota do rival, sucessão entre rivais e vitória da run.
+- `rival-kingdoms`: identidade de cada rival, campanha de ataques, condição de derrota do rival, entrada escalonada, sorteio do atacante entre os rivais em guerra e vitória da run.
 - `difficulty-ladder`: níveis de dificuldade, o que cada um endurece, e desbloqueio pelo triunfo.
 - `game-feel`: retorno visual na origem da mudança, encenação ordenada da resolução do dia, o ataque como cena principal, e desbloqueio como momento.
 - `encounters`: encontros com identidade, escolha assimétrica, presença persistente e cadeia de consequências.
 
 ### Modified Capabilities
 - `kingdom-grid`: edifícios passam a custar madeira e pedra em vez de ouro, a produzir recursos distintos por terreno e a exigir trabalhadores para operar.
-- `threat-clock`: a ameaça deixa de ser uma curva anônima sem teto e passa a ser a campanha do rival vigente, com número finito de ataques e identidade que define o tipo de pressão.
+- `threat-clock`: a ameaça deixa de ser uma curva anônima sem teto e passa a ser a soma das campanhas dos rivais em guerra, cada uma com número finito de ataques e identidade que define o tipo de pressão.
 - `run-loop`: o fim da run deixa de ser apenas Colapso; passa a existir Vitória por derrotar todos os rivais, e a pontuação considera os dois desfechos.
 - `card-system`: cartas passam a custar e conceder recursos distintos, não apenas ouro e defesa.
 - `meta-progression`: nós passam a poder conceder bônus numéricos permanentes, e a validação que hoje proíbe isso é substituída por um teto por nível de dificuldade.

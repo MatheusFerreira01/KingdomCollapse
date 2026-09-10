@@ -44,7 +44,7 @@ Um `ResourcePool` indexado por um enum `ResourceKind`, com operações de crédi
 *Alternativa:* propriedades separadas (`Gold`, `Wood`, ...). Mais legível numa primeira leitura, pior em toda extensão futura.
 
 ### D3 — Rival como dado, campanha como fila derivada
-Um `RivalDefinition` traz nome, identidade, número de ataques, curva de força da campanha e o eixo que a identidade pressiona. O relógio de ameaça continua sendo a fila visível; passa a ser preenchido pela campanha do rival vigente em vez de por uma curva global.
+Um `RivalDefinition` traz nome, identidade, número de ataques, curva de força da campanha e o eixo que a identidade pressiona. O relógio de ameaça continua sendo a fila visível; passa a ser preenchido pelas campanhas dos rivais em guerra em vez de por uma curva global (ver D12 para como elas se combinam).
 
 *Por quê:* preserva tudo que já funciona e foi testado na telegrafia — antecedência mínima, força prevista, alteração pelo clima — e troca só a origem dos ataques. Também deixa o conteúdo de rival autorável no Inspector, como o resto.
 
@@ -81,7 +81,7 @@ As curvas atuais foram medidas sobre a economia de ouro único e não sobrevivem
 *Por quê:* medir dias sobrevividos num jogo com vitória mede a coisa errada — uma run que vence no dia 26 e outra que colapsa no dia 26 não são o mesmo resultado.
 
 ### D8 — O bot precisa aprender a economia antes de a medição valer
-A `GreedyPolicy` atual só sabe raciocinar sobre ouro e defesa. Ela precisa passar a alocar trabalhadores, vigiar o saldo de comida e reagir à identidade do rival vigente.
+A `GreedyPolicy` atual só sabe raciocinar sobre ouro e defesa. Ela precisa passar a alocar trabalhadores, vigiar o saldo de comida e reagir às identidades dos rivais em guerra.
 
 *Por quê:* já aconteceu duas vezes nesta sessão de o bot medir o jogo errado — ele ignorava o relógio de ameaça e desperdiçava carta de defesa em dia calmo, e as duas vezes fizeram a curva parecer mais letal do que era. Com uma economia mais rica, um bot ingênuo erraria mais, não menos.
 
@@ -112,6 +112,17 @@ As raças continuam sendo modificadores nesta mudança. O desenho de raças-como
 
 *Registro:* com a decisão de fazer o jogo completo, isto deixou de ser um corte e virou dependência. `add-race-identities` está comprometida no roteiro.
 
+### D12 — Rivais entram escalonados e atacam juntos
+A run começa com um rival em guerra. Os seguintes entram em dias declarados pelo nível e se somam aos que já lutam, sem substituí-los. A cada janela do relógio, o atacante é sorteado entre os rivais em guerra; as janelas ficam mais frequentes com mais rivais, e nunca há dois ataques de rival no mesmo dia. Se todos os rivais em guerra caem antes da próxima entrada, o próximo entra antecipado, depois de ao menos um dia sem ataque.
+
+*Por quê:* com um rival por vez, o jogador monta a build contra aquele rival e troca quando ele cai — a pergunta nunca é "o que priorizar", só "o que este rival pede". Com dois ou três ativos, muralha e celeiro disputam a mesma população no mesmo dia, que é exatamente a tensão que a economia de cinco recursos existe para criar (D1, D4). Também nasce uma decisão que não existia: qual rival derrubar primeiro. E derrotar um rival passa a ser alívio sentido na hora, porque a pressão cai com um atacante a menos.
+
+*O sorteio é no anúncio, nunca na resolução.* A aleatoriedade entra em quem vem, não em quando se fica sabendo: todo ataque sorteado continua anunciado com a antecedência mínima. Sem isso a derrota viraria azar, que é o que um roguelite não pode ter. O limite de um ataque por dia existe pelo mesmo motivo — dois rivais caindo juntos num dia azarado derrubariam a run sem erro do jogador.
+
+*Alternativas descartadas:* a sucessão estrita (um rival derrotado, o próximo declara guerra), que foi implementada primeiro e revertida por deixar a run sem decisão de prioridade; e todos os rivais em guerra desde o dia 1, que atropelaria o aprendizado das identidades e tiraria a escalada — a entrada escalonada ensina uma identidade nova por vez e ainda chega ao caos no fim da run.
+
+*Registro:* mudança pedida pelo usuário depois de ver o grupo 4 implementado no modelo sequencial.
+
 ## Risks / Trade-offs
 
 - **Escopo: isto é quase uma reescrita da economia** → mitigado por fazer em ordem, com o jogo compilando e testado a cada etapa: recursos, depois rivais, depois escada. Cada etapa é jogável antes da seguinte começar.
@@ -130,5 +141,6 @@ Não há usuários nem saves publicados. O save de meta existente carrega númer
 ## Open Questions
 
 - Quantos rivais no nível 1? A intuição é 3, mas a resposta sai da simulação depois que o bot souber jogar.
+- Dias de entrada e densidade das janelas por número de rivais em guerra (D12) — os valores iniciais são chute, calibrados junto com as campanhas no grupo 11.
 - A capacidade de população vem de um edifício dedicado ou de todos os edifícios? Decidir depois de ver se o jogador sente falta de um "alojamento" como decisão própria.
 - Nome final do jogo continua aberto (herdado da mudança anterior, registrado em `docs/steam.md`).
