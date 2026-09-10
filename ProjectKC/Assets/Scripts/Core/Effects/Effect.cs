@@ -90,6 +90,40 @@ namespace KingdomCollapse.Core
         string Kind { get; }
 
         EffectResult Apply(EffectContext context);
+
+        /// <summary>
+        /// Texto de regra do efeito, antes de ser aplicado: "+10 ouro", "+3 defesa
+        /// hoje". E daqui que sai o texto da carta. Faz parte da interface para que um
+        /// efeito novo sem descricao nem compile — carta que o jogador nao consegue
+        /// ler e carta que ele nao joga.
+        /// </summary>
+        string Describe();
+    }
+
+    /// <summary>Formatacao comum dos textos de regra.</summary>
+    public static class RulesText
+    {
+        public static string Percent(double fraction) =>
+            (int)Math.Round(fraction * 100, MidpointRounding.AwayFromZero) + "%";
+
+        public static string Number(double value) =>
+            Math.Abs(value - Math.Round(value)) < 0.001 ? ((int)Math.Round(value)).ToString() : value.ToString("0.#");
+
+        /// <summary>Quantidade de recurso com a escala declarada: fixa, por celula ou fracao do saldo.</summary>
+        public static string Amount(double amount, GoldScaling scaling, string resource)
+        {
+            switch (scaling)
+            {
+                case GoldScaling.PerOwnedTile:
+                    return Number(amount) + " " + resource + " por celula possuida";
+                case GoldScaling.FractionOfCurrent:
+                    return Percent(amount) + " do saldo de " + resource;
+                default:
+                    return Number(amount) + " " + resource;
+            }
+        }
+
+        public static string Days(int days) => days == 1 ? "1 dia" : days + " dias";
     }
 
     /// <summary>

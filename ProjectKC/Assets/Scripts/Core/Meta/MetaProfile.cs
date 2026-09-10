@@ -62,9 +62,15 @@ namespace KingdomCollapse.Core
 
         internal void MarkPurchased(string nodeId) => _purchasedNodes.Add(nodeId);
 
-        /// <summary>Registra o resultado de uma run encerrada.</summary>
-        public void RecordRun(RunScore score, int daysSurvived)
+        /// <summary>
+        /// Registra o resultado de uma run encerrada. Devolve o nivel que ela acabou
+        /// de liberar, ou 0: a tela de fim precisa nomear o desbloqueio, e so quem
+        /// registra sabe se houve um.
+        /// </summary>
+        public int RecordRun(RunScore score, int daysSurvived)
         {
+            int unlockedBefore = HighestUnlockedLevel;
+
             RunsPlayed++;
             AddCurrency(score.MetaCurrency);
 
@@ -85,6 +91,8 @@ namespace KingdomCollapse.Core
             {
                 HighestUnlockedLevel = score.LevelRank + 1;
             }
+
+            return HighestUnlockedLevel > unlockedBefore ? HighestUnlockedLevel : 0;
         }
 
         /// <summary>Perfil novo: saldo zero e nenhum no comprado.</summary>

@@ -822,6 +822,38 @@ namespace KingdomCollapse.Tests
             Assert.That(bundle.Engine.EndDay().Rejection, Is.EqualTo(CommandRejection.RunOver));
         }
 
+        [Test]
+        public void DerrotaDeRivalEVitoriaSaoMomentosQueInterrompemODia()
+        {
+            RivalDefinition[] rivals = WeakPair();
+            RunBundle bundle = TestContent.Run(firstThreatDay: 4, rivals: rivals);
+            bundle.Engine.DrainEvents();
+
+            List<DayStep> steps = new List<DayStep>();
+            for (int i = 0; i < 60 && !bundle.Run.IsOver; i++)
+            {
+                bundle.Engine.EndDay();
+                steps.AddRange(DayPresentation.Build(bundle.Engine.DrainEvents()));
+            }
+
+            List<DayStep> moments = steps.FindAll(s => s.IsMoment);
+
+            Assert.That(moments.Count, Is.EqualTo(3), "dois rivais derrotados e o fim da run");
+            Assert.That(moments[0].Kind, Is.EqualTo(DayStepKind.RivalDefeated));
+            Assert.That(moments[1].Kind, Is.EqualTo(DayStepKind.RivalDefeated));
+            Assert.That(moments[2].Kind, Is.EqualTo(DayStepKind.Outcome));
+            Assert.That(moments[2].Source, Is.InstanceOf<RunWonEvent>());
+
+            // A derrota vem antes de o proximo rival declarar guerra.
+            int firstDefeat = steps.IndexOf(moments[0]);
+            int secondDeclaration = steps.FindIndex(
+                s => s.Source is RivalDeclaredWarEvent d && d.Rival == rivals[1]);
+            Assert.That(secondDeclaration, Is.GreaterThan(firstDefeat));
+
+            Assert.That(steps.FindAll(s => s.Kind == DayStepKind.Attack).TrueForAll(s => !s.IsMoment),
+                "ataque e destaque, mas corre sozinho: momento e so o que muda a guerra");
+        }
+
         private static RunScore ScoreOf(RunOutcome outcome, int rivalsDefeated = 1)
         {
             RunBundle bundle = TestContent.Run();

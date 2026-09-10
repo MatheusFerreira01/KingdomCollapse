@@ -74,7 +74,10 @@ namespace KingdomCollapse.Core
                 return effects;
             }
 
-            Today = Draw(random);
+            // O primeiro dia nao teve vespera, entao nao teve previsao. Um clima que
+            // proibe acao sem ter sido anunciado quebra a promessa do clima, e no dia
+            // 1 ainda trava justo a primeira jogada da run.
+            Today = Draw(random, weather => !weather.BlocksPurchase && !weather.BlocksReveal);
             ApplyToThreats(run, Today, run.Day, effects);
 
             Tomorrow = Draw(random);
@@ -104,12 +107,24 @@ namespace KingdomCollapse.Core
             return effects;
         }
 
-        private WeatherDefinition Draw(IRandomSource random)
+        /// <summary>
+        /// Sorteia pelo peso. O filtro zera o peso de quem nao pode sair; se ninguem
+        /// passar nele, vale o catalogo inteiro, porque um dia sem clima nao existe.
+        /// </summary>
+        private WeatherDefinition Draw(IRandomSource random, System.Predicate<WeatherDefinition> allowed = null)
         {
             double[] weights = new double[_catalog.Count];
+            bool anyAllowed = false;
             for (int i = 0; i < _catalog.Count; i++)
             {
-                weights[i] = _catalog[i].Weight;
+                bool ok = allowed == null || allowed(_catalog[i]);
+                weights[i] = ok ? _catalog[i].Weight : 0;
+                anyAllowed |= ok && _catalog[i].Weight > 0;
+            }
+
+            if (!anyAllowed)
+            {
+                return Draw(random);
             }
 
             int index = RunRandom.PickWeighted(random, weights);

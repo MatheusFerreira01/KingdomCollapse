@@ -23,6 +23,11 @@ namespace KingdomCollapse.Game
         [Tooltip("Zero sorteia uma semente nova a cada partida.")]
         [SerializeField] private int _seed;
 
+        [Tooltip("Nivel de dificuldade da run. Limitado ao mais alto que o perfil ja liberou. " +
+                 "Andaime ate existir a tela de selecao.")]
+        [Min(1)]
+        [SerializeField] private int _levelRank = 1;
+
         [Header("Cena")]
         [SerializeField] private bool _createLighting = true;
 
@@ -41,6 +46,13 @@ namespace KingdomCollapse.Game
         /// <summary>Recurso que a ultima recusa apontou, para destacar no painel.</summary>
         private ResourceShortage _lastShortage = ResourceShortage.None;
 
+        private FileProfileStore _profileStore;
+        private MetaProfile _profile;
+        private DifficultyLadder _ladder;
+
+        /// <summary>Nivel que a run encerrada acabou de liberar, para nomear na tela de fim.</summary>
+        private DifficultyLevel _justUnlocked;
+
         private void Start()
         {
             if (_database == null)
@@ -50,7 +62,53 @@ namespace KingdomCollapse.Game
                 return;
             }
 
+            LoadProfile();
             StartRun(_seed == 0 ? Random.Range(1, int.MaxValue) : _seed);
+        }
+
+        /// <summary>
+        /// O perfil guarda moeda de meta e niveis liberados entre sessoes. Save
+        /// ilegivel nunca impede o jogo de abrir: o Core preserva o arquivo e devolve
+        /// um perfil novo.
+        /// </summary>
+        private void LoadProfile()
+        {
+            _profileStore = new FileProfileStore(
+                System.IO.Path.Combine(Application.persistentDataPath, "profile.json"));
+            ProfileLoadResult result = _profileStore.Load();
+            _profile = result.Profile;
+
+            if (result.Status == ProfileLoadStatus.Corrupt)
+            {
+                Debug.LogWarning(result.Message + (result.BackupPath != null ? " Copia em " + result.BackupPath : ""));
+            }
+        }
+
+        /// <summary>Nivel pedido no Inspector, limitado ao que o perfil ja liberou e ao que existe.</summary>
+        private int ResolveLevelRank()
+        {
+            int rank = Mathf.Clamp(_levelRank, 1, _profile.HighestUnlockedLevel);
+            return _ladder.LevelOfRank(rank) != null ? rank : 1;
+        }
+
+        private void RecordRunEnd(RunScore score)
+        {
+            int unlocked = _profile.RecordRun(score, _bundle.Run.Stats.DaysSurvived);
+            _justUnlocked = unlocked > 0 ? _ladder.LevelOfRank(unlocked) : null;
+
+            try
+            {
+                _profileStore.Save(_profile);
+            }
+            catch (System.Exception error)
+            {
+                Debug.LogError("Nao consegui salvar o perfil: " + error.Message, this);
+            }
+
+            if (_justUnlocked != null)
+            {
+                Log("DESBLOQUEADO: " + _justUnlocked.DisplayName + ".");
+            }
         }
 
         private void StartRun(int seed)
@@ -64,7 +122,9 @@ namespace KingdomCollapse.Game
                 return;
             }
 
-            RunSetup setup = _database.CreateSetup(_raceId, seed);
+            _ladder = _database.BuildLadder();
+            _justUnlocked = null;
+            RunSetup setup = _database.CreateSetup(_raceId, seed, ResolveLevelRank());
 
             try
             {
@@ -84,7 +144,8 @@ namespace KingdomCollapse.Game
             _cameraRig.Frame(_gridView.WorldBounds(), instant: true);
 
             _log.Clear();
-            Log("Run iniciada. Semente " + seed + ", raca " + _bundle.Run.Race.DisplayName + ".");
+            Log("Run iniciada. Semente " + seed + ", raca " + _bundle.Run.Race.DisplayName +
+                (_bundle.Run.Level != null ? ", " + _bundle.Run.Level.DisplayName : string.Empty) + ".");
             ConsumeEvents();
         }
 
@@ -144,6 +205,12 @@ namespace KingdomCollapse.Game
         {
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            // Com um momento na tela, o dia esta parado: nada no tabuleiro responde.
+            if (_staging.IsAwaitingAcknowledge)
             {
                 return;
             }
@@ -376,12 +443,14 @@ namespace KingdomCollapse.Game
                     case RunWonEvent won:
                         Log("=== VITORIA === " + won.Score.TotalPoints + " pts, " +
                             won.Score.MetaCurrency + " moedas de meta.");
+                        RecordRunEnd(won.Score);
                         break;
 
                     case RunCollapsedEvent collapsed:
                         Log("=== COLAPSO (" + collapsed.Reason + ") === " +
                             collapsed.Score.TotalPoints + " pts, " +
                             collapsed.Score.MetaCurrency + " moedas de meta.");
+                        RecordRunEnd(collapsed.Score);
                         break;
                 }
             }
@@ -471,17 +540,84 @@ namespace KingdomCollapse.Game
         }
 
         // --- HUD provisorio (IMGUI) ---
+        //
+        // Andaime, mas organizado em regioes fixas: barra de estado no topo, painel de
+        // consulta com rolagem a esquerda, mao de cartas embaixo e acoes a direita.
+        // Tudo e desenhado numa resolucao virtual e escalado para a tela real, para
+        // que nada corte num monitor menor. A UI definitiva substitui isto inteiro.
 
-        private const float PanelWidth = 340f;
-        private const float LogHeight = 190f;
+        private const float ReferenceWidth = 1600f;
+        private const float ReferenceHeight = 900f;
+        private const float TopBarHeight = 66f;
+        private const float SidePanelWidth = 340f;
+        private const float HandHeight = 190f;
+        private const float ActionsWidth = 190f;
+        private const float CardWidth = 190f;
+        private const float LogWidth = 460f;
+        private const float Margin = 8f;
+
+        private float _uiScale = 1f;
+        private Vector2 _sideScroll;
+        private Vector2 _handScroll;
+        private bool _showLog;
+        private bool _openRivals = true;
+        private bool _openClock = true;
+        private bool _openKingdom = true;
+        private bool _openCell = true;
+
+        private GUIStyle _wrapStyle;
+        private GUIStyle _boldStyle;
+        private GUIStyle _sectionStyle;
+        private static GUIStyle _momentTitle;
+
+        private float VirtualWidth => Screen.width / _uiScale;
+
+        private float VirtualHeight => Screen.height / _uiScale;
+
+        private Rect TopBarRect => new Rect(0f, 0f, VirtualWidth, TopBarHeight);
+
+        private Rect SideRect => new Rect(
+            Margin, TopBarHeight + Margin, SidePanelWidth, VirtualHeight - TopBarHeight - HandHeight - 3f * Margin);
+
+        private Rect HandRect => new Rect(
+            Margin, VirtualHeight - HandHeight - Margin, VirtualWidth - ActionsWidth - 3f * Margin, HandHeight);
+
+        private Rect ActionsRect => new Rect(
+            VirtualWidth - ActionsWidth - Margin, VirtualHeight - HandHeight - Margin, ActionsWidth, HandHeight);
+
+        private Rect LogRect => new Rect(
+            VirtualWidth - LogWidth - Margin, TopBarHeight + Margin, LogWidth,
+            VirtualHeight - TopBarHeight - HandHeight - 3f * Margin);
+
+        private void UpdateUiScale()
+        {
+            _uiScale = Mathf.Clamp(Mathf.Min(Screen.width / ReferenceWidth, Screen.height / ReferenceHeight), 0.6f, 2f);
+        }
 
         private bool IsPointerOverHud(Vector2 screenPosition)
         {
-            // A posicao do mouse vem com Y de baixo para cima; o HUD e ancorado no topo.
-            float guiY = Screen.height - screenPosition.y;
-            bool overPanel = screenPosition.x <= PanelWidth + 20f;
-            bool overLog = guiY >= Screen.height - LogHeight - 20f;
-            return overPanel || overLog;
+            // O mouse vem em pixels com Y de baixo para cima; o HUD vive na resolucao
+            // virtual com Y de cima para baixo.
+            Vector2 point = new Vector2(screenPosition.x / _uiScale, (Screen.height - screenPosition.y) / _uiScale);
+
+            return TopBarRect.Contains(point) ||
+                   SideRect.Contains(point) ||
+                   HandRect.Contains(point) ||
+                   ActionsRect.Contains(point) ||
+                   (_showLog && LogRect.Contains(point)) ||
+                   (_bundle != null && _bundle.Run.IsOver);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_wrapStyle != null)
+            {
+                return;
+            }
+
+            _wrapStyle = new GUIStyle(GUI.skin.label) { wordWrap = true, fontSize = 12 };
+            _boldStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
+            _sectionStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, fontStyle = FontStyle.Bold };
         }
 
         private void OnGUI()
@@ -491,146 +627,231 @@ namespace KingdomCollapse.Game
                 return;
             }
 
+            EnsureStyles();
+            UpdateUiScale();
+
+            Matrix4x4 screenMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(_uiScale, _uiScale, 1f));
+
             RunState run = _bundle.Run;
 
-            GUILayout.BeginArea(new Rect(10, 10, PanelWidth, Screen.height - LogHeight - 40f), GUI.skin.box);
+            // Um momento para o dia: o HUD continua visivel, mas nada nele responde
+            // ate o jogador reconhecer o que aconteceu.
+            bool blocked = _staging.IsAwaitingAcknowledge;
 
-            GUILayout.Label("Dia " + run.Day + "   |   " + run.Phase);
-            DrawResources(run);
-            GUILayout.Label("Energia " + run.Energy + "/" + run.EnergyPerDay +
-                            "    Integridade " + run.Integrity + "/" + run.MaxIntegrity +
-                            "    Defesa " + run.TotalDefense());
-            DrawWorkforce(run);
-            GUILayout.Label("Celulas " + run.Grid.OwnedCount + " (de pe: " + run.StandingTileCount() + ")");
-
-            int nextCost = run.Grid.NextTileCost(run.Rules);
-            GUILayout.Label("Proxima celula: " + nextCost + " ouro" +
-                            (run.CanAfford(nextCost) ? string.Empty : "  (falta " + (nextCost - run.Gold) + ")"));
-
-            // A recusa fica no topo, junto do dado que a explica. No rodape ela passava
-            // despercebida e o jogador so via o clique "nao fazer nada".
-            if (!string.IsNullOrEmpty(_lastRejection))
-            {
-                GUILayout.Label(">> " + _lastRejection);
-            }
-
-            DrawThreatClock(run);
-            GUILayout.Space(6);
-            DrawSelection(run);
-            GUILayout.Space(6);
-            DrawHand(run);
-
-            GUILayout.FlexibleSpace();
-
-            if (run.IsOver)
-            {
-                DrawCollapse();
-            }
-            else
-            {
-                if (GUILayout.Button("Fim do Dia", GUILayout.Height(32)))
-                {
-                    EndDay();
-                }
-
-                // Acelerar e pular sao requisitos, nao conveniencias: a encenacao
-                // irrita na decima repeticao, e a run tem dezenas de dias.
-                if (GUILayout.Button("Encenacao: " + DayStaging.Label(_staging.Speed)))
-                {
-                    _staging.Speed = DayStaging.Cycle(_staging.Speed);
-                }
-            }
-
-            GUILayout.EndArea();
-
-            DrawStaging();
             DrawGhostPrices(run);
-            DrawLog();
-        }
 
-        /// <summary>Desenha o custo sobre cada celula compravel, projetado na tela.</summary>
-        private void DrawGhostPrices(RunState run)
-        {
-            if (run.IsOver)
+            GUI.enabled = !blocked;
+            DrawTopBar(run);
+            DrawSidePanel(run);
+            DrawHand(run);
+            DrawActions(run);
+
+            if (_showLog)
             {
-                return;
+                DrawLog();
             }
 
-            int cost = run.Grid.NextTileCost(run.Rules);
-            bool affordable = run.CanAfford(cost);
-            string label = cost + (affordable ? string.Empty : " x");
+            DrawRejection();
 
-            List<KeyValuePair<Coord, Vector3>> anchors = _gridView.GhostAnchors();
-
-            for (int i = 0; i < anchors.Count; i++)
+            if (run.IsOver && !blocked)
             {
-                Vector3 screen = _camera.WorldToScreenPoint(anchors[i].Value);
-                if (screen.z <= 0f)
-                {
-                    continue;
-                }
-
-                Rect rect = new Rect(screen.x - 28f, Screen.height - screen.y - 12f, 56f, 22f);
-                GUI.Label(rect, label);
+                DrawRunEnd();
             }
+
+            GUI.enabled = true;
+            DrawStaging();
+
+            GUI.matrix = screenMatrix;
         }
+
+        // --- Barra de estado ---
 
         /// <summary>
-        /// Os cinco recursos, com a variacao prevista do dia. O recurso que a ultima
-        /// recusa apontou aparece marcado: a mensagem diz o que falta, e a marca diz
-        /// onde olhar (spec game-feel).
+        /// Tudo que muda a cada acao, numa linha que nunca rola: recursos com a
+        /// variacao prevista do dia, gente, energia, integridade e defesa. O recurso
+        /// que a ultima recusa apontou aparece marcado (spec game-feel).
         /// </summary>
-        private void DrawResources(RunState run)
+        private void DrawTopBar(RunState run)
         {
+            GUILayout.BeginArea(TopBarRect, GUI.skin.box);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Dia " + run.Day, _boldStyle, GUILayout.Width(70));
+            if (run.Level != null)
+            {
+                GUILayout.Label(run.Level.DisplayName, GUILayout.Width(140));
+            }
+
+            GUILayout.Label(PhaseLabel(run.Phase), GUILayout.Width(120));
+            GUILayout.FlexibleSpace();
+
+            if (run.TodayWeather != null)
+            {
+                string tomorrow = run.Weather.Tomorrow != null ? run.Weather.Tomorrow.DisplayName : "?";
+                GUILayout.Label("Clima hoje: " + run.TodayWeather.DisplayName + "     amanha: " + tomorrow);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             ResourceAmounts predicted = run.CollectDailyProductionByResource();
             int upkeep = run.DailyFoodUpkeep();
 
             for (int i = 0; i < ResourceKinds.All.Length; i++)
             {
                 ResourceKind kind = ResourceKinds.All[i];
-                int delta = predicted[kind];
-
-                if (kind == ResourceKind.Food)
-                {
-                    delta -= upkeep;
-                }
-
                 if (kind == ResourceKind.Population)
                 {
                     continue;
                 }
 
-                string line = ResourceKinds.DisplayName(kind).PadRight(9) + run[kind];
-                if (delta != 0)
-                {
-                    line += "  (" + (delta > 0 ? "+" : string.Empty) + delta + "/dia)";
-                }
+                int delta = predicted[kind] - (kind == ResourceKind.Food ? upkeep : 0);
+                string chip = ResourceKinds.DisplayName(kind) + " " + run[kind] +
+                              (delta != 0 ? " (" + (delta > 0 ? "+" : string.Empty) + delta + ")" : string.Empty);
+                GUILayout.Label(Marked(chip, kind), GUILayout.Width(150));
+            }
 
-                bool missing = _lastShortage.Any && _lastShortage.Kind == kind;
-                GUILayout.Label(missing ? ">> " + line + "  <<" : "   " + line);
+            WorkerAllocation allocation = run.Allocation();
+            string people = "gente " + run[ResourceKind.Population] + "/" + run.PopulationCapacity() +
+                            " (" + allocation.Assigned + " trab." +
+                            (allocation.IdleBuildings > 0 ? ", " + allocation.IdleBuildings + " parado(s)" : string.Empty) + ")";
+            GUILayout.Label(Marked(people, ResourceKind.Population), GUILayout.Width(210));
+
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("energia " + run.Energy + "/" + run.EnergyPerDay, GUILayout.Width(90));
+            GUILayout.Label("integridade " + run.Integrity + "/" + run.MaxIntegrity, GUILayout.Width(120));
+            GUILayout.Label("defesa " + run.TotalDefense(), GUILayout.Width(80));
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndArea();
+        }
+
+        private string Marked(string text, ResourceKind kind)
+        {
+            bool missing = _lastShortage.Any && _lastShortage.Kind == kind;
+            return missing ? ">> " + text + " <<" : text;
+        }
+
+        private static string PhaseLabel(DayPhase phase)
+        {
+            switch (phase)
+            {
+                case DayPhase.Planning:
+                    return "Planejamento";
+                case DayPhase.Resolution:
+                    return "Resolucao";
+                case DayPhase.Collapsed:
+                    return "Colapso";
+                case DayPhase.Won:
+                    return "Vitoria";
+                default:
+                    return phase.ToString();
             }
         }
 
-        private void DrawWorkforce(RunState run)
+        // --- Painel de consulta ---
+
+        private void DrawSidePanel(RunState run)
         {
-            WorkerAllocation allocation = run.Allocation();
-            int capacity = run.PopulationCapacity();
+            GUILayout.BeginArea(SideRect, GUI.skin.box);
+            _sideScroll = GUILayout.BeginScrollView(_sideScroll);
 
-            string line = "populacao ".PadRight(9) + run[ResourceKind.Population] + "/" + capacity +
-                          "  (" + allocation.Assigned + " trabalhando";
-
-            if (allocation.IdleBuildings > 0)
+            if (Section("Rivais em guerra", ref _openRivals))
             {
-                line += ", " + allocation.IdleBuildings + " parado(s)";
+                DrawRivals(run);
             }
 
-            line += ")";
+            if (Section("Relogio de ameaca", ref _openClock))
+            {
+                DrawThreatClock(run);
+            }
 
-            bool missing = _lastShortage.Any && _lastShortage.Kind == ResourceKind.Population;
-            GUILayout.Label(missing ? ">> " + line + "  <<" : "   " + line);
+            if (Section("Reino", ref _openKingdom))
+            {
+                DrawKingdom(run);
+            }
+
+            if (Section("Celula selecionada", ref _openCell))
+            {
+                DrawSelection(run);
+            }
+
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        /// <summary>Cabecalho de secao recolhivel. Devolve se a secao esta aberta.</summary>
+        private bool Section(string title, ref bool open)
+        {
+            GUILayout.Space(4);
+            if (GUILayout.Button((open ? "[-] " : "[+] ") + title, _sectionStyle))
+            {
+                open = !open;
+            }
+
+            return open;
+        }
+
+        private void DrawRivals(RunState run)
+        {
+            ThreatClock clock = run.Threats;
+            if (!clock.HasRivals)
+            {
+                GUILayout.Label("Nenhum rival no conteudo: a ameaca e anonima.", _wrapStyle);
+                return;
+            }
+
+            List<RivalCampaign> active = clock.ActiveCampaigns();
+            for (int i = 0; i < active.Count; i++)
+            {
+                RivalCampaign campaign = active[i];
+                GUILayout.Label(campaign.Rival.DisplayName + " (" + campaign.Rival.Identity.DisplayName + ")", _boldStyle);
+                GUILayout.Label("repelidos " + campaign.AttacksRepelled + " de " + campaign.Rival.AttacksToDefeat +
+                                (campaign.AttacksSuffered > 0 ? "   |   sofridos " + campaign.AttacksSuffered : string.Empty));
+                GUILayout.Label(campaign.Rival.Identity.Description, _wrapStyle);
+                GUILayout.Space(4);
+            }
+
+            if (clock.NextRivalToEnter != null)
+            {
+                GUILayout.Label("Proximo a entrar: " + clock.NextRivalToEnter.DisplayName +
+                                " (" + clock.NextRivalToEnter.Identity.DisplayName + "), dia " + clock.NextEntryDay, _wrapStyle);
+            }
+
+            GUILayout.Label("Derrotados: " + run.Stats.RivalsDefeated + " de " + clock.Rivals.Count);
+        }
+
+        private void DrawThreatClock(RunState run)
+        {
+            IReadOnlyList<ScheduledThreat> pending = run.Threats.Pending;
+            if (pending.Count == 0)
+            {
+                GUILayout.Label("nada anunciado");
+                return;
+            }
+
+            for (int i = 0; i < pending.Count; i++)
+            {
+                ScheduledThreat threat = pending[i];
+                int days = threat.DaysUntil(run.Day);
+                string when = days <= 0 ? "HOJE" : days == 1 ? "amanha" : "em " + days + " dias";
+                string origin = threat.Rival != null ? threat.Rival.DisplayName : threat.Kind.ToString();
+                GUILayout.Label(when + ": " + origin + " — forca " + threat.Force +
+                                "  (sua defesa: " + run.TotalDefense() + ")", _wrapStyle);
+            }
+        }
+
+        private void DrawKingdom(RunState run)
+        {
+            GUILayout.Label("Celulas " + run.Grid.OwnedCount + " (de pe: " + run.StandingTileCount() + ")");
+
+            int nextCost = run.Grid.NextTileCost(run.Rules);
+            GUILayout.Label("Proxima celula: " + nextCost + " ouro" +
+                            (run.CanAfford(nextCost) ? string.Empty : "  (falta " + (nextCost - run.Gold) + ")"));
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Postura:", GUILayout.Width(60));
+            GUILayout.Label("Postura:", GUILayout.Width(62));
             if (GUILayout.Button(StanceLabel(run.Stance)))
             {
                 run.Stance = NextStance(run.Stance);
@@ -638,6 +859,106 @@ namespace KingdomCollapse.Game
             }
 
             GUILayout.EndHorizontal();
+            GUILayout.Label("Postura decide quem recebe gente primeiro: campos produzem, muralhas defendem.", _wrapStyle);
+        }
+
+        private void DrawSelection(RunState run)
+        {
+            if (!_gridView.Selected.HasValue)
+            {
+                GUILayout.Label("Clique numa celula sua para ver e construir. " +
+                                "Clique num bloco amarelo para comprar.", _wrapStyle);
+                return;
+            }
+
+            Coord coord = _gridView.Selected.Value;
+            Tile tile = run.Grid.TileAt(coord);
+
+            GUILayout.Label(coord + " — " + tile.Terrain + (tile.Destroyed ? " (arrasada)" : string.Empty), _boldStyle);
+
+            if (tile.HasBuilding)
+            {
+                ProductionBreakdown breakdown = ProductionCalculator.ForTile(run.Grid, tile, run.Rules);
+                GUILayout.Label(tile.Building.DisplayName + ": " +
+                                (breakdown.IsEmpty ? "nao produz" : breakdown.Totals + " por dia"), _wrapStyle);
+
+                for (int i = 0; i < breakdown.Lines.Count; i++)
+                {
+                    GUILayout.Label("   " + breakdown.Lines[i], _wrapStyle);
+                }
+
+                if (tile.Coord != run.Grid.HallCoord && GUILayout.Button("Demolir"))
+                {
+                    _bundle.Engine.Demolish(coord);
+                    AfterStateChanged();
+                }
+
+                return;
+            }
+
+            if (tile.Destroyed || !tile.Owned)
+            {
+                return;
+            }
+
+            List<BuildingDefinition> buildings = _bundle.AvailableBuildings();
+            for (int i = 0; i < buildings.Count; i++)
+            {
+                BuildingDefinition building = buildings[i];
+                if (building.Id == RunBuilder.HallBuildingId || !building.CanBuildOn(tile.Terrain))
+                {
+                    continue;
+                }
+
+                ResourceAmounts cost = _bundle.Engine.BuildCostOf(building);
+                bool wasEnabled = GUI.enabled;
+                GUI.enabled = wasEnabled && run.CanAfford(cost, out _);
+
+                if (GUILayout.Button(building.DisplayName + "  —  " + CostText(cost)))
+                {
+                    TryBuild(building, coord);
+                }
+
+                GUI.enabled = wasEnabled;
+                GUILayout.Label(BuildingSummary(building), _wrapStyle);
+            }
+        }
+
+        private static string CostText(ResourceAmounts cost)
+        {
+            List<string> parts = new List<string>();
+            foreach (ResourceKind kind in cost.NonZero())
+            {
+                parts.Add(cost[kind] + " " + ResourceKinds.DisplayName(kind));
+            }
+
+            return parts.Count == 0 ? "de graca" : string.Join(", ", parts);
+        }
+
+        private static string BuildingSummary(BuildingDefinition building)
+        {
+            List<string> parts = new List<string>();
+            if (!building.Production.IsEmpty)
+            {
+                parts.Add("produz " + building.Production + "/dia");
+            }
+
+            if (building.Defense > 0)
+            {
+                parts.Add("+" + building.Defense + " defesa");
+            }
+
+            if (building.PopulationCapacity > 0)
+            {
+                parts.Add("abriga " + building.PopulationCapacity);
+            }
+
+            if (building.WorkersRequired > 0)
+            {
+                parts.Add("exige " + building.WorkersRequired + " de gente");
+            }
+
+            return "   " + string.Join(", ", parts);
         }
 
         private static WorkerStance NextStance(WorkerStance stance)
@@ -666,26 +987,158 @@ namespace KingdomCollapse.Game
             }
         }
 
-        /// <summary>A cena do dia, com o passo atual em destaque.</summary>
-        private void DrawStaging()
+        // --- Mao e acoes ---
+
+        /// <summary>
+        /// A mao como cartas lado a lado, cada uma com o texto de regra tirado dos
+        /// proprios efeitos. Rola na horizontal quando a mao nao cabe.
+        /// </summary>
+        private void DrawHand(RunState run)
         {
-            if (!_staging.IsPlaying && _staging.Current == null)
+            GUILayout.BeginArea(HandRect, GUI.skin.box);
+            GUILayout.Label("Mao (" + run.Deck.Hand.Count + ")   —   energia " + run.Energy + "/" + run.EnergyPerDay,
+                _boldStyle);
+
+            if (run.Deck.Hand.Count == 0)
+            {
+                GUILayout.Label("sem cartas");
+                GUILayout.EndArea();
+                return;
+            }
+
+            _handScroll = GUILayout.BeginScrollView(_handScroll, true, false);
+            GUILayout.BeginHorizontal();
+
+            List<CardDefinition> hand = new List<CardDefinition>(run.Deck.Hand);
+            for (int i = 0; i < hand.Count; i++)
+            {
+                DrawCard(run, hand[i]);
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        private void DrawCard(RunState run, CardDefinition card)
+        {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(CardWidth), GUILayout.Height(HandHeight - 58f));
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(card.DisplayName, _boldStyle);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("[" + card.EnergyCost + "]", _boldStyle);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Label(CardText.RulesFor(card), _wrapStyle);
+            GUILayout.FlexibleSpace();
+
+            bool wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && run.Energy >= card.EnergyCost && !run.IsOver;
+            string label = card.NeedsTarget
+                ? (_gridView.Selected.HasValue ? "Jogar na celula" : "Selecione o alvo")
+                : "Jogar";
+            if (GUILayout.Button(label))
+            {
+                TryPlayCard(card);
+            }
+
+            GUI.enabled = wasEnabled;
+            GUILayout.EndVertical();
+        }
+
+        private void DrawActions(RunState run)
+        {
+            GUILayout.BeginArea(ActionsRect, GUI.skin.box);
+
+            if (!run.IsOver && GUILayout.Button("Fim do Dia", GUILayout.Height(56)))
+            {
+                EndDay();
+            }
+
+            // Acelerar e pular sao requisitos, nao conveniencias: a encenacao irrita
+            // na decima repeticao, e a run tem dezenas de dias.
+            if (GUILayout.Button("Encenacao: " + DayStaging.Label(_staging.Speed)))
+            {
+                _staging.Speed = DayStaging.Cycle(_staging.Speed);
+            }
+
+            if (GUILayout.Button(_showLog ? "Esconder log" : "Mostrar log"))
+            {
+                _showLog = !_showLog;
+            }
+
+            GUILayout.EndArea();
+        }
+
+        /// <summary>
+        /// A recusa aparece logo abaixo da barra de estado, perto do contador que ela
+        /// aponta. No rodape ela passava despercebida e o clique parecia nao fazer nada.
+        /// </summary>
+        private void DrawRejection()
+        {
+            if (string.IsNullOrEmpty(_lastRejection))
             {
                 return;
             }
 
+            float width = 520f;
+            GUI.Box(new Rect((VirtualWidth - width) * 0.5f, TopBarHeight + 4f, width, 28f), ">> " + _lastRejection);
+        }
+
+        // --- Mundo ---
+
+        /// <summary>Desenha o custo sobre cada celula compravel, projetado na tela.</summary>
+        private void DrawGhostPrices(RunState run)
+        {
+            if (run.IsOver)
+            {
+                return;
+            }
+
+            int cost = run.Grid.NextTileCost(run.Rules);
+            bool affordable = run.CanAfford(cost);
+            string label = cost + (affordable ? string.Empty : " x");
+
+            List<KeyValuePair<Coord, Vector3>> anchors = _gridView.GhostAnchors();
+
+            for (int i = 0; i < anchors.Count; i++)
+            {
+                Vector3 screen = _camera.WorldToScreenPoint(anchors[i].Value);
+                if (screen.z <= 0f)
+                {
+                    continue;
+                }
+
+                float x = screen.x / _uiScale;
+                float y = (Screen.height - screen.y) / _uiScale;
+                GUI.Label(new Rect(x - 28f, y - 12f, 56f, 22f), label);
+            }
+        }
+
+        // --- Encenacao e momentos ---
+
+        /// <summary>A cena do dia, com o passo atual em destaque.</summary>
+        private void DrawStaging()
+        {
             DayStep step = _staging.Current;
             if (step == null)
             {
                 return;
             }
 
-            float width = 460f;
-            float height = step.IsHighlight ? 70f : 46f;
-            Rect rect = new Rect((Screen.width - width) * 0.5f, 60f, width, height);
+            if (step.IsMoment)
+            {
+                DrawMoment(step);
+                return;
+            }
+
+            float width = 480f;
+            float height = step.IsHighlight ? 72f : 50f;
+            Rect rect = new Rect((VirtualWidth - width) * 0.5f, TopBarHeight + 40f, width, height);
 
             GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label(step.IsHighlight ? "*** " + step.Headline + " ***" : step.Headline);
+            GUILayout.Label(step.IsHighlight ? "*** " + step.Headline + " ***" : step.Headline, _boldStyle);
 
             if (GUILayout.Button("pular"))
             {
@@ -695,115 +1148,118 @@ namespace KingdomCollapse.Game
             GUILayout.EndArea();
         }
 
-        private void DrawThreatClock(RunState run)
+        /// <summary>
+        /// Derrota de rival e fim de run: um quadro no centro da tela que so sai com
+        /// "Continuar". Andaime como o resto do HUD, mas ja com a regra que importa —
+        /// o dia para ate o jogador ver o que conquistou ou perdeu.
+        /// </summary>
+        private void DrawMoment(DayStep step)
         {
-            GUILayout.Space(6);
-            GUILayout.Label("-- Relogio de ameaca --");
+            List<string> lines = new List<string>();
+            string title;
 
-            IReadOnlyList<ScheduledThreat> pending = run.Threats.Pending;
-            if (pending.Count == 0)
+            switch (step.Source)
             {
-                GUILayout.Label("nada anunciado");
+                case RivalDefeatedEvent defeated:
+                    title = "RIVAL DERROTADO";
+                    lines.Add(defeated.Rival.DisplayName + " (" + defeated.Rival.Identity.DisplayName + ")");
+                    lines.Add(defeated.Campaign.AttacksRepelled + " ataques repelidos" +
+                              (defeated.Campaign.AttacksSuffered > 0
+                                  ? ", " + defeated.Campaign.AttacksSuffered + " sofridos"
+                                  : string.Empty));
+
+                    // Contagem de derrotados, e nao a lista de quem ainda luta: a lista
+                    // ja pode conter o rival que so entra no dia seguinte, e o momento
+                    // precisa vir antes da proxima declaracao de guerra.
+                    lines.Add("Rivais derrotados: " + _bundle.Run.Stats.RivalsDefeated + " de " +
+                              _bundle.Run.Threats.Rivals.Count);
+                    break;
+
+                case RunWonEvent won:
+                    title = "VITORIA";
+                    lines.Add("Todos os rivais cairam em " + _bundle.Run.Day + " dias.");
+                    lines.Add(won.Score.TotalPoints + " pts  =>  " + won.Score.MetaCurrency + " moedas de meta");
+                    AddUnlockLines(lines);
+                    break;
+
+                case RunCollapsedEvent collapsed:
+                    title = "COLAPSO";
+                    lines.Add(collapsed.Reason == CollapseReason.TerritoryLost
+                        ? "Nenhuma celula ficou de pe."
+                        : "A base caiu.");
+                    lines.Add(collapsed.Score.TotalPoints + " pts  =>  " + collapsed.Score.MetaCurrency + " moedas de meta");
+                    break;
+
+                default:
+                    title = step.Headline;
+                    break;
+            }
+
+            float width = 540f;
+            float height = 150f + lines.Count * 24f;
+            Rect rect = new Rect((VirtualWidth - width) * 0.5f, (VirtualHeight - height) * 0.35f, width, height);
+
+            GUILayout.BeginArea(rect, GUI.skin.window);
+            GUILayout.Space(8);
+            GUILayout.Label("*** " + title + " ***", MomentTitleStyle());
+            GUILayout.Space(8);
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                GUILayout.Label(lines[i], _wrapStyle);
+            }
+
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Continuar", GUILayout.Height(34)))
+            {
+                _staging.Acknowledge();
+            }
+
+            GUILayout.EndArea();
+        }
+
+        private void AddUnlockLines(List<string> lines)
+        {
+            if (_justUnlocked == null)
+            {
                 return;
             }
 
-            for (int i = 0; i < pending.Count; i++)
+            lines.Add(string.Empty);
+            lines.Add("DESBLOQUEADO: " + _justUnlocked.DisplayName);
+            if (!string.IsNullOrEmpty(_justUnlocked.Hardening))
             {
-                ScheduledThreat threat = pending[i];
-                string origin = threat.Rival != null ? threat.Rival.DisplayName + ": " : string.Empty;
-                GUILayout.Label(origin + threat.Kind + " em " + threat.DaysUntil(run.Day) +
-                                " dia(s), forca " + threat.Force);
+                lines.Add(_justUnlocked.Hardening);
             }
         }
 
-        private void DrawSelection(RunState run)
+        private static GUIStyle MomentTitleStyle()
         {
-            if (!_gridView.Selected.HasValue)
+            if (_momentTitle == null)
             {
-                GUILayout.Label("-- Nenhuma celula selecionada --");
-                GUILayout.Label("Clique num bloco amarelo para comprar.");
-                return;
+                _momentTitle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 22,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter
+                };
             }
 
-            Coord coord = _gridView.Selected.Value;
-            Tile tile = run.Grid.TileAt(coord);
-
-            GUILayout.Label("-- Celula " + coord + " --");
-            GUILayout.Label("Terreno: " + tile.Terrain + (tile.Destroyed ? " (arrasada)" : string.Empty));
-
-            if (tile.HasBuilding)
-            {
-                ProductionBreakdown breakdown = ProductionCalculator.ForTile(run.Grid, tile, run.Rules);
-                GUILayout.Label(tile.Building.DisplayName + " => " + breakdown.Total + " ouro/dia");
-
-                for (int i = 0; i < breakdown.Lines.Count; i++)
-                {
-                    GUILayout.Label("   " + breakdown.Lines[i]);
-                }
-
-                if (tile.Coord != run.Grid.HallCoord && GUILayout.Button("Demolir"))
-                {
-                    _bundle.Engine.Demolish(coord);
-                    AfterStateChanged();
-                }
-
-                return;
-            }
-
-            List<BuildingDefinition> buildings = _bundle.AvailableBuildings();
-            for (int i = 0; i < buildings.Count; i++)
-            {
-                BuildingDefinition building = buildings[i];
-                if (building.Id == RunBuilder.HallBuildingId || !building.CanBuildOn(tile.Terrain))
-                {
-                    continue;
-                }
-
-                string label = building.DisplayName + " (" + building.GoldCost + " ouro, +" +
-                               building.BaseGoldProduction + "/dia)";
-
-                GUI.enabled = run.CanAfford(building.GoldCost);
-                if (GUILayout.Button(label))
-                {
-                    TryBuild(building, coord);
-                }
-
-                GUI.enabled = true;
-            }
+            return _momentTitle;
         }
 
-        private void DrawHand(RunState run)
-        {
-            GUILayout.Label("-- Mao (" + run.Deck.Hand.Count + ") --");
-
-            if (run.Deck.Hand.Count == 0)
-            {
-                GUILayout.Label("sem cartas");
-                return;
-            }
-
-            List<CardDefinition> hand = new List<CardDefinition>(run.Deck.Hand);
-            for (int i = 0; i < hand.Count; i++)
-            {
-                CardDefinition card = hand[i];
-                GUI.enabled = run.Energy >= card.EnergyCost;
-
-                if (GUILayout.Button(card.DisplayName + "  [" + card.EnergyCost + "]"))
-                {
-                    TryPlayCard(card);
-                }
-
-                GUI.enabled = true;
-            }
-        }
-
-        private void DrawCollapse()
+        /// <summary>Tela de fim, no centro, com o placar discriminado e o que foi desbloqueado.</summary>
+        private void DrawRunEnd()
         {
             RunScore score = _bundle.Engine.FinalScore;
+            float width = 500f;
+            float height = 150f + (score != null ? score.Lines.Count * 22f : 0f) + (_justUnlocked != null ? 70f : 0f);
+            Rect rect = new Rect((VirtualWidth - width) * 0.5f, TopBarHeight + 60f, width, height);
 
+            GUILayout.BeginArea(rect, GUI.skin.window);
             GUILayout.Label(_bundle.Run.Outcome == RunOutcome.Victory
-                ? "=== VITORIA ==="
-                : "=== COLAPSO: " + _bundle.Run.Collapse + " ===");
+                ? "*** VITORIA ***"
+                : "*** COLAPSO: " + _bundle.Run.Collapse + " ***", MomentTitleStyle());
 
             if (score != null)
             {
@@ -812,24 +1268,36 @@ namespace KingdomCollapse.Game
                     GUILayout.Label(score.Lines[i].ToString());
                 }
 
-                GUILayout.Label("Total " + score.TotalPoints + " pts  =>  " +
-                                score.MetaCurrency + " moedas de meta");
+                GUILayout.Label("Total " + score.TotalPoints + " pts  =>  " + score.MetaCurrency + " moedas de meta",
+                    _boldStyle);
             }
 
-            if (GUILayout.Button("Nova run", GUILayout.Height(30)))
+            // O desbloqueio fica na tela de fim tambem, e nao so no momento: e aqui
+            // que o jogador decide a proxima run (spec game-feel).
+            List<string> unlock = new List<string>();
+            AddUnlockLines(unlock);
+            for (int i = 0; i < unlock.Count; i++)
+            {
+                GUILayout.Label(unlock[i], _wrapStyle);
+            }
+
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Nova run", GUILayout.Height(34)))
             {
                 StartRun(Random.Range(1, int.MaxValue));
             }
+
+            GUILayout.EndArea();
         }
 
         private void DrawLog()
         {
-            GUILayout.BeginArea(new Rect(10, Screen.height - LogHeight - 10, Screen.width - 20, LogHeight), GUI.skin.box);
+            GUILayout.BeginArea(LogRect, GUI.skin.box);
             _logScroll = GUILayout.BeginScrollView(_logScroll);
 
             for (int i = 0; i < _log.Count; i++)
             {
-                GUILayout.Label(_log[i]);
+                GUILayout.Label(_log[i], _wrapStyle);
             }
 
             GUILayout.EndScrollView();

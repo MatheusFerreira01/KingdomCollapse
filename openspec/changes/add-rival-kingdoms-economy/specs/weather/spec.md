@@ -15,6 +15,17 @@ Um clima SHALL poder modificar a produção de recursos de acordo com o terreno 
 - **WHEN** um clima favorece floresta
 - **THEN** o ganho aparece na madeira, e não num total genérico de produção
 
+### Requirement: Clima pode bloquear ações
+Um clima SHALL poder impedir ações específicas do dia, como comprar quadrado ou revelar terreno, e a razão SHALL ser comunicada ao jogador. O primeiro dia da run SHALL NOT ter clima que bloqueie ação, porque não houve véspera em que ele pudesse ter sido previsto.
+
+#### Scenario: Neblina impede expandir
+- **WHEN** o clima do dia é neblina e o jogador tenta comprar um quadrado
+- **THEN** a compra é recusada e o motivo informa que a neblina impede a expansão hoje
+
+#### Scenario: O primeiro dia nunca bloqueia
+- **WHEN** a run começa
+- **THEN** o clima do dia 1 não bloqueia nenhuma ação, e climas que bloqueiam só aparecem depois de terem sido previstos na véspera
+
 ## ADDED Requirements
 
 ### Requirement: Clima pode pressionar a comida

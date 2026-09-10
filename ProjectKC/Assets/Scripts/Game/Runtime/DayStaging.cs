@@ -38,6 +38,12 @@ namespace KingdomCollapse.Game
 
         public bool IsPlaying => Current != null || _pending.Count > 0;
 
+        /// <summary>
+        /// Um momento esta na tela esperando o jogador. Enquanto isso o resto do jogo
+        /// para: e isso que faz derrota de rival e fim de run interromperem o dia.
+        /// </summary>
+        public bool IsAwaitingAcknowledge => Current != null && Current.IsMoment;
+
         /// <summary>Passos já mostrados neste dia, para consulta depois da cena.</summary>
         public List<DayStep> Shown { get; } = new List<DayStep>();
 
@@ -53,33 +59,62 @@ namespace KingdomCollapse.Game
                 return;
             }
 
+            _pending.AddRange(steps);
+
             if (Speed == StagingSpeed.Skip)
             {
                 // Pular não pode perder informação: os passos continuam consultáveis,
-                // só não são exibidos um a um.
-                Shown.AddRange(steps);
+                // só não são exibidos um a um. Momentos sao a excecao, e param mesmo
+                // assim.
+                SkipToNextMoment();
                 return;
             }
 
-            _pending.AddRange(steps);
             Advance();
         }
 
-        /// <summary>Corta a encenação em andamento, preservando o que faltava mostrar.</summary>
+        /// <summary>
+        /// Corta a encenação até o próximo momento, preservando o que faltava mostrar.
+        /// Um momento já na tela não é pulado: ele sai só com Acknowledge.
+        /// </summary>
         public void SkipRest()
         {
+            if (IsAwaitingAcknowledge)
+            {
+                return;
+            }
+
             if (Current != null)
             {
+                Shown.Add(Current);
                 Current = null;
             }
 
-            Shown.AddRange(_pending);
-            _pending.Clear();
+            SkipToNextMoment();
+        }
+
+        /// <summary>O jogador reconheceu o momento; a encenação segue.</summary>
+        public void Acknowledge()
+        {
+            if (!IsAwaitingAcknowledge)
+            {
+                return;
+            }
+
+            if (Speed == StagingSpeed.Skip)
+            {
+                Shown.Add(Current);
+                Current = null;
+                SkipToNextMoment();
+                return;
+            }
+
+            Advance();
         }
 
         public void Tick(float delta)
         {
-            if (Current == null)
+            if (Current == null || Current.IsMoment)
             {
                 return;
             }
@@ -107,6 +142,25 @@ namespace KingdomCollapse.Game
             Current = _pending[0];
             _pending.RemoveAt(0);
             _timer = DurationFor(Current);
+        }
+
+        /// <summary>Manda para o consultável tudo até o próximo momento, e para nele.</summary>
+        private void SkipToNextMoment()
+        {
+            while (_pending.Count > 0 && !_pending[0].IsMoment)
+            {
+                Shown.Add(_pending[0]);
+                _pending.RemoveAt(0);
+            }
+
+            if (_pending.Count == 0)
+            {
+                Current = null;
+                return;
+            }
+
+            Current = _pending[0];
+            _pending.RemoveAt(0);
         }
 
         private float DurationFor(DayStep step)

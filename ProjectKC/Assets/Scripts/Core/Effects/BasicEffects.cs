@@ -50,6 +50,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.GainGold;
 
+        public string Describe()
+        {
+            return "+" + RulesText.Amount(_amount, _scaling, "ouro");
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             int gold = ResolveAmount(context.Run);
@@ -88,6 +93,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.LoseGold;
+
+        public string Describe()
+        {
+            return "-" + RulesText.Amount(_amount, _scaling, "ouro");
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -128,6 +138,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.BuildOn;
 
+        public string Describe()
+        {
+            return "Constroi " + _building.DisplayName + (_free ? " de graca" : " pagando o custo");
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             if (!context.HasTarget)
@@ -160,6 +175,11 @@ namespace KingdomCollapse.Core
     public sealed class DestroyTileEffect : IEffect, ISeverityDeclaring
     {
         public string Kind => EffectKinds.DestroyTile;
+
+        public string Describe()
+        {
+            return "Arrasa uma celula";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -231,6 +251,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.RepairBase;
 
+        public string Describe()
+        {
+            return "+" + (_asFraction ? RulesText.Percent(_amount) + " da" : RulesText.Number(_amount)) + " integridade";
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             RunState run = context.Run;
@@ -261,6 +286,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.DamageBase;
+
+        public string Describe()
+        {
+            return "-" + (_asFraction ? RulesText.Percent(_amount) + " da" : RulesText.Number(_amount)) + " integridade";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -297,6 +327,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.AddDefense;
 
+        public string Describe()
+        {
+            return "+" + _amount + " defesa hoje";
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             if (_amount <= 0)
@@ -319,6 +354,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.DrawCards;
+
+        public string Describe()
+        {
+            return _count == 1 ? "Compra 1 carta" : "Compra " + _count + " cartas";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -344,6 +384,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.RevealTile;
+
+        public string Describe()
+        {
+            return _radius > 0 ? "Revela " + _radius + " celula(s) da fronteira" : "Revela terreno";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -385,6 +430,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.AddCardToDeck;
 
+        public string Describe()
+        {
+            return "Poe " + (_card != null ? _card.DisplayName : "?") + " no baralho";
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             if (_card == null)
@@ -408,6 +458,11 @@ namespace KingdomCollapse.Core
     public sealed class RemoveCardEffect : IEffect, ISeverityDeclaring
     {
         public string Kind => EffectKinds.RemoveCard;
+
+        public string Describe()
+        {
+            return "Tira uma carta do baralho";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -434,6 +489,11 @@ namespace KingdomCollapse.Core
     public sealed class GrantTileEffect : IEffect
     {
         public string Kind => EffectKinds.GrantTile;
+
+        public string Describe()
+        {
+            return "Ganha uma celula de graca";
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -478,6 +538,14 @@ namespace KingdomCollapse.Core
 
         public string Kind => EffectKinds.ModifyProduction;
 
+        public string Describe()
+        {
+            string change = _key == ModifierKeys.ProductionMultiplier
+                ? (_value > 0 ? "+" : "") + RulesText.Percent(_value)
+                : (_value > 0 ? "+" : "") + RulesText.Number(_value);
+            return change + " de producao por " + RulesText.Days(_days);
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             if (_days <= 0 || _value == 0)
@@ -500,6 +568,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.DisableTile;
+
+        public string Describe()
+        {
+            return "Para um edificio por " + RulesText.Days(_days);
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -548,6 +621,13 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => EffectKinds.SetTerrain;
+
+        public string Describe()
+        {
+            return _requireFrom
+                ? "Transforma " + _from + " em " + _to
+                : "Transforma o terreno em " + _to;
+        }
 
         public EffectResult Apply(EffectContext context)
         {
@@ -600,6 +680,11 @@ namespace KingdomCollapse.Core
     public sealed class RepairTileEffect : IEffect
     {
         public string Kind => EffectKinds.RepairTile;
+
+        public string Describe()
+        {
+            return "Repara uma celula arrasada";
+        }
 
         public EffectResult Apply(EffectContext context)
         {

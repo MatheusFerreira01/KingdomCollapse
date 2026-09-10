@@ -51,6 +51,16 @@ namespace KingdomCollapse.Core
             Kind == DayStepKind.RivalDefeated ||
             Kind == DayStepKind.Outcome;
 
+        /// <summary>
+        /// Passos que interrompem o dia ate o jogador reconhecer: derrotar um rival e
+        /// terminar a run (spec game-feel). Nao correm com o relogio da encenacao, e
+        /// nem pular a encenacao os esconde — um triunfo que passa sozinho em um
+        /// segundo nao e momento, e linha de log.
+        /// </summary>
+        public bool IsMoment =>
+            Kind == DayStepKind.RivalDefeated ||
+            Kind == DayStepKind.Outcome;
+
         public override string ToString() => Kind + ": " + Headline;
     }
 

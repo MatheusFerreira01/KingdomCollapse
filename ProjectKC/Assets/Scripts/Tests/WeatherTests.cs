@@ -32,6 +32,30 @@ namespace KingdomCollapse.Tests
                 threatForceDelta: -4);
         }
 
+        [Test]
+        public void PrimeiroDiaNuncaTemClimaQueBloqueiaAcao()
+        {
+            // O dia 1 nao teve vespera, entao nao teve previsao. Neblina ali proibia a
+            // primeira compra da run sem nenhum aviso.
+            WeatherDefinition heavyFog = new WeatherDefinition(
+                "fog", "Neblina", blocksPurchase: true, blocksReveal: true, weight: 50);
+            WeatherDefinition calm = new WeatherDefinition("calm", "Dia limpo", isCalmDay: true);
+
+            bool fogLater = false;
+            for (int seed = 1; seed <= 200; seed++)
+            {
+                RaceDefinition race = TestContent.Humans();
+                ContentCatalog catalog = TestContent.Catalog(race);
+                catalog.AddWeather(heavyFog).AddWeather(calm);
+                RunBundle bundle = TestContent.Run(race, catalog, seed);
+
+                Assert.That(bundle.Run.TodayWeather, Is.SameAs(calm), "semente " + seed);
+                fogLater |= bundle.Run.Weather.Tomorrow == heavyFog;
+            }
+
+            Assert.That(fogLater, Is.True, "do dia 2 em diante a neblina continua existindo, anunciada na vespera");
+        }
+
         private static WeatherDefinition Fog()
         {
             return new WeatherDefinition(

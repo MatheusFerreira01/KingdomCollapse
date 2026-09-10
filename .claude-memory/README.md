@@ -16,7 +16,7 @@ escreve `.cs` e quem mexe no Editor.
 Copie o conteúdo desta pasta para:
 
 ```
-C:\Users\<seu-usuario>\.claude\projects\D--Projetos-Meu-Jogo\memory\
+C:\Users\<seu-usuario>\.claude\projects\D--Projetos-Meu-Jogo-KingdomCollapse\memory\
 ```
 
 Se a pasta não existir, crie. E acrescente as linhas correspondentes ao `MEMORY.md`
@@ -25,7 +25,11 @@ que estiver lá, que é o índice carregado a cada sessão:
 ```
 - [Projeto KingdomCollapse](kingdom-collapse-projeto.md) — segundo jogo, repo separado; virou "jogo completo bem feito" em 2026-09-09, MM em pausa
 - [Trabalho de editor é do usuário](unity-editor-work-is-the-users.md) — Claude escreve .cs, Matheus faz cenas/prefabs/assets no Unity
+- [Onde paramos (2026-09-10)](kingdom-collapse-onde-paramos.md) — grupos 4/5 e layout feitos; próximo: bug das cartas de terreno
 ```
+
+A pasta de memória é a do diretório em que o Claude Code é aberto: abrindo dentro de
+`KingdomCollapse`, o nome termina em `-KingdomCollapse`.
 
 ## Se não restaurar
 

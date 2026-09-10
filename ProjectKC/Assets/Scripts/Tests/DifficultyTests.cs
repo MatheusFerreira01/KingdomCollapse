@@ -147,6 +147,19 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
+        public void RegistroDizQualNivelAcabouDeAbrir()
+        {
+            // A tela de fim precisa nomear o desbloqueio (spec game-feel), e so quem
+            // registra a run sabe se ela abriu algo novo.
+            MetaProfile profile = MetaProfile.NewProfile();
+
+            Assert.That(profile.RecordRun(Finished(RunOutcome.Collapse, 1), 20), Is.EqualTo(0));
+            Assert.That(profile.RecordRun(Finished(RunOutcome.Victory, 1), 20), Is.EqualTo(2));
+            Assert.That(profile.RecordRun(Finished(RunOutcome.Victory, 1), 20), Is.EqualTo(0),
+                "vencer de novo o mesmo nivel nao abre nada novo");
+        }
+
+        [Test]
         public void VencerNivelBaixoNaoRebaixaODesbloqueio()
         {
             MetaProfile profile = MetaProfile.NewProfile();

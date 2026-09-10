@@ -31,6 +31,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => ResourceEffectKinds.GainResource;
 
+        public string Describe()
+        {
+            return "+" + RulesText.Amount(_amount, _scaling, ResourceKinds.DisplayName(_kind));
+        }
+
         public ResourceKind Resource => _kind;
 
         public EffectResult Apply(EffectContext context)
@@ -78,6 +83,11 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => ResourceEffectKinds.LoseResource;
+
+        public string Describe()
+        {
+            return "-" + RulesText.Amount(_amount, _scaling, ResourceKinds.DisplayName(_kind));
+        }
 
         public ResourceKind Resource => _kind;
 
@@ -129,6 +139,11 @@ namespace KingdomCollapse.Core
 
         public string Kind => ResourceEffectKinds.Recruit;
 
+        public string Describe()
+        {
+            return "+" + _amount + " de populacao" + (_ignoreCapacity ? ", mesmo acima do teto" : " (ate o teto)");
+        }
+
         public EffectResult Apply(EffectContext context)
         {
             if (_amount <= 0)
@@ -171,6 +186,19 @@ namespace KingdomCollapse.Core
         }
 
         public string Kind => ResourceEffectKinds.SetStance;
+
+        public string Describe()
+        {
+            switch (_stance)
+            {
+                case WorkerStance.DefenseFirst:
+                    return "Gente vai primeiro para as muralhas";
+                case WorkerStance.ProductionFirst:
+                    return "Gente vai primeiro para os campos";
+                default:
+                    return "Reparte a gente entre campos e muralhas";
+            }
+        }
 
         public EffectResult Apply(EffectContext context)
         {
