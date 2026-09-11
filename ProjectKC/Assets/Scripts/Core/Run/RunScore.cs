@@ -41,6 +41,8 @@ namespace KingdomCollapse.Core
 
         public CollapseReason Reason { get; internal set; }
 
+        public RunOutcome Outcome { get; internal set; }
+
         internal void Add(string label, int quantity, int pointsEach)
         {
             if (quantity <= 0 || pointsEach == 0)
@@ -64,6 +66,13 @@ namespace KingdomCollapse.Core
         public const int PointsPerAttackSurvived = 15;
         public const int PointsPerMilestone = 25;
 
+        /// <summary>
+        /// Bonus de vencer a campanha. Grande o bastante pra qualquer Vitoria render
+        /// mais moeda de meta que um Colapso com o mesmo reino construido (spec
+        /// rival-kingdoms — "Vitoria rende mais que Colapso").
+        /// </summary>
+        public const int PointsPerVictory = 150;
+
         /// <summary>Quantos pontos valem uma moeda de meta.</summary>
         public const int PointsPerMetaCoin = 20;
 
@@ -75,7 +84,7 @@ namespace KingdomCollapse.Core
 
         public static RunScore Calculate(RunState run)
         {
-            RunScore score = new RunScore { Reason = run.Collapse };
+            RunScore score = new RunScore { Reason = run.Collapse, Outcome = run.Outcome };
 
             int standingTiles = run.StandingTileCount();
             int buildings = CountBuildings(run.Grid);
@@ -85,6 +94,11 @@ namespace KingdomCollapse.Core
             score.Add("Edificios erguidos", buildings, PointsPerBuilding);
             score.Add("Ataques repelidos", run.Stats.AttacksSurvived, PointsPerAttackSurvived);
             score.Add("Marcos alcancados", run.Stats.MilestonesReached, PointsPerMilestone);
+
+            if (run.Outcome == RunOutcome.Victory)
+            {
+                score.Add("Vitoria da campanha", 1, PointsPerVictory);
+            }
 
             score.MetaCurrency = Math.Max(
                 MinimumMetaCoins,

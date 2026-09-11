@@ -27,6 +27,19 @@ namespace KingdomCollapse.Core
         public int ThreatIntervalDays { get; set; } = 4;
 
         public int ThreatLeadDays { get; set; } = 3;
+
+        /// <summary>
+        /// Roster de rivais, em ordem de sucessao. Vazio ou nulo: a run usa a curva
+        /// de ameaca anonima antiga (compatibilidade com testes de regra que nao
+        /// envolvem rival — spec run-loop nao exige campanha fora do jogo real).
+        /// </summary>
+        public List<RivalDefinition> Rivals { get; set; }
+
+        /// <summary>Dias entre um ataque e o proximo dentro da mesma campanha.</summary>
+        public int CampaignIntervalDays { get; set; } = 4;
+
+        /// <summary>Dias de respiro garantidos entre derrotar um rival e o proximo declarar guerra.</summary>
+        public int CampaignRestDays { get; set; } = 3;
     }
 
     public sealed class RunBundle
@@ -105,7 +118,14 @@ namespace KingdomCollapse.Core
                 setup.ThreatLeadDays);
 
             WeatherSystem weather = new WeatherSystem(catalog.Weather);
-            RunState run = new RunState(race, grid, deck, random, threats, weather);
+
+            RivalCampaignState campaign = setup.Rivals != null && setup.Rivals.Count > 0
+                ? new RivalCampaignState(
+                    setup.Rivals, setup.CampaignIntervalDays, setup.CampaignRestDays, setup.ThreatLeadDays)
+                : null;
+
+            RunState run = new RunState(race, grid, deck, random, threats, weather, campaign);
+            ApplyMetaBonuses(run, race, tree, profile);
 
             EventPool pool = new EventPool(
                 ResolveEvents(race, catalog, tree, profile), setup.EventWeights);
@@ -115,6 +135,31 @@ namespace KingdomCollapse.Core
             HashSet<string> buildings = ResolveBuildingIds(race, catalog, tree, profile);
 
             return new RunBundle(run, engine, catalog, buildings);
+        }
+
+        /// <summary>
+        /// Aplica ao estado inicial o poder permanente comprado na arvore de meta
+        /// (design D6, task 6.1). Sem arvore ou perfil, nao ha nada a aplicar — e o
+        /// caso dos testes de regra que montam run sem meta-progressao nenhuma.
+        /// </summary>
+        private static void ApplyMetaBonuses(RunState run, RaceDefinition race, MetaTree tree, MetaProfile profile)
+        {
+            if (tree == null || profile == null)
+            {
+                return;
+            }
+
+            foreach (ResourceKind kind in ResourceKinds.All)
+            {
+                int bonus = tree.TotalNumericBonus(profile, MetaBonusKeys.StartingResource(kind), race.Id);
+                if (bonus > 0)
+                {
+                    run.Add(kind, bonus);
+                }
+            }
+
+            int integrityBonus = tree.TotalNumericBonus(profile, MetaBonusKeys.StartingIntegrity, race.Id);
+            run.IncreaseMaxIntegrity(integrityBonus);
         }
 
         private static BuildingDefinition ResolveHall(ContentCatalog catalog)

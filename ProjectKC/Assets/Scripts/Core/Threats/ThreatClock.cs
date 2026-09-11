@@ -16,12 +16,16 @@ namespace KingdomCollapse.Core
     /// </summary>
     public sealed class ScheduledThreat
     {
-        public ScheduledThreat(ThreatKind kind, int arrivalDay, int force, int announcedOnDay)
+        public ScheduledThreat(
+            ThreatKind kind, int arrivalDay, int force, int announcedOnDay,
+            RivalIdentity identity = null, string rivalId = null)
         {
             Kind = kind;
             ArrivalDay = arrivalDay;
             Force = force;
             AnnouncedOnDay = announcedOnDay;
+            Identity = identity;
+            RivalId = rivalId;
         }
 
         public ThreatKind Kind { get; }
@@ -32,6 +36,16 @@ namespace KingdomCollapse.Core
         public int Force { get; internal set; }
 
         public int AnnouncedOnDay { get; }
+
+        /// <summary>
+        /// Identidade do rival dono deste ataque, quando veio de uma campanha (design
+        /// D3). Nulo para ameaca anonima da curva antiga — CombatResolver cai no
+        /// comportamento de hoje nesse caso.
+        /// </summary>
+        public RivalIdentity Identity { get; }
+
+        /// <summary>Id do <see cref="RivalDefinition"/> dono, para limpar a campanha ao derrotar.</summary>
+        public string RivalId { get; }
 
         public int LeadTime => ArrivalDay - AnnouncedOnDay;
 
@@ -215,6 +229,42 @@ namespace KingdomCollapse.Core
             threat.ArrivalDay += days;
             _pending.Sort((a, b) => a.ArrivalDay.CompareTo(b.ArrivalDay));
             return days;
+        }
+
+        /// <summary>
+        /// Agenda um ataque vindo de uma campanha de rival, em vez da curva anonima
+        /// interna (design D3 — "so troca a origem"). Respeita a mesma antecedencia
+        /// minima que a geracao interna.
+        /// </summary>
+        public ScheduledThreat Schedule(int arrivalDay, int force, int currentDay, RivalIdentity identity, string rivalId)
+        {
+            int clampedArrival = Math.Max(arrivalDay, currentDay + MinimumLeadDays);
+            ScheduledThreat threat = new ScheduledThreat(
+                ThreatKind.Horde, clampedArrival, Math.Max(1, force), currentDay, identity, rivalId);
+
+            _pending.Add(threat);
+            _pending.Sort((a, b) => a.ArrivalDay.CompareTo(b.ArrivalDay));
+            return threat;
+        }
+
+        /// <summary>
+        /// Remove da fila todo ataque ainda pendente de um rival — chamado ao
+        /// derrota-lo, pra nao sobrar ataque de quem ja perdeu a guerra (spec
+        /// rival-kingdoms — "derrotar limpa os ataques restantes").
+        /// </summary>
+        public List<ScheduledThreat> ClearPendingForRival(string rivalId)
+        {
+            List<ScheduledThreat> removed = new List<ScheduledThreat>();
+            for (int i = _pending.Count - 1; i >= 0; i--)
+            {
+                if (_pending[i].RivalId == rivalId)
+                {
+                    removed.Add(_pending[i]);
+                    _pending.RemoveAt(i);
+                }
+            }
+
+            return removed;
         }
 
         public ScheduledThreat NextThreat(int currentDay)

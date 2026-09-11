@@ -10,7 +10,8 @@ namespace KingdomCollapse.Core
         Resolution = 2,
         Event = 3,
         DayEnd = 4,
-        Collapsed = 5
+        Collapsed = 5,
+        Victory = 6
     }
 
     public enum CollapseReason
@@ -18,6 +19,15 @@ namespace KingdomCollapse.Core
         None = 0,
         IntegrityLost,
         TerritoryLost
+    }
+
+    /// <summary>Como a run termina. Vitoria e Colapso sao desfechos de primeira
+    /// classe (design D5) — nenhum dos dois e "o outro, mas sem nome".</summary>
+    public enum RunOutcome
+    {
+        Ongoing = 0,
+        Victory = 1,
+        Collapse = 2
     }
 
     /// <summary>Modificador com prazo. Some sozinho quando os dias acabam.</summary>
@@ -90,7 +100,8 @@ namespace KingdomCollapse.Core
             RunDeck deck,
             RunRandom random,
             ThreatClock threats,
-            WeatherSystem weather = null)
+            WeatherSystem weather = null,
+            RivalCampaignState campaign = null)
         {
             Weather = weather ?? new WeatherSystem();
             Race = race;
@@ -98,6 +109,7 @@ namespace KingdomCollapse.Core
             Deck = deck;
             Random = random;
             Threats = threats;
+            Campaign = campaign;
 
             Day = 1;
             Phase = DayPhase.DayStart;
@@ -122,6 +134,10 @@ namespace KingdomCollapse.Core
         public RunRandom Random { get; }
 
         public ThreatClock Threats { get; }
+
+        /// <summary>Sucessao de rivais, ou nulo quando a run nao usa campanha (ameaca
+        /// anonima da curva antiga — testes de regra continuam funcionando).</summary>
+        public RivalCampaignState Campaign { get; }
 
         public WeatherSystem Weather { get; }
 
@@ -163,9 +179,28 @@ namespace KingdomCollapse.Core
         /// </summary>
         public int PendingDefense { get; private set; }
 
-        public bool IsOver => Phase == DayPhase.Collapsed;
+        public bool IsOver => Phase == DayPhase.Collapsed || Phase == DayPhase.Victory;
 
         public CollapseReason Collapse { get; private set; } = CollapseReason.None;
+
+        /// <summary>Vitoria e Colapso sao desfechos distintos (design D5); isto e
+        /// quem consulta qual dos dois terminou a run, sem inferir pelo Phase.</summary>
+        public RunOutcome Outcome { get; private set; } = RunOutcome.Ongoing;
+
+        /// <summary>
+        /// Encerra a run em Vitoria. So RunEngine chama isto, ao derrotar o ultimo
+        /// rival do roster — nunca sobrescreve um desfecho ja decidido.
+        /// </summary>
+        internal void DeclareVictory()
+        {
+            if (IsOver)
+            {
+                return;
+            }
+
+            Outcome = RunOutcome.Victory;
+            Phase = DayPhase.Victory;
+        }
 
         /// <summary>
         /// Um dia com combate ou saque. Zera no Inicio do Dia; a regra de estagnacao
@@ -236,6 +271,22 @@ namespace KingdomCollapse.Core
         }
 
         // --- Integridade ---
+
+        /// <summary>
+        /// Aumenta o teto de integridade permanentemente e cura o mesmo tanto. So
+        /// RunBuilder chama isto, aplicando bonus de meta ao montar a run (task 6.1,
+        /// design D6) — nunca durante a run em si.
+        /// </summary>
+        internal void IncreaseMaxIntegrity(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            MaxIntegrity += amount;
+            Integrity += amount;
+        }
 
         public void Heal(int amount)
         {
@@ -483,6 +534,7 @@ namespace KingdomCollapse.Core
             if (Integrity <= 0)
             {
                 Collapse = CollapseReason.IntegrityLost;
+                Outcome = RunOutcome.Collapse;
                 Phase = DayPhase.Collapsed;
                 return true;
             }
@@ -493,6 +545,7 @@ namespace KingdomCollapse.Core
             if (StandingTileCount() <= 0)
             {
                 Collapse = CollapseReason.TerritoryLost;
+                Outcome = RunOutcome.Collapse;
                 Phase = DayPhase.Collapsed;
                 return true;
             }

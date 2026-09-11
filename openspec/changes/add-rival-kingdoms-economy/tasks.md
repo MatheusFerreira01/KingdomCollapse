@@ -48,43 +48,43 @@
 
 ## 4. Reinos rivais
 
-- [ ] 4.1 Implementar `RivalDefinition` (nome, identidade, número de ataques, curva da campanha, eixo pressionado) e `RivalIdentity`, verificando por teste que toda identidade do catálogo declara o eixo que pressiona
-- [ ] 4.2 Implementar a campanha do rival preenchendo o relógio de ameaça, verificando por teste que todo ataque continua sendo anunciado com a antecedência mínima e que o relógio indica de qual rival vem (spec `rival-kingdoms`)
-- [ ] 4.3 Implementar a contagem de ataques repelidos e a derrota do rival, verificando por teste que repelir todos derrota, que falhar não perde a campanha, e que derrotar limpa os ataques restantes daquela campanha
-- [ ] 4.4 Implementar a sucessão de rivais com intervalo de respiro e campanha mais forte, verificando por teste que o próximo rival é anunciado e que existe ao menos um dia sem ataque entre campanhas
-- [ ] 4.5 Implementar a resolução de ataque por eixo de identidade, verificando por teste que um rival econômico causa perda mesmo com defesa alta e que um rival de assalto é anulado por defesa suficiente (design D4)
-- [ ] 4.6 Implementar Vitória como desfecho da run, com placar próprio, verificando por teste que derrotar o último rival encerra imediatamente e que Vitória rende mais moeda que Colapso (spec `run-loop`)
-- [ ] 4.7 Adicionar verificação automatizada do catálogo de rivais que falha se nenhum rival pressionar um eixo diferente de defesa
+- [x] 4.1 Implementar `RivalDefinition` (nome, identidade, número de ataques, curva da campanha, eixo pressionado) e `RivalIdentity`, verificando por teste que toda identidade do catálogo declara o eixo que pressiona
+- [x] 4.2 Implementar a campanha do rival preenchendo o relógio de ameaça, verificando por teste que todo ataque continua sendo anunciado com a antecedência mínima e que o relógio indica de qual rival vem (spec `rival-kingdoms`)
+- [x] 4.3 Implementar a contagem de ataques repelidos e a derrota do rival, verificando por teste que repelir todos derrota, que falhar não perde a campanha, e que derrotar limpa os ataques restantes daquela campanha
+- [x] 4.4 Implementar a sucessão de rivais com intervalo de respiro e campanha mais forte, verificando por teste que o próximo rival é anunciado e que existe ao menos um dia sem ataque entre campanhas
+- [x] 4.5 Implementar a resolução de ataque por eixo de identidade, verificando por teste que um rival econômico causa perda mesmo com defesa alta e que um rival de assalto é anulado por defesa suficiente (design D4)
+- [x] 4.6 Implementar Vitória como desfecho da run, com placar próprio, verificando por teste que derrotar o último rival encerra imediatamente e que Vitória rende mais moeda que Colapso (spec `run-loop`)
+- [x] 4.7 Adicionar verificação automatizada do catálogo de rivais que falha se nenhum rival pressionar um eixo diferente de defesa
 
 ## 5. Escada de dificuldade
 
-- [ ] 5.1 Implementar `DifficultyLevel` (rivais do nível, endurecimentos declarados, teto de poder da meta) e a seleção de nível, verificando por teste que um perfil novo só tem o primeiro nível
-- [ ] 5.2 Implementar o desbloqueio por Vitória, persistido no perfil, verificando por teste que colapsar não desbloqueia e que o desbloqueio sobrevive a serializar e desserializar
-- [ ] 5.3 Verificar por teste que os níveis são monotonicamente mais duros em ao menos um eixo e mais fáceis em nenhum
+- [x] 5.1 Implementar `DifficultyLevel` (rivais do nível, endurecimentos declarados, teto de poder da meta) e a seleção de nível, verificando por teste que um perfil novo só tem o primeiro nível
+- [x] 5.2 Implementar o desbloqueio por Vitória, persistido no perfil, verificando por teste que colapsar não desbloqueia e que o desbloqueio sobrevive a serializar e desserializar
+- [x] 5.3 Verificar por teste que os níveis são monotonicamente mais duros em ao menos um eixo e mais fáceis em nenhum
 - [ ] 5.4 Exibir o que cada nível endurece na seleção, verificando que o texto vem do dado do nível e não de código
 
 ## 6. Meta com poder permanente
 
-- [ ] 6.1 Estender `MetaNodeDefinition` para conceder bônus numérico permanente ao estado inicial, verificando por teste que a run seguinte começa com o valor aumentado
-- [ ] 6.2 Substituir a validação que proíbe poder por um teto de poder acumulado por nível, verificando por teste que uma árvore dentro do teto passa e uma acima é reprovada apontando o nível e o excedente (spec `difficulty-ladder`, design D6)
+- [x] 6.1 Estender `MetaNodeDefinition` para conceder bônus numérico permanente ao estado inicial, verificando por teste que a run seguinte começa com o valor aumentado
+- [x] 6.2 Substituir a validação que proíbe poder por um teto de poder acumulado por nível, verificando por teste que uma árvore dentro do teto passa e uma acima é reprovada apontando o nível e o excedente (spec `difficulty-ladder`, design D6)
 - [ ] 6.3 [Editor] Criar a árvore inicial — tronco geral com desbloqueios e buffs, mais o galho dos Humanos — verificando em jogo que a compra afeta a run seguinte e que a validação passa
 
 ## 7. Simulador e bot
 
-- [ ] 7.1 Ensinar a `GreedyPolicy` a alocar trabalhadores entre produção e guarnição conforme a ameaça iminente, verificando por teste que ela guarnece antes de um ataque e devolve gente à produção depois
-- [ ] 7.2 Ensinar o bot a vigiar o saldo de comida e priorizar produção de comida antes de passar fome, verificando por teste que ele não deixa a população cair por descuido em condições folgadas
-- [ ] 7.3 Ensinar o bot a reagir à identidade do rival vigente, verificando por teste que contra um rival econômico ele estoca em vez de erguer torre (design D8)
-- [ ] 7.4 Estender o diagnóstico estrutural para os recursos novos — recurso parado, população ociosa, edifício sem gente, comida no limite — verificando que cada aviso aparece quando a condição existe e some quando ela deixa de existir
-- [ ] 7.5 Trocar a métrica alvo do relatório de "dia mediano de Colapso" para "fração de runs que vencem a campanha" e duração da campanha vencida, verificando pelo relatório (design D7)
+- [x] 7.1 Ensinar a `GreedyPolicy` a alocar trabalhadores entre produção e guarnição conforme a ameaça iminente, verificando por teste que ela guarnece antes de um ataque e devolve gente à produção depois
+- [x] 7.2 Ensinar o bot a vigiar o saldo de comida e priorizar produção de comida antes de passar fome, verificando por teste que ele não deixa a população cair por descuido em condições folgadas
+- [x] 7.3 Ensinar o bot a reagir à identidade do rival vigente, verificando por teste que contra um rival econômico ele estoca em vez de erguer torre (design D8)
+- [x] 7.4 Estender o diagnóstico estrutural para os recursos novos — recurso parado, população ociosa, edifício sem gente, comida no limite — verificando que cada aviso aparece quando a condição existe e some quando ela deixa de existir
+- [x] 7.5 Trocar a métrica alvo do relatório de "dia mediano de Colapso" para "fração de runs que vencem a campanha" e duração da campanha vencida, verificando pelo relatório (design D7)
 
 ## 8. Encontros
 
-- [ ] 8.1 Implementar `EncounterDefinition` com identidade, opções assimétricas e possibilidade de deixar presença, verificando por teste que todo encontro do catálogo declara nome e descrição (spec `encounters`)
-- [ ] 8.2 Implementar presença persistente com ação periódica anunciada e custo de resolução conhecido, verificando por teste que a presença age no intervalo declarado e some ao ser resolvida
-- [ ] 8.3 Implementar encadeamento: um encontro agenda outro para um dia futuro, referenciando a escolha anterior, verificando por teste que a continuação acontece mesmo com outros encontros no intervalo
-- [ ] 8.4 Aplicar o orçamento de severidade a encontros e presenças, verificando por teste que uma presença hostil nunca encerra a run e sempre tem como ser encerrada
-- [ ] 8.5 Garantir que encontros não tocam a campanha do rival, verificando por teste que nenhum encontro cria, adianta ou cancela ataque
-- [ ] 8.6 Adicionar verificação de catálogo que reprova encontro cuja escolha tenha opção dominante em toda situação
+- [x] 8.1 Implementar `EncounterDefinition` com identidade, opções assimétricas e possibilidade de deixar presença, verificando por teste que todo encontro do catálogo declara nome e descrição (spec `encounters`)
+- [x] 8.2 Implementar presença persistente com ação periódica anunciada e custo de resolução conhecido, verificando por teste que a presença age no intervalo declarado e some ao ser resolvida
+- [x] 8.3 Implementar encadeamento: um encontro agenda outro para um dia futuro, referenciando a escolha anterior, verificando por teste que a continuação acontece mesmo com outros encontros no intervalo
+- [x] 8.4 Aplicar o orçamento de severidade a encontros e presenças, verificando por teste que uma presença hostil nunca encerra a run e sempre tem como ser encerrada
+- [x] 8.5 Garantir que encontros não tocam a campanha do rival, verificando por teste que nenhum encontro cria, adianta ou cancela ataque
+- [x] 8.6 Adicionar verificação de catálogo que reprova encontro cuja escolha tenha opção dominante em toda situação
 - [ ] 8.7 [Editor] Criar 6 encontros iniciais — minotauro ferido, dragão que se instala, herói errante, ruína amaldiçoada, caravana perdida, eremita — sendo ao menos 2 com presença e 1 com cadeia
 
 ## 9. Conteúdo

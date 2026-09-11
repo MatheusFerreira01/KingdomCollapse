@@ -3,9 +3,10 @@ using System.Collections.Generic;
 namespace KingdomCollapse.Core
 {
     /// <summary>
-    /// O que um no da arvore pode desbloquear. NumericBonus existe deliberadamente
-    /// como categoria proibida: a validacao de catalogo precisa conseguir descrever
-    /// e reprovar o caso, e nao apenas nao te-lo (spec meta-progression).
+    /// O que um no da arvore pode desbloquear. NumericBonus concede poder permanente
+    /// ao estado inicial da proxima run — permitido desde que a escada de
+    /// dificuldade exista para absorve-lo (design D6, reversao da proibicao
+    /// original). O teto por nivel e quem impede virar grind-para-vencer.
     /// </summary>
     public enum UnlockKind
     {
@@ -14,24 +15,37 @@ namespace KingdomCollapse.Core
         Event = 2,
         Race = 3,
         Terrain = 4,
-
-        /// <summary>Proibido. Meta desbloqueia conteudo, nunca poder direto.</summary>
         NumericBonus = 99
+    }
+
+    /// <summary>Chaves de bonus numerico reconhecidas por RunBuilder (task 6.1). Um
+    /// no de meta usa uma destas como ContentId do Unlock NumericBonus.</summary>
+    public static class MetaBonusKeys
+    {
+        public const string StartingIntegrity = "starting_integrity";
+
+        /// <summary>Bonus permanente num recurso inicial especifico.</summary>
+        public static string StartingResource(ResourceKind kind) => "starting_resource_" + kind;
     }
 
     public sealed class Unlock
     {
-        public Unlock(UnlockKind kind, string contentId)
+        public Unlock(UnlockKind kind, string contentId, int amount = 0)
         {
             Kind = kind;
             ContentId = contentId;
+            Amount = amount;
         }
 
         public UnlockKind Kind { get; }
 
         public string ContentId { get; }
 
-        public override string ToString() => Kind + ":" + ContentId;
+        /// <summary>Magnitude do bonus, quando Kind == NumericBonus. Ignorado nos
+        /// demais tipos, que desbloqueiam conteudo e nao numero.</summary>
+        public int Amount { get; }
+
+        public override string ToString() => Kind + ":" + ContentId + (Amount != 0 ? "+" + Amount : string.Empty);
     }
 
     /// <summary>

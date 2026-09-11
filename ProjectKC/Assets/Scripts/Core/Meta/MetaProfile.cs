@@ -12,6 +12,7 @@ namespace KingdomCollapse.Core
         public const int CurrentVersion = 1;
 
         private readonly HashSet<string> _purchasedNodes = new HashSet<string>();
+        private readonly HashSet<string> _unlockedDifficultyLevels = new HashSet<string>();
 
         public MetaProfile(int version = CurrentVersion)
         {
@@ -31,6 +32,52 @@ namespace KingdomCollapse.Core
         public IReadOnlyCollection<string> PurchasedNodes => _purchasedNodes;
 
         public bool HasNode(string nodeId) => _purchasedNodes.Contains(nodeId);
+
+        public IReadOnlyCollection<string> UnlockedDifficultyLevels => _unlockedDifficultyLevels;
+
+        /// <summary>
+        /// O primeiro nivel da escada esta sempre disponivel — um perfil novo nao
+        /// pode comecar sem ter o que jogar (task 5.1). Os demais exigem desbloqueio
+        /// explicito por Vitoria.
+        /// </summary>
+        public bool IsDifficultyUnlocked(string levelId, IReadOnlyList<DifficultyLevel> ladder)
+        {
+            if (ladder != null && ladder.Count > 0 && ladder[0].Id == levelId)
+            {
+                return true;
+            }
+
+            return _unlockedDifficultyLevels.Contains(levelId);
+        }
+
+        internal void UnlockDifficultyLevel(string levelId)
+        {
+            if (!string.IsNullOrEmpty(levelId))
+            {
+                _unlockedDifficultyLevels.Add(levelId);
+            }
+        }
+
+        /// <summary>
+        /// Desbloqueia o nivel seguinte ao vencido. So Vitoria chama isto — Colapso
+        /// nao desbloqueia nada (spec difficulty-ladder).
+        /// </summary>
+        public void UnlockNextDifficulty(string completedLevelId, IReadOnlyList<DifficultyLevel> ladder)
+        {
+            if (ladder == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < ladder.Count - 1; i++)
+            {
+                if (ladder[i].Id == completedLevelId)
+                {
+                    UnlockDifficultyLevel(ladder[i + 1].Id);
+                    return;
+                }
+            }
+        }
 
         public void AddCurrency(int amount)
         {

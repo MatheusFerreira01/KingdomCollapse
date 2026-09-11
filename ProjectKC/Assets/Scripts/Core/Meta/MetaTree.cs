@@ -179,6 +179,41 @@ namespace KingdomCollapse.Core
             return races;
         }
 
+        /// <summary>
+        /// Soma o bonus numerico de todos os nos comprados com a chave dada — tronco
+        /// geral mais o galho da raca, mesmo filtro de UnlockedContent (design D6,
+        /// task 6.1).
+        /// </summary>
+        public int TotalNumericBonus(MetaProfile profile, string bonusKey, string raceId)
+        {
+            int total = 0;
+
+            foreach (KeyValuePair<string, MetaNodeDefinition> pair in _nodes)
+            {
+                MetaNodeDefinition node = pair.Value;
+                if (!profile.HasNode(node.Id))
+                {
+                    continue;
+                }
+
+                if (node.IsRaceBranch && node.RaceBranchId != raceId)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < node.Unlocks.Count; i++)
+                {
+                    Unlock unlock = node.Unlocks[i];
+                    if (unlock.Kind == UnlockKind.NumericBonus && unlock.ContentId == bonusKey)
+                    {
+                        total += unlock.Amount;
+                    }
+                }
+            }
+
+            return total;
+        }
+
         public List<MetaNodeDefinition> BranchFor(string raceId)
         {
             List<MetaNodeDefinition> branch = new List<MetaNodeDefinition>();
@@ -196,8 +231,11 @@ namespace KingdomCollapse.Core
     }
 
     /// <summary>
-    /// Valida o catalogo de meta. A regra central e que nenhum no venda poder
-    /// numerico: a progressao entre runs cresce variedade, nao forca (design/spec).
+    /// Valida o catalogo de meta. Bonus numerico permanente e permitido (design D6);
+    /// o que a validacao estrutural cobre aqui e forma do dado — pre-requisito,
+    /// custo, no sem desbloqueio nenhum. O teto de poder por nivel e verificado a
+    /// parte, em ValidatePowerCap, porque depende de qual DifficultyLevel esta em
+    /// jogo.
     /// </summary>
     public static class MetaCatalogValidator
     {
@@ -212,18 +250,6 @@ namespace KingdomCollapse.Core
                 if (node.Unlocks.Count == 0)
                 {
                     violations.Add(new CatalogViolation(node.Id, "conteudo", "no nao desbloqueia nada"));
-                }
-
-                for (int i = 0; i < node.Unlocks.Count; i++)
-                {
-                    if (node.Unlocks[i].Kind == UnlockKind.NumericBonus)
-                    {
-                        violations.Add(new CatalogViolation(
-                            node.Id,
-                            "bonus numerico",
-                            "meta desbloqueia conteudo, nunca poder permanente (" +
-                            node.Unlocks[i].ContentId + ")"));
-                    }
                 }
 
                 for (int i = 0; i < node.PrerequisiteIds.Count; i++)
@@ -246,6 +272,41 @@ namespace KingdomCollapse.Core
                 {
                     violations.Add(new CatalogViolation(node.Id, "custo", "custo negativo"));
                 }
+            }
+
+            return violations;
+        }
+
+        /// <summary>
+        /// Reprova quando o poder acumulado de TODOS os bonus numericos da arvore
+        /// (assumindo a arvore inteira comprada — o pior caso) excede o teto do
+        /// nivel de dificuldade. Aponta o nivel e o excedente na mensagem, pra quem
+        /// autora saber exatamente quanto cortar (task 6.2, design D6).
+        /// </summary>
+        public static List<CatalogViolation> ValidatePowerCap(MetaTree tree, DifficultyLevel level)
+        {
+            List<CatalogViolation> violations = new List<CatalogViolation>();
+
+            int totalPower = 0;
+            foreach (KeyValuePair<string, MetaNodeDefinition> pair in tree.Nodes)
+            {
+                for (int i = 0; i < pair.Value.Unlocks.Count; i++)
+                {
+                    Unlock unlock = pair.Value.Unlocks[i];
+                    if (unlock.Kind == UnlockKind.NumericBonus)
+                    {
+                        totalPower += unlock.Amount;
+                    }
+                }
+            }
+
+            if (totalPower > level.MetaPowerCap)
+            {
+                int excess = totalPower - level.MetaPowerCap;
+                violations.Add(new CatalogViolation(
+                    level.Id, "teto de poder",
+                    "poder acumulado " + totalPower + " excede o teto do nivel " + level.Id +
+                    " (" + level.MetaPowerCap + ") em " + excess));
             }
 
             return violations;

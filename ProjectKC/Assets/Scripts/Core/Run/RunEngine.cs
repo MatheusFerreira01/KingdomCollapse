@@ -148,12 +148,7 @@ namespace KingdomCollapse.Core
 
             // O relogio anuncia antes do Planejamento: o jogador nunca planeja um dia
             // sem enxergar a fila inteira de ameacas (spec threat-clock).
-            List<ScheduledThreat> announced = Run.Threats.AnnounceDue(
-                Run.Day, Run.Grid.OwnedCount, Run.Random.Channel(RandomChannel.Threats));
-            for (int i = 0; i < announced.Count; i++)
-            {
-                Emit(new ThreatAnnouncedEvent(announced[i]));
-            }
+            AnnounceThreats();
 
             int energyPenalty = (int)Run.SumModifier(ModifierKeys.EnergyPenalty);
             int weatherEnergy = Run.TodayWeather?.EnergyDelta ?? 0;
@@ -168,6 +163,38 @@ namespace KingdomCollapse.Core
             CheckMilestones();
 
             SetPhase(DayPhase.Planning);
+        }
+
+        /// <summary>
+        /// Preenche o relogio de ameaca. Com campanha de rival, a origem e a
+        /// campanha do rival vigente (design D3); sem uma, cai na curva anonima
+        /// antiga — o que mantem toda run de teste sem rival funcionando igual.
+        /// </summary>
+        private void AnnounceThreats()
+        {
+            if (Run.Campaign != null && Run.Campaign.HasRoster)
+            {
+                ScheduledThreat scheduled = Run.Campaign.AnnounceIfDue(Run.Threats, Run.Day);
+
+                if (Run.Campaign.JustDeclared != null)
+                {
+                    Emit(new RivalDeclaredEvent(Run.Campaign.JustDeclared));
+                }
+
+                if (scheduled != null)
+                {
+                    Emit(new ThreatAnnouncedEvent(scheduled));
+                }
+
+                return;
+            }
+
+            List<ScheduledThreat> announced = Run.Threats.AnnounceDue(
+                Run.Day, Run.Grid.OwnedCount, Run.Random.Channel(RandomChannel.Threats));
+            for (int i = 0; i < announced.Count; i++)
+            {
+                Emit(new ThreatAnnouncedEvent(announced[i]));
+            }
         }
 
         /// <summary>
@@ -603,11 +630,41 @@ namespace KingdomCollapse.Core
                 }
 
                 Emit(new AttackResolvedEvent(report));
+                RegisterCampaignResolution(due[i], report);
 
                 if (Run.CheckCollapse())
                 {
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Avisa a campanha do resultado do ataque. Ao derrotar o rival vigente,
+        /// emite o marco e declara Vitoria se era o ultimo do roster — o proximo
+        /// CheckCollapse (chamado logo em seguida) pega o Outcome ja decidido,
+        /// porque IsOver responde true assim que a Vitoria e declarada.
+        /// </summary>
+        private void RegisterCampaignResolution(ScheduledThreat threat, AttackReport report)
+        {
+            if (Run.Campaign == null)
+            {
+                return;
+            }
+
+            RivalDefinition candidate = Run.Campaign.Current;
+            bool defeated = Run.Campaign.RegisterResolution(Run.Threats, threat, report.Repelled, Run.Day);
+
+            if (!defeated)
+            {
+                return;
+            }
+
+            Emit(new RivalDefeatedEvent(candidate));
+
+            if (Run.Campaign.AllDefeated)
+            {
+                Run.DeclareVictory();
             }
         }
 
@@ -685,7 +742,15 @@ namespace KingdomCollapse.Core
         {
             Run.Stats.DaysSurvived = Run.Day;
             FinalScore = ScoreCalculator.Calculate(Run);
-            Emit(new RunCollapsedEvent(Run.Collapse, FinalScore));
+
+            if (Run.Outcome == RunOutcome.Victory)
+            {
+                Emit(new RunVictoryEvent(FinalScore));
+            }
+            else
+            {
+                Emit(new RunCollapsedEvent(Run.Collapse, FinalScore));
+            }
         }
     }
 }

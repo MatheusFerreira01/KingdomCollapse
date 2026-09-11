@@ -112,8 +112,15 @@ namespace KingdomCollapse.Core
 
                 case ThreatAnnouncedEvent announced:
                     return new DayStep(DayStepKind.Threat, announced,
-                        announced.Threat.Kind + " em " + announced.Threat.DaysUntil(0) * -1 +
+                        (announced.Threat.Identity != null
+                            ? announced.Threat.Identity.DisplayName
+                            : announced.Threat.Kind.ToString()) +
+                        " em " + announced.Threat.DaysUntil(0) * -1 +
                         " dias, força " + announced.Threat.Force);
+
+                case RivalDeclaredEvent declared:
+                    return new DayStep(DayStepKind.Threat, declared,
+                        declared.Rival.DisplayName + " declara guerra");
 
                 case ThreatWeatheredEvent weathered:
                     return new DayStep(DayStepKind.Threat, weathered,
@@ -140,6 +147,13 @@ namespace KingdomCollapse.Core
 
                 case RunCollapsedEvent collapsed:
                     return new DayStep(DayStepKind.Outcome, collapsed, "Colapso");
+
+                case RivalDefeatedEvent defeated:
+                    return new DayStep(DayStepKind.RivalDefeated, defeated,
+                        defeated.Rival.DisplayName + " derrotado");
+
+                case RunVictoryEvent victory:
+                    return new DayStep(DayStepKind.Outcome, victory, "Vitória");
 
                 default:
                     return null;

@@ -498,18 +498,20 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
-        public void NoQueConcedeBonusNumerico_EReprovado()
+        public void NoQueConcedeBonusNumerico_NaoEMaisReprovadoPelaValidacaoEstrutural()
         {
+            // Reversao consciente (design D6): bonus numerico permanente passou a
+            // ser permitido porque a escada de dificuldade absorve o poder. O teto
+            // por nivel (ValidatePowerCap) e quem cobre esse caso agora.
             MetaTree tree = new MetaTree(new List<MetaNodeDefinition>
             {
                 new MetaNodeDefinition("ouro_inicial", "Ouro inicial", 5,
-                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "starting_gold_+20") })
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "starting_resource_Gold", 20) })
             });
 
             List<CatalogViolation> violations = MetaCatalogValidator.Validate(tree);
 
-            Assert.That(violations.Count, Is.EqualTo(1));
-            Assert.That(violations[0].Rule, Is.EqualTo("bonus numerico"));
+            Assert.That(violations, Is.Empty, string.Join(" | ", violations));
         }
 
         [Test]
@@ -538,6 +540,91 @@ namespace KingdomCollapse.Tests
 
             Assert.That(violations.Count, Is.EqualTo(1));
             Assert.That(violations[0].Rule, Is.EqualTo("pre-requisito"));
+        }
+
+        // --- 6.1 Bonus numerico permanente ---
+
+        [Test]
+        public void BonusNumericoComprado_AumentaRecursoInicialDaProximaRun()
+        {
+            ContentCatalog catalog = TestContent.Catalog();
+            MetaTree tree = new MetaTree(new List<MetaNodeDefinition>
+            {
+                new MetaNodeDefinition("mais_ouro", "Mais ouro", 5,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, MetaBonusKeys.StartingResource(ResourceKind.Gold), 20) })
+            });
+            MetaProfile profile = MetaProfile.NewProfile();
+            profile.AddCurrency(50);
+
+            RunSetup setup = new RunSetup("humans", 21) { FirstThreatDay = 999 };
+            RunBundle before = RunBuilder.Build(setup, catalog, tree, profile);
+            int goldBefore = before.Run.Gold;
+
+            tree.Purchase(profile, "mais_ouro");
+            RunBundle after = RunBuilder.Build(setup, catalog, tree, profile);
+
+            Assert.That(after.Run.Gold, Is.EqualTo(goldBefore + 20));
+        }
+
+        [Test]
+        public void BonusDeIntegridade_AumentaOTetoEACuraJunto()
+        {
+            ContentCatalog catalog = TestContent.Catalog();
+            MetaTree tree = new MetaTree(new List<MetaNodeDefinition>
+            {
+                new MetaNodeDefinition("muralhas_eternas", "Muralhas eternas", 5,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, MetaBonusKeys.StartingIntegrity, 10) })
+            });
+            MetaProfile profile = MetaProfile.NewProfile();
+            profile.AddCurrency(50);
+            tree.Purchase(profile, "muralhas_eternas");
+
+            RunSetup setup = new RunSetup("humans", 21) { FirstThreatDay = 999 };
+            RunBundle withBonus = RunBuilder.Build(setup, catalog, tree, profile);
+            RunBundle withoutBonus = RunBuilder.Build(setup, catalog);
+
+            Assert.That(withBonus.Run.MaxIntegrity, Is.EqualTo(withoutBonus.Run.MaxIntegrity + 10));
+            Assert.That(withBonus.Run.Integrity, Is.EqualTo(withoutBonus.Run.Integrity + 10));
+        }
+
+        // --- 6.2 Teto de poder por nivel ---
+
+        [Test]
+        public void ArvoreDentroDoTeto_Passa()
+        {
+            MetaTree tree = new MetaTree(new List<MetaNodeDefinition>
+            {
+                new MetaNodeDefinition("a", "A", 1,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "x", 5) }),
+                new MetaNodeDefinition("b", "B", 1,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "y", 5) })
+            });
+            DifficultyLevel level = new DifficultyLevel(
+                "level_1", "Nivel 1", new List<RivalDefinition>(), new List<string>(), metaPowerCap: 10, pressure: 1);
+
+            List<CatalogViolation> violations = MetaCatalogValidator.ValidatePowerCap(tree, level);
+
+            Assert.That(violations, Is.Empty);
+        }
+
+        [Test]
+        public void ArvoreAcimaDoTeto_ReprovaApontandoNivelEExcedente()
+        {
+            MetaTree tree = new MetaTree(new List<MetaNodeDefinition>
+            {
+                new MetaNodeDefinition("a", "A", 1,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "x", 5) }),
+                new MetaNodeDefinition("b", "B", 1,
+                    new List<Unlock> { new Unlock(UnlockKind.NumericBonus, "y", 8) })
+            });
+            DifficultyLevel level = new DifficultyLevel(
+                "level_1", "Nivel 1", new List<RivalDefinition>(), new List<string>(), metaPowerCap: 10, pressure: 1);
+
+            List<CatalogViolation> violations = MetaCatalogValidator.ValidatePowerCap(tree, level);
+
+            Assert.That(violations.Count, Is.EqualTo(1));
+            Assert.That(violations[0].SubjectId, Is.EqualTo("level_1"));
+            Assert.That(violations[0].Detail, Does.Contain("3"), "excedente devia ser 13-10=3");
         }
     }
 }

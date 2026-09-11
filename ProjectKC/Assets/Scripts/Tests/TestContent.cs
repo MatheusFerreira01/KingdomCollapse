@@ -127,6 +127,61 @@ namespace KingdomCollapse.Tests
                 new RuleModifiers(new Dictionary<string, double>(rules)));
         }
 
+        // --- Rivais ---
+
+        public static RivalIdentity AssaultIdentity(string id = "assault_identity") =>
+            new RivalIdentity(id, "Horda de Assalto", RivalAxis.Territory);
+
+        public static RivalIdentity SiegeIdentity(string id = "siege_identity") =>
+            new RivalIdentity(id, "Cerco Pesado", RivalAxis.Integrity);
+
+        public static RivalIdentity PopulationIdentity(string id = "population_identity") =>
+            new RivalIdentity(id, "Sequestrador", RivalAxis.Population);
+
+        public static RivalIdentity ResourceIdentity(
+            string id = "resource_identity", ResourceKind resource = ResourceKind.Food) =>
+            new RivalIdentity(id, "Saqueador", RivalAxis.Resource, resource);
+
+        /// <summary>Curva constante e baixa, para o teste controlar a forca sem
+        /// depender de quantos dias passaram.</summary>
+        public static ThreatCurve FlatCampaignCurve(int force = 3) =>
+            new ThreatCurve(baseForce: force, perDay: 0, dayExponent: 1);
+
+        public static RivalDefinition Rival(
+            string id, RivalIdentity identity, int attackCount = 1, ThreatCurve curve = null) =>
+            new RivalDefinition(id, id, identity, attackCount, curve ?? FlatCampaignCurve());
+
+        /// <summary>
+        /// Run com campanha de rival no lugar da curva anonima. FirstThreatDay fica
+        /// em 999 de proposito: sem isso a curva antiga tambem geraria ameaca, e o
+        /// teste mediria as duas fontes misturadas.
+        /// </summary>
+        public static RunBundle RunWithRivals(
+            List<RivalDefinition> rivals,
+            RaceDefinition race = null,
+            ContentCatalog catalog = null,
+            int seed = 1234,
+            int campaignIntervalDays = 4,
+            int campaignRestDays = 3,
+            int threatLeadDays = 3)
+        {
+            RaceDefinition chosen = race ?? Humans();
+            ContentCatalog content = catalog ?? Catalog(chosen);
+
+            RunSetup setup = new RunSetup(chosen.Id, seed)
+            {
+                FirstThreatDay = 999,
+                Rivals = rivals,
+                CampaignIntervalDays = campaignIntervalDays,
+                CampaignRestDays = campaignRestDays,
+                ThreatLeadDays = threatLeadDays
+            };
+
+            RunBundle bundle = RunBuilder.Build(setup, content);
+            bundle.Engine.StartRun();
+            return bundle;
+        }
+
         // --- Runs completas ---
 
         /// <summary>

@@ -335,4 +335,43 @@ namespace KingdomCollapse.Core
 
         public override string Kind => "run_collapsed";
     }
+
+    /// <summary>Um rival declara guerra: primeiro da run, ou o proximo apos uma derrota.</summary>
+    public sealed class RivalDeclaredEvent : RunEvent
+    {
+        public RivalDeclaredEvent(RivalDefinition rival)
+        {
+            Rival = rival;
+        }
+
+        public RivalDefinition Rival { get; }
+
+        public override string Kind => "rival_declared";
+    }
+
+    /// <summary>Todos os ataques necessarios da campanha do rival foram repelidos.</summary>
+    public sealed class RivalDefeatedEvent : RunEvent
+    {
+        public RivalDefeatedEvent(RivalDefinition rival)
+        {
+            Rival = rival;
+        }
+
+        public RivalDefinition Rival { get; }
+
+        public override string Kind => "rival_defeated";
+    }
+
+    /// <summary>Todos os rivais do nivel foram derrotados: a run termina em Vitoria.</summary>
+    public sealed class RunVictoryEvent : RunEvent
+    {
+        public RunVictoryEvent(RunScore score)
+        {
+            Score = score;
+        }
+
+        public RunScore Score { get; }
+
+        public override string Kind => "run_victory";
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace KingdomCollapse.Core
@@ -33,6 +34,21 @@ namespace KingdomCollapse.Core
 
         public int BaseDamage { get; internal set; }
 
+        /// <summary>Populacao perdida por um rival de eixo Population. Nao depende de
+        /// defesa (design D4) — cobrado mesmo quando o ataque e repelido.</summary>
+        public int PopulationLost { get; internal set; }
+
+        /// <summary>Recurso perdido por um rival de eixo Resource, e qual recurso.
+        /// Mesma regra do Population: independente de defesa.</summary>
+        public ResourceKind? ResourceLostKind { get; internal set; }
+
+        public int ResourceLostAmount { get; internal set; }
+
+        /// <summary>
+        /// Se a defesa bastou pra segurar o ataque. Decide o progresso da campanha
+        /// (spec rival-kingdoms) igual para qualquer eixo — mas eixo Population/
+        /// Resource ainda cobra pedagio mesmo quando Repelled e true.
+        /// </summary>
         public bool Repelled => Overflow <= 0;
 
         public override string ToString()
@@ -48,8 +64,17 @@ namespace KingdomCollapse.Core
         public const int ForcePerTile = 6;
 
         /// <summary>
-        /// Confronta forca contra defesa. O excedente come o territorio a partir da
-        /// borda; o que ainda sobrar fere a base.
+        /// Fracao da forca cobrada como pedagio por rival de eixo Population/Resource,
+        /// sempre — defesa alta nao reduz isto (design D4, "nao resolvido por defesa").
+        /// </summary>
+        public const double EconomicTollFraction = 0.5;
+
+        /// <summary>
+        /// Confronta forca contra defesa. Sem identidade de rival (ameaca anonima da
+        /// curva antiga), o comportamento e o de sempre: o excedente come o
+        /// territorio a partir da borda, e o que sobrar fere a base. Com identidade,
+        /// o eixo dela decide: Territory/Integrity seguem a mesma logica de excedente;
+        /// Population/Resource cobram pedagio proporcional a forca, defesa ou nao.
         /// </summary>
         public static AttackReport Resolve(RunState run, ScheduledThreat threat)
         {
@@ -59,18 +84,44 @@ namespace KingdomCollapse.Core
             run.ConsumePendingDefense();
 
             int overflow = threat.Force - defense;
-            if (overflow <= 0)
+            report.Overflow = Math.Max(0, overflow);
+
+            RivalAxis axis = threat.Identity?.Axis ?? RivalAxis.Territory;
+
+            switch (axis)
             {
-                report.Overflow = 0;
-                return report;
+                case RivalAxis.Population:
+                    report.PopulationLost = ApplyEconomicToll(run, ResourceKind.Population, threat.Force);
+                    break;
+
+                case RivalAxis.Resource:
+                    ResourceKind kind = threat.Identity.Resource;
+                    report.ResourceLostKind = kind;
+                    report.ResourceLostAmount = ApplyEconomicToll(run, kind, threat.Force);
+                    break;
+
+                default:
+                    if (overflow > 0)
+                    {
+                        ResolveDefensiveAxis(run, threat, report, overflow, axis);
+                    }
+
+                    break;
             }
 
-            report.Overflow = overflow;
+            return report;
+        }
 
-            // Incendio e colapso estrutural ferem a base direto; a horda come
-            // territorio primeiro. A diferenca existe para que os tipos exijam
-            // preparos diferentes, e nao so numeros diferentes.
-            if (threat.Kind == ThreatKind.Horde)
+        /// <summary>Territory come celula da borda; Integrity fere a base direto — a
+        /// mesma distincao que Horde/Fire ja faziam antes de existir rival.</summary>
+        private static void ResolveDefensiveAxis(
+            RunState run, ScheduledThreat threat, AttackReport report, int overflow, RivalAxis axis)
+        {
+            bool eatsTerritory = threat.Identity != null
+                ? axis == RivalAxis.Territory
+                : threat.Kind == ThreatKind.Horde;
+
+            if (eatsTerritory)
             {
                 overflow = DestroyBorderTiles(run, report, overflow);
             }
@@ -79,8 +130,14 @@ namespace KingdomCollapse.Core
             {
                 report.BaseDamage = run.Damage(overflow);
             }
+        }
 
-            return report;
+        /// <summary>Sempre tira algo quando Force > 0, defesa nao entra na conta —
+        /// e o que torna este eixo "nao resolvido por defesa".</summary>
+        private static int ApplyEconomicToll(RunState run, ResourceKind kind, int force)
+        {
+            int toll = Math.Max(1, (int)Math.Ceiling(force * EconomicTollFraction));
+            return run.Remove(kind, toll);
         }
 
         private static int DestroyBorderTiles(RunState run, AttackReport report, int overflow)

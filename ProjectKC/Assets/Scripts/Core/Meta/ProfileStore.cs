@@ -44,6 +44,14 @@ namespace KingdomCollapse.Core
 
             nodes.Sort((a, b) => string.CompareOrdinal((string)a, (string)b));
 
+            List<object> difficultyLevels = new List<object>();
+            foreach (string levelId in profile.UnlockedDifficultyLevels)
+            {
+                difficultyLevels.Add(levelId);
+            }
+
+            difficultyLevels.Sort((a, b) => string.CompareOrdinal((string)a, (string)b));
+
             Dictionary<string, object> map = new Dictionary<string, object>
             {
                 { "version", profile.Version },
@@ -51,7 +59,8 @@ namespace KingdomCollapse.Core
                 { "runsPlayed", profile.RunsPlayed },
                 { "bestDay", profile.BestDayReached },
                 { "bestScore", profile.BestScore },
-                { "nodes", nodes }
+                { "nodes", nodes },
+                { "difficultyLevels", difficultyLevels }
             };
 
             return MiniJson.Serialize(map);
@@ -90,6 +99,19 @@ namespace KingdomCollapse.Core
                 }
 
                 profile.MarkPurchased(nodeId);
+            }
+
+            // Campo novo (task 5.2): opcional pra nao quebrar save de versao anterior
+            // que nunca teve escada de dificuldade nenhuma.
+            if (map.TryGetValue("difficultyLevels", out object rawLevels) && rawLevels is List<object> levels)
+            {
+                for (int i = 0; i < levels.Count; i++)
+                {
+                    if (levels[i] is string levelId)
+                    {
+                        profile.UnlockDifficultyLevel(levelId);
+                    }
+                }
             }
 
             return profile;
