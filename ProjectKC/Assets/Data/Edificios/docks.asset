@@ -16,8 +16,8 @@ MonoBehaviour:
   _displayName: Ancoradouro
   _prefab: {fileID: 919132149155446097, guid: 85147315a36d02b4ab0d7da1d4dbfc8d, type: 3}
   _allowedTerrains: 03000000
-  _goldCost: 22
-  _baseGoldProduction: 0
+  _goldCost: 13
+  _baseGoldProduction: 1
   _defense: 0
   _adjacencyBonuses:
   - Match: 0

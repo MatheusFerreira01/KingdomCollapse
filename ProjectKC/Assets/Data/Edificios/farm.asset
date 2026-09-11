@@ -16,8 +16,8 @@ MonoBehaviour:
   _displayName: Fazenda
   _prefab: {fileID: 919132149155446097, guid: 6e64fbab148f7e045a34a86923b88b81, type: 3}
   _allowedTerrains: 00000000
-  _goldCost: 20
-  _baseGoldProduction: 0
+  _goldCost: 12
+  _baseGoldProduction: 1
   _defense: 0
   _adjacencyBonuses: []
   _cost: []

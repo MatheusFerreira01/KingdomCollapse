@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: 
   _displayName: Recrutamento
   _art: {fileID: 0}
-  _rulesText: Ganha 3 de defesa. Nao custa energia.
+  _rulesText: Ganha 3 de defesa ate o proximo ataque. Nao custa energia.
   _energyCost: 0
   _target: 0
   _retained: 0

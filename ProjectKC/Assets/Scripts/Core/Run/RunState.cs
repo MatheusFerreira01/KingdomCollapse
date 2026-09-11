@@ -615,7 +615,7 @@ namespace KingdomCollapse.Core
             // o povo ainda de pe (spec — sem isso extincao e "so mais um dia de
             // fome" em vez de um resultado pior).
             int extinctionLimit = Math.Max(
-                1, (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 12.0)) / 2);
+                1, (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 10.0)) / 2);
             if (DaysAtZeroPopulation >= extinctionLimit)
             {
                 Collapse = CollapseReason.Starvation;
@@ -624,7 +624,7 @@ namespace KingdomCollapse.Core
                 return true;
             }
 
-            int starvationLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 12.0));
+            int starvationLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 10.0));
             if (DaysWithoutFood >= starvationLimit)
             {
                 Collapse = CollapseReason.Starvation;
@@ -633,7 +633,7 @@ namespace KingdomCollapse.Core
                 return true;
             }
 
-            int bankruptcyLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.BankruptcyCollapseDays, 12.0));
+            int bankruptcyLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.BankruptcyCollapseDays, 10.0));
             if (DaysWithoutGold >= bankruptcyLimit)
             {
                 Collapse = CollapseReason.Bankruptcy;

@@ -41,13 +41,13 @@ namespace KingdomCollapse.Core
         public const string GarrisonDefenseMultiplier = "garrison_defense_multiplier";
 
         /// <summary>Dias seguidos com comida zerada ate a run colapsar de fome
-        /// cronica. Padrao 12 (calibrado na task 11.2 — extincao usa metade disso).
+        /// cronica. Padrao 10 (calibrado na task 11.2 — extincao usa metade disso).
         /// Existe para que um rival de eixo Recurso/Populacao consiga matar a run
         /// mesmo com defesa alta (design D4).</summary>
         public const string StarvationCollapseDays = "starvation_collapse_days";
 
         /// <summary>Dias seguidos com ouro zerado ate a run colapsar por falencia.
-        /// Padrao 12. Mesma logica da fome cronica, para a economia geral.</summary>
+        /// Padrao 10. Mesma logica da fome cronica, para a economia geral.</summary>
         public const string BankruptcyCollapseDays = "bankruptcy_collapse_days";
 
         // --- Pontos de extensao por raca ---

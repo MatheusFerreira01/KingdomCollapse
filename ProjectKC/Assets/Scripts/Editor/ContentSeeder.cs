@@ -153,25 +153,29 @@ namespace KingdomCollapse.EditorTools
             buildings.Add(Building("hall", "Salao do Reino", null, 0, 2, 2, null,
                 null, null, workersRequired: 0, populationCapacity: 5));
 
+            // Todo edificio de recurso tambem rende 1 de ouro/dia: sem isso, o
+            // primeiro edificio construido virar fazenda/serraria/mina/ancoradouro
+            // deixa o jogador zerado de ouro ate a sorte de uma carta salvar
+            // (achado em playtest — task 11.2).
             buildings.Add(Building("farm", "Fazenda",
-                new List<TerrainType> { TerrainType.Plain }, 20, 0, 0, null,
+                new List<TerrainType> { TerrainType.Plain }, 12, 1, 0, null,
                 null, Resources(ResourceKind.Food, 4), workersRequired: 1, populationCapacity: 0));
 
             buildings.Add(Building("sawmill", "Serraria",
-                new List<TerrainType> { TerrainType.Forest }, 25, 0, 0,
+                new List<TerrainType> { TerrainType.Forest }, 14, 1, 0,
                 Adjacencies(Adjacency(TerrainType.Forest, 2, ResourceKind.Gold)),
                 null, Resources(ResourceKind.Wood, 3), workersRequired: 1, populationCapacity: 0));
 
             buildings.Add(Building("mine", "Mina",
-                new List<TerrainType> { TerrainType.Mine }, 30, 0, 0, null,
+                new List<TerrainType> { TerrainType.Mine }, 16, 1, 0, null,
                 null, Resources(ResourceKind.Stone, 4), workersRequired: 1, populationCapacity: 0));
 
             buildings.Add(Building("docks", "Ancoradouro",
-                new List<TerrainType> { TerrainType.River }, 22, 0, 0,
+                new List<TerrainType> { TerrainType.River }, 13, 1, 0,
                 Adjacencies(Adjacency(TerrainType.River, 2, ResourceKind.Gold)),
                 null, Resources(ResourceKind.Food, 2), workersRequired: 1, populationCapacity: 0));
 
-            buildings.Add(Building("outpost", "Posto Avancado", null, 18, 1, 3, null,
+            buildings.Add(Building("outpost", "Posto Avancado", null, 10, 1, 3, null,
                 null, null, workersRequired: 0, populationCapacity: 2));
 
             buildings.Add(Building("watchtower", "Torre de Vigia", null, 30, 0, 7, null,
@@ -238,7 +242,8 @@ namespace KingdomCollapse.EditorTools
             cards.Add(Card("card_barricade", "Barricada", "Ganha 12 de defesa ate o proximo ataque.", 2,
                 TargetRequirement.None, Effects(Effect(EffectEntryKind.AddDefense, 12))));
 
-            cards.Add(Card("card_recruit", "Recrutamento", "Ganha 3 de defesa. Nao custa energia.", 0,
+            cards.Add(Card("card_recruit", "Recrutamento",
+                "Ganha 3 de defesa ate o proximo ataque. Nao custa energia.", 0,
                 TargetRequirement.None, Effects(Effect(EffectEntryKind.AddDefense, 3))));
 
             cards.Add(Card("card_scouts", "Batedores", "Revela 3 celulas da fronteira.", 0,
@@ -274,7 +279,8 @@ namespace KingdomCollapse.EditorTools
                 TargetRequirement.None, Effects(Effect(EffectEntryKind.RepairBase, 5))));
 
             cards.Add(Card("card_fortify", "Fortificar",
-                "Ganha 8 de defesa e 1 de integridade.", 2, TargetRequirement.None,
+                "Ganha 8 de defesa ate o proximo ataque, e 1 de integridade (permanente).", 2,
+                TargetRequirement.None,
                 Effects(
                     Effect(EffectEntryKind.AddDefense, 8),
                     Effect(EffectEntryKind.RepairBase, 1))));
@@ -310,7 +316,8 @@ namespace KingdomCollapse.EditorTools
                 Effects(Effect(EffectEntryKind.Recruit, 3, ignoreCapacity: true))));
 
             cards.Add(Card("card_stonewall", "Muralha de Pedra",
-                "Perde 6 de pedra, ganha 10 de defesa.", 1, TargetRequirement.None,
+                "Perde 6 de pedra (permanente), ganha 10 de defesa ate o proximo ataque.", 1,
+                TargetRequirement.None,
                 Effects(
                     Effect(EffectEntryKind.LoseResource, 6, resource: ResourceKind.Stone),
                     Effect(EffectEntryKind.AddDefense, 10))));

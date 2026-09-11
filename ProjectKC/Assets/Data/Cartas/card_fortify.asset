@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: 
   _displayName: Fortificar
   _art: {fileID: 0}
-  _rulesText: Ganha 8 de defesa e 1 de integridade.
+  _rulesText: Ganha 8 de defesa ate o proximo ataque, e 1 de integridade (permanente).
   _energyCost: 2
   _target: 0
   _retained: 0

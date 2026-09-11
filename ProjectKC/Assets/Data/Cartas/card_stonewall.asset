@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: 
   _displayName: Muralha de Pedra
   _art: {fileID: 0}
-  _rulesText: Perde 6 de pedra, ganha 10 de defesa.
+  _rulesText: Perde 6 de pedra (permanente), ganha 10 de defesa ate o proximo ataque.
   _energyCost: 1
   _target: 0
   _retained: 0

@@ -29,25 +29,25 @@ namespace KingdomCollapse.Tests
                     workersRequired: 0, populationCapacity: 5),
 
                 new BuildingDefinition(
-                    "farm", "Fazenda", new List<TerrainType> { TerrainType.Plain }, 20, 0, 0,
+                    "farm", "Fazenda", new List<TerrainType> { TerrainType.Plain }, 12, 1, 0,
                     production: Resources(ResourceKind.Food, 4), workersRequired: 1),
 
                 new BuildingDefinition(
-                    "sawmill", "Serraria", new List<TerrainType> { TerrainType.Forest }, 25, 0, 0,
+                    "sawmill", "Serraria", new List<TerrainType> { TerrainType.Forest }, 14, 1, 0,
                     adjacencyBonuses: new List<AdjacencyBonus> { AdjacencyBonus.ForTerrain(TerrainType.Forest, 2) },
                     production: Resources(ResourceKind.Wood, 3), workersRequired: 1),
 
                 new BuildingDefinition(
-                    "mine", "Mina", new List<TerrainType> { TerrainType.Mine }, 30, 0, 0,
+                    "mine", "Mina", new List<TerrainType> { TerrainType.Mine }, 16, 1, 0,
                     production: Resources(ResourceKind.Stone, 4), workersRequired: 1),
 
                 new BuildingDefinition(
-                    "docks", "Ancoradouro", new List<TerrainType> { TerrainType.River }, 22, 0, 0,
+                    "docks", "Ancoradouro", new List<TerrainType> { TerrainType.River }, 13, 1, 0,
                     adjacencyBonuses: new List<AdjacencyBonus> { AdjacencyBonus.ForTerrain(TerrainType.River, 2) },
                     production: Resources(ResourceKind.Food, 2), workersRequired: 1),
 
                 new BuildingDefinition(
-                    "outpost", "Posto Avancado", new List<TerrainType>(), 18, 1, 3,
+                    "outpost", "Posto Avancado", new List<TerrainType>(), 10, 1, 3,
                     populationCapacity: 2),
 
                 new BuildingDefinition(
@@ -164,7 +164,7 @@ namespace KingdomCollapse.Tests
                 new RivalDefinition("Rival_Maraures", "Saqueadores", assault, 4,
                     new ThreatCurve(baseForce: 2, perDay: 0.8, dayExponent: 1.1)),
                 new RivalDefinition("Rival_Besieger", "Sitiantes", siege, 2,
-                    new ThreatCurve(baseForce: 4, perDay: 1.1, dayExponent: 1.2)),
+                    new ThreatCurve(baseForce: 5, perDay: 1.3, dayExponent: 1.25)),
                 new RivalDefinition("Rival_Saboteur", "Sabotadores", economic, 3,
                     new ThreatCurve(baseForce: 2, perDay: 0.8, dayExponent: 1.15))
             };

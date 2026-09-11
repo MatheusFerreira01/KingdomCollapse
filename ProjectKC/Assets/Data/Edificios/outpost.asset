@@ -16,7 +16,7 @@ MonoBehaviour:
   _displayName: Posto Avancado
   _prefab: {fileID: 919132149155446097, guid: 717d4e4bded77ac40ac93303bcdd38ab, type: 3}
   _allowedTerrains: 
-  _goldCost: 18
+  _goldCost: 10
   _baseGoldProduction: 1
   _defense: 3
   _adjacencyBonuses: []

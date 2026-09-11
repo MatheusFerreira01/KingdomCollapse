@@ -16,8 +16,8 @@ MonoBehaviour:
   _displayName: Serraria
   _prefab: {fileID: 919132149155446097, guid: a896dafdb70459f4f8c9f55c2b40569c, type: 3}
   _allowedTerrains: 01000000
-  _goldCost: 25
-  _baseGoldProduction: 0
+  _goldCost: 14
+  _baseGoldProduction: 1
   _defense: 0
   _adjacencyBonuses:
   - Match: 0
