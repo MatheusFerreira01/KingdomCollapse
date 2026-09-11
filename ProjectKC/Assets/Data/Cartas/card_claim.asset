@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:CardAsset
   _id: 
   _displayName: Reivindicar
+  _art: {fileID: 0}
   _rulesText: Ganha a celula compravel alvo de graca.
   _energyCost: 2
   _target: 5
@@ -33,3 +34,6 @@ MonoBehaviour:
     RequiredTerrain: 0
     RequireSourceTerrain: 0
     RevealCount: 0
+    Resource: 0
+    Stance: 0
+    IgnoreCapacity: 0

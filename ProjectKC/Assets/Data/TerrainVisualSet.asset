@@ -17,3 +17,10 @@ MonoBehaviour:
   _mine: {fileID: 2800000, guid: 0cd725d99e26e2e47a42241e61aced41, type: 3}
   _river: {fileID: 0}
   _ruin: {fileID: 2800000, guid: f18b2869b38a43e49ad9029d89a149b4, type: 3}
+  _plainProp: {fileID: 0}
+  _forestProp: {fileID: 919132149155446097, guid: e176a6d4b5d5db944a77b4f554f6ce38, type: 3}
+  _mineProp: {fileID: 919132149155446097, guid: b25bac8fda12dcd459f360704b7452bc, type: 3}
+  _riverProp: {fileID: 0}
+  _ruinProp: {fileID: 0}
+  _roadProp: {fileID: 0}
+  _bridgeProp: {fileID: 0}

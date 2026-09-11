@@ -95,6 +95,15 @@ namespace KingdomCollapse.Game
         /// <summary>Recurso que a ultima recusa apontou, para destacar no painel.</summary>
         private ResourceShortage _lastShortage = ResourceShortage.None;
 
+        // Meta-progressao (task 10.4): perfil persistido em disco, e a escada de
+        // dificuldade lida do GameDatabase. Escada vazia (nenhum nivel autorado
+        // ainda, tarefa 9.5) preserva o comportamento antigo: a run comeca direto.
+        private FileProfileStore _profileStore;
+        private MetaProfile _metaProfile;
+        private List<DifficultyLevel> _difficultyLevels;
+        private string _currentLevelId;
+        private bool _awaitingDifficultyChoice;
+
         private void Start()
         {
             if (_database == null)
@@ -104,11 +113,25 @@ namespace KingdomCollapse.Game
                 return;
             }
 
-            StartRun(_seed == 0 ? Random.Range(1, int.MaxValue) : _seed);
+            _profileStore = new FileProfileStore(
+                System.IO.Path.Combine(Application.persistentDataPath, "meta_profile.json"));
+            _metaProfile = _profileStore.Load().Profile;
+            _difficultyLevels = _database.DifficultyLevels();
+
+            if (_difficultyLevels.Count > 0)
+            {
+                _awaitingDifficultyChoice = true;
+                return;
+            }
+
+            StartRun(_seed == 0 ? Random.Range(1, int.MaxValue) : _seed, null);
         }
 
-        private void StartRun(int seed)
+        private void StartRun(int seed, DifficultyLevel level)
         {
+            _awaitingDifficultyChoice = false;
+            _currentLevelId = level?.Id;
+
             ContentCatalog catalog = _database.BuildCatalog();
             _cardArt = _database.BuildCardArt();
             _buildingPrefabsCache = _database.BuildBuildingPrefabs();
@@ -121,11 +144,12 @@ namespace KingdomCollapse.Game
                 return;
             }
 
-            RunSetup setup = _database.CreateSetup(_raceId, seed);
+            RunSetup setup = _database.CreateSetup(_raceId, seed, level);
+            MetaTree tree = _database.BuildMetaTree();
 
             try
             {
-                _bundle = RunBuilder.Build(setup, catalog);
+                _bundle = RunBuilder.Build(setup, catalog, tree, _metaProfile);
             }
             catch (System.Exception error)
             {
@@ -614,6 +638,21 @@ namespace KingdomCollapse.Game
                         Log("=== COLAPSO (" + collapsed.Reason + ") === " +
                             collapsed.Score.TotalPoints + " pts, " +
                             collapsed.Score.MetaCurrency + " moedas de meta.");
+                        OnRunEnded(collapsed.Score);
+                        break;
+
+                    case RivalDeclaredEvent rivalDeclared:
+                        Log("RIVAL: " + rivalDeclared.Rival.DisplayName + " declara guerra.");
+                        break;
+
+                    case RivalDefeatedEvent rivalDefeated:
+                        Log("RIVAL DERROTADO: " + rivalDefeated.Rival.DisplayName + ".");
+                        break;
+
+                    case RunVictoryEvent victory:
+                        Log("=== VITORIA === " + victory.Score.TotalPoints + " pts, " +
+                            victory.Score.MetaCurrency + " moedas de meta.");
+                        OnRunEnded(victory.Score);
                         break;
                 }
             }
@@ -723,6 +762,12 @@ namespace KingdomCollapse.Game
 
         private void OnGUI()
         {
+            if (_awaitingDifficultyChoice)
+            {
+                DrawDifficultySelect();
+                return;
+            }
+
             if (_bundle == null)
             {
                 return;
@@ -858,6 +903,14 @@ namespace KingdomCollapse.Game
             else
             {
                 GUILayout.Label("ameaca em " + nearest.DaysUntil(run.Day) + " dia(s)");
+            }
+
+            if (run.Campaign != null && run.Campaign.HasRoster && !run.Campaign.AllDefeated
+                && run.Campaign.Current != null)
+            {
+                GUILayout.Space(12);
+                GUILayout.Label(run.Campaign.Current.DisplayName + "  " +
+                    run.Campaign.RepelsAchieved + "/" + run.Campaign.RepelsNeeded);
             }
 
             GUILayout.FlexibleSpace();
@@ -1105,6 +1158,15 @@ namespace KingdomCollapse.Game
             if (_tomorrowWeather != null)
             {
                 text += "\n-> amanha: " + _tomorrowWeather.DisplayName;
+
+                if (_tomorrowWeather.FoodUpkeepMultiplier > 1.0)
+                {
+                    text += " (consumo de comida sobe)";
+                }
+                else if (_tomorrowWeather.FoodUpkeepMultiplier < 1.0)
+                {
+                    text += " (consumo de comida cai)";
+                }
             }
 
             return text;
@@ -1250,11 +1312,17 @@ namespace KingdomCollapse.Game
         {
             WorkerAllocation allocation = run.Allocation();
             int capacity = run.PopulationCapacity();
+            int idlePopulation = Mathf.Max(0, run[ResourceKind.Population] - allocation.Assigned);
 
             string detail = "  (" + allocation.Assigned + " trabalhando";
+            if (idlePopulation > 0)
+            {
+                detail += ", " + idlePopulation + " ociosa";
+            }
+
             if (allocation.IdleBuildings > 0)
             {
-                detail += ", " + allocation.IdleBuildings + " parado(s)";
+                detail += ", " + allocation.IdleBuildings + " edif. parado(s)";
             }
 
             detail += ")";
@@ -1548,8 +1616,11 @@ namespace KingdomCollapse.Game
         private void DrawCollapse()
         {
             RunScore score = _bundle.Engine.FinalScore;
+            bool victory = _bundle.Run.Outcome == RunOutcome.Victory;
 
-            GUILayout.Label("=== COLAPSO: " + _bundle.Run.Collapse + " ===");
+            GUILayout.Label(victory
+                ? "=== VITORIA ==="
+                : "=== COLAPSO: " + _bundle.Run.Collapse + " ===");
 
             if (score != null)
             {
@@ -1562,10 +1633,102 @@ namespace KingdomCollapse.Game
                                 score.MetaCurrency + " moedas de meta");
             }
 
+            if (victory && !string.IsNullOrEmpty(_currentLevelId))
+            {
+                DifficultyLevel next = NextLevelAfter(_currentLevelId);
+                if (next != null)
+                {
+                    GUILayout.Label("Nivel seguinte desbloqueado: " + next.DisplayName);
+                }
+                else
+                {
+                    GUILayout.Label("Ultimo nivel da escada vencido.");
+                }
+            }
+
             if (GUILayout.Button("Nova run", GUILayout.Height(30)))
             {
-                StartRun(Random.Range(1, int.MaxValue));
+                if (_difficultyLevels.Count > 0)
+                {
+                    _awaitingDifficultyChoice = true;
+                }
+                else
+                {
+                    StartRun(Random.Range(1, int.MaxValue), null);
+                }
             }
+        }
+
+        private DifficultyLevel NextLevelAfter(string levelId)
+        {
+            for (int i = 0; i < _difficultyLevels.Count - 1; i++)
+            {
+                if (_difficultyLevels[i].Id == levelId)
+                {
+                    return _difficultyLevels[i + 1];
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Grava o resultado da run no perfil (task 10.4): vitoria desbloqueia o
+        /// proximo nivel da escada, colapso nao desbloqueia nada (spec
+        /// difficulty-ladder). Salva em disco na hora — sem essa run nao ha um
+        /// "fim de sessao" melhor para gravar.
+        /// </summary>
+        private void OnRunEnded(RunScore score)
+        {
+            if (_metaProfile == null || score == null)
+            {
+                return;
+            }
+
+            _metaProfile.RecordRun(score, _bundle.Run.Day);
+
+            if (_bundle.Run.Outcome == RunOutcome.Victory && !string.IsNullOrEmpty(_currentLevelId))
+            {
+                _metaProfile.UnlockNextDifficulty(_currentLevelId, _difficultyLevels);
+            }
+
+            _profileStore?.Save(_metaProfile);
+        }
+
+        /// <summary>Tela antes da run comecar, quando ha ao menos um nivel de
+        /// dificuldade autorado (task 10.4). O primeiro nivel esta sempre liberado; os
+        /// demais exigem ter vencido o anterior nesta maquina.</summary>
+        private void DrawDifficultySelect()
+        {
+            Rect area = new Rect(Screen.width * 0.5f - 200f, Screen.height * 0.5f - 200f, 400f, 400f);
+            GUILayout.BeginArea(area, GUI.skin.box);
+
+            GUILayout.Label("=== ESCOLHA A DIFICULDADE ===");
+
+            for (int i = 0; i < _difficultyLevels.Count; i++)
+            {
+                DifficultyLevel level = _difficultyLevels[i];
+                bool unlocked = _metaProfile.IsDifficultyUnlocked(level.Id, _difficultyLevels);
+
+                GUILayout.BeginVertical(GUI.skin.box);
+                GUI.enabled = unlocked;
+
+                if (GUILayout.Button(level.DisplayName + (unlocked ? string.Empty : "  (bloqueado)")))
+                {
+                    StartRun(_seed == 0 ? Random.Range(1, int.MaxValue) : _seed, level);
+                }
+
+                GUI.enabled = true;
+
+                for (int h = 0; h < level.Hardenings.Count; h++)
+                {
+                    GUILayout.Label("- " + level.Hardenings[h]);
+                }
+
+                GUILayout.EndVertical();
+            }
+
+            GUILayout.EndArea();
         }
 
         /// <summary>Caixa flutuante ao lado da mao, semi-transparente e sem fundo

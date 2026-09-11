@@ -14,8 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
   _displayName: Mina
+  _prefab: {fileID: 919132149155446097, guid: 922f7363a8ec3614580fb45db92ed199, type: 3}
   _allowedTerrains: 02000000
   _goldCost: 30
-  _baseGoldProduction: 5
+  _baseGoldProduction: 0
   _defense: 0
   _adjacencyBonuses: []
+  _cost: []
+  _production:
+  - Resource: 2
+    Amount: 4
+  _workersRequired: 1
+  _populationCapacity: 0

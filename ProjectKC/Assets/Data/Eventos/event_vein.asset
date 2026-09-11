@@ -36,3 +36,6 @@ MonoBehaviour:
       RequiredTerrain: 0
       RequireSourceTerrain: 0
       RevealCount: 4
+      Resource: 0
+      Stance: 0
+      IgnoreCapacity: 0

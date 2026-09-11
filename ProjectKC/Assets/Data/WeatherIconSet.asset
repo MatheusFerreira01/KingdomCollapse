@@ -12,4 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a8c65dff3da39c469bfa037a709eebe, type: 3}
   m_Name: WeatherIconSet
   m_EditorClassIdentifier: KingdomCollapse.Game::KingdomCollapse.Game.WeatherIconSet
-  _icons: []
+  _icons:
+  - WeatherId: weather_sun
+    Icon: {fileID: 2800000, guid: 4568fecd844c6b4419f5630604ead511, type: 3}
+  - WeatherId: weather_rain
+    Icon: {fileID: 2800000, guid: c362d73f71817cd4fb98f9f1105bf24f, type: 3}
+  - WeatherId: weather_drought
+    Icon: {fileID: 2800000, guid: 7416d17bc392d59418912f7151e0c47e, type: 3}
+  - WeatherId: weather_fog
+    Icon: {fileID: 2800000, guid: 15439ddc188c96a4d9be5389d72d73a2, type: 3}
+  - WeatherId: weather_storm
+    Icon: {fileID: 2800000, guid: e64859f11e738a44ca3ef6e9e14c38d1, type: 3}
+  - WeatherId: weather_calm
+    Icon: {fileID: 2800000, guid: 46bba2f70677a5d47a65908232afd621, type: 3}

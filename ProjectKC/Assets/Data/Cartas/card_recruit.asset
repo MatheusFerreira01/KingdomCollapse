@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:CardAsset
   _id: 
   _displayName: Recrutamento
+  _art: {fileID: 0}
   _rulesText: Ganha 3 de defesa. Nao custa energia.
   _energyCost: 0
   _target: 0
@@ -33,3 +34,6 @@ MonoBehaviour:
     RequiredTerrain: 0
     RequireSourceTerrain: 0
     RevealCount: 0
+    Resource: 0
+    Stance: 0
+    IgnoreCapacity: 0

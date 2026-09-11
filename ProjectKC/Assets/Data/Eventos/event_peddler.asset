@@ -39,6 +39,9 @@ MonoBehaviour:
       RequiredTerrain: 0
       RequireSourceTerrain: 0
       RevealCount: 0
+      Resource: 0
+      Stance: 0
+      IgnoreCapacity: 0
     - Kind: 9
       Amount: 0
       Scaling: 0
@@ -52,3 +55,6 @@ MonoBehaviour:
       RequiredTerrain: 0
       RequireSourceTerrain: 0
       RevealCount: 0
+      Resource: 0
+      Stance: 0
+      IgnoreCapacity: 0

@@ -21,6 +21,9 @@ namespace KingdomCollapse.Game
         [Tooltip("Climas do jogo. Nao passam por desbloqueio: todo dia tem um.")]
         [SerializeField] private List<WeatherAsset> _weather = new List<WeatherAsset>();
 
+        [Tooltip("Escada de dificuldade, em ordem do nivel 1 em diante.")]
+        [SerializeField] private List<DifficultyLevelAsset> _difficultyLevels = new List<DifficultyLevelAsset>();
+
         [Header("Desbloqueado desde o inicio")]
         [Tooltip("O que aparece numa run sem nenhum no de meta comprado.")]
         [SerializeField] private List<BuildingAsset> _startingBuildings = new List<BuildingAsset>();
@@ -174,6 +177,35 @@ namespace KingdomCollapse.Game
             setup.FirstThreatDay = _balance.FirstThreatDay;
             setup.ThreatIntervalDays = _balance.ThreatIntervalDays;
             setup.ThreatLeadDays = _balance.ThreatLeadDays;
+            return setup;
+        }
+
+        /// <summary>Escada de dificuldade, em ordem (nivel 1 primeiro). Vazia sem
+        /// niveis autorados — quem chama decide o fallback (spec run-loop antiga).</summary>
+        public List<DifficultyLevel> DifficultyLevels()
+        {
+            List<DifficultyLevel> levels = new List<DifficultyLevel>();
+            for (int i = 0; i < _difficultyLevels.Count; i++)
+            {
+                if (_difficultyLevels[i] != null)
+                {
+                    levels.Add(_difficultyLevels[i].ToDefinition());
+                }
+            }
+
+            return levels;
+        }
+
+        /// <summary>Mesmo que CreateSetup, com o roster de rivais do nivel de
+        /// dificuldade escolhido aplicado (task 10.4).</summary>
+        public RunSetup CreateSetup(string raceId, int seed, DifficultyLevel level)
+        {
+            RunSetup setup = CreateSetup(raceId, seed);
+            if (level != null)
+            {
+                setup.Rivals = new List<RivalDefinition>(level.Rivals);
+            }
+
             return setup;
         }
 

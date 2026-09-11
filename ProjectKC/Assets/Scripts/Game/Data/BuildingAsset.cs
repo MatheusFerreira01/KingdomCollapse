@@ -86,5 +86,35 @@ namespace KingdomCollapse.Game
                 Id, _displayName, _allowedTerrains, _goldCost, _baseGoldProduction, _defense, bonuses,
                 ToAmounts(_cost), ToAmounts(_production), _workersRequired, _populationCapacity);
         }
+
+#if UNITY_EDITOR
+        /// <summary>Preenchimento programatico, usado pelo ContentSeeder (task 9.1).
+        /// Mesmo padrao de CardAsset: reafirma os campos a cada geracao, entao rodar
+        /// o semeador de novo reseta estes numeros para os valores declarados aqui —
+        /// ajuste fino depois disso e trabalho de Inspector.</summary>
+        public void EditorConfigure(
+            string displayName,
+            List<TerrainType> allowedTerrains,
+            int goldCost,
+            int baseGoldProduction,
+            int defense,
+            List<Adjacency> adjacencyBonuses,
+            List<ResourceEntry> cost,
+            List<ResourceEntry> production,
+            int workersRequired,
+            int populationCapacity)
+        {
+            _displayName = displayName;
+            _allowedTerrains = allowedTerrains ?? new List<TerrainType>();
+            _goldCost = goldCost;
+            _baseGoldProduction = baseGoldProduction;
+            _defense = defense;
+            _adjacencyBonuses = adjacencyBonuses ?? new List<Adjacency>();
+            _cost = cost ?? new List<ResourceEntry>();
+            _production = production ?? new List<ResourceEntry>();
+            _workersRequired = workersRequired;
+            _populationCapacity = populationCapacity;
+        }
+#endif
     }
 }

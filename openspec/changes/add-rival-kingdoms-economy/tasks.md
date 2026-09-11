@@ -89,19 +89,19 @@
 
 ## 9. Conteúdo
 
-- [ ] 9.1 Atualizar o `ContentSeeder` para gerar edifícios com custo, produção e trabalhadores nos recursos novos, verificando que o catálogo gerado passa na validação
-- [ ] 9.2 Atualizar as cartas para custar e conceder recursos, incluindo cartas de população, verificando em jogo que cada uma resolve e é recusada corretamente
-- [ ] 9.3 Atualizar os eventos e ofertas para operar sobre recursos, verificando que as ofertas continuam tendo saída sem custo
+- [x] 9.1 Atualizar o `ContentSeeder` para gerar edifícios com custo, produção e trabalhadores nos recursos novos, verificando que o catálogo gerado passa na validação
+- [x] 9.2 Atualizar as cartas para custar e conceder recursos, incluindo cartas de população, verificando em jogo que cada uma resolve e é recusada corretamente
+- [x] 9.3 Atualizar os eventos e ofertas para operar sobre recursos, verificando que as ofertas continuam tendo saída sem custo
 - [ ] 9.4 [Editor] Criar os 3 rivais do nível 1 — um de assalto, um de cerco pesado, um econômico — verificando em jogo que cada um exige uma resposta diferente
 - [ ] 9.5 [Editor] Criar os 3 primeiros níveis de dificuldade com seus endurecimentos declarados, verificando em jogo que vencer o nível 1 desbloqueia o 2
 
 ## 10. Painéis e telas
 
-- [ ] 10.1 Exibir os cinco recursos com produção e consumo previstos do dia, verificando em jogo que o saldo previsto bate com o que acontece ao encerrar o dia
-- [ ] 10.2 Exibir população total, alocada e ociosa, e permitir realocar, verificando em jogo que realocar muda defesa e produção na hora
-- [ ] 10.3 Exibir o rival vigente, sua identidade e o progresso da campanha, verificando em jogo que repelir um ataque avança o progresso visivelmente
-- [ ] 10.4 Implementar as telas de Vitória e de seleção de dificuldade, verificando em jogo que vencer desbloqueia o nível seguinte
-- [ ] 10.5 Exibir clima de hoje e previsão de amanhã, com o impacto na comida, verificando em jogo que a previsão bate com o dia seguinte
+- [x] 10.1 Exibir os cinco recursos com produção e consumo previstos do dia, verificando em jogo que o saldo previsto bate com o que acontece ao encerrar o dia
+- [x] 10.2 Exibir população total, alocada e ociosa, e permitir realocar, verificando em jogo que realocar muda defesa e produção na hora
+- [x] 10.3 Exibir o rival vigente, sua identidade e o progresso da campanha, verificando em jogo que repelir um ataque avança o progresso visivelmente
+- [x] 10.4 Implementar as telas de Vitória e de seleção de dificuldade, verificando em jogo que vencer desbloqueia o nível seguinte
+- [x] 10.5 Exibir clima de hoje e previsão de amanhã, com o impacto na comida, verificando em jogo que a previsão bate com o dia seguinte
 
 ## 11. Balanceamento
 

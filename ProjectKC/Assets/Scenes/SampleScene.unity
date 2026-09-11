@@ -465,6 +465,9 @@ MonoBehaviour:
   _raceId: humans
   _seed: 0
   _createLighting: 1
+  _icons: {fileID: 11400000, guid: c8000fa8381bc894bb5b0731e6d1a6d0, type: 2}
+  _terrainVisuals: {fileID: 11400000, guid: a89fc64438e18f344a8c387f3a8f72ab, type: 2}
+  _weatherIcons: {fileID: 11400000, guid: a8bf301c74856d645a9bb2fb3d2537e7, type: 2}
 --- !u!4 &1981743150
 Transform:
   m_ObjectHideFlags: 0

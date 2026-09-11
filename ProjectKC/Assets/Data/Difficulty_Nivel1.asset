@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55477977b15b7c642b9fd2958e6fb017, type: 3}
+  m_Name: Difficulty_Nivel1
+  m_EditorClassIdentifier: KingdomCollapse.Game::KingdomCollapse.Game.DifficultyLevelAsset
+  _id: 
+  _displayName: "N\xEDvel 1"
+  _rivals:
+  - {fileID: 11400000, guid: 063ff47d3ff3cd74eb27f68a7ccb4c7f, type: 2}
+  - {fileID: 11400000, guid: 6e9b07136ba34e44a8361a329d58bb9c, type: 2}
+  - {fileID: 11400000, guid: 1948d2db64529ba488d0e175f7c3ce6b, type: 2}
+  _hardenings:
+  - Teste frase 1
+  - Teste frase 2
+  - Teste frase 3
+  _metaPowerCap: 1
+  _pressure: 1

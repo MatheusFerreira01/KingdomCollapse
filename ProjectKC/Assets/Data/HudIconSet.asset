@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e5316334daee944ae88add4cc20745, type: 3}
   m_Name: HudIconSet
   m_EditorClassIdentifier: KingdomCollapse.Game::KingdomCollapse.Game.HudIconSet
-  _gold: {fileID: 0}
-  _wood: {fileID: 0}
-  _stone: {fileID: 0}
-  _food: {fileID: 0}
-  _population: {fileID: 0}
-  _energy: {fileID: 0}
-  _defense: {fileID: 0}
-  _threat: {fileID: 0}
+  _gold: {fileID: 2800000, guid: e61af2d2a39221a4c89e5b912601392f, type: 3}
+  _wood: {fileID: 2800000, guid: a193a8ade86cfbe42ad916e231b1971a, type: 3}
+  _stone: {fileID: 2800000, guid: 30fd4a3e3bc17314391fb7136133a83b, type: 3}
+  _food: {fileID: 2800000, guid: 7b5ec0fd884509f45998938dd60d8c2d, type: 3}
+  _population: {fileID: 2800000, guid: 151cf891e98fcd44ca8d3f03e50b06cd, type: 3}
+  _energy: {fileID: 2800000, guid: 38f3ddaac70f59043a4a2e2295069a07, type: 3}
+  _defense: {fileID: 2800000, guid: a2cd45c69e9d90449b5b2d3972600fe5, type: 3}
+  _threat: {fileID: 2800000, guid: c99199ba893e6db408bbfdc97eefd463, type: 3}

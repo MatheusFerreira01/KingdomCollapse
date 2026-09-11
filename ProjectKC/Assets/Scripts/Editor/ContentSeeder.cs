@@ -26,6 +26,7 @@ namespace KingdomCollapse.EditorTools
         {
             DataFolders.EnsureAll();
 
+            List<BuildingAsset> buildings = SeedBuildings();
             List<CardAsset> cards = SeedCards();
             List<WeatherAsset> weather = SeedWeather();
             List<EventAsset> events = SeedEvents(cards);
@@ -33,11 +34,11 @@ namespace KingdomCollapse.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Register(cards, weather, events);
+            Register(buildings, cards, weather, events);
 
             Debug.Log(
-                "Conteudo inicial gerado: " + cards.Count + " cartas, " + weather.Count +
-                " climas, " + events.Count + " eventos.");
+                "Conteudo inicial gerado: " + buildings.Count + " edificios, " + cards.Count +
+                " cartas, " + weather.Count + " climas, " + events.Count + " eventos.");
 
             ReportViolations();
         }
@@ -109,7 +110,9 @@ namespace KingdomCollapse.EditorTools
             int revealCount = 0,
             CardAsset card = null,
             TerrainType targetTerrain = TerrainType.Plain,
-            bool requireSourceTerrain = false)
+            bool requireSourceTerrain = false,
+            ResourceKind resource = ResourceKind.Gold,
+            bool ignoreCapacity = false)
         {
             return new EffectEntry
             {
@@ -122,13 +125,98 @@ namespace KingdomCollapse.EditorTools
                 RevealCount = revealCount,
                 Card = card,
                 TargetTerrain = targetTerrain,
-                RequireSourceTerrain = requireSourceTerrain
+                RequireSourceTerrain = requireSourceTerrain,
+                Resource = resource,
+                IgnoreCapacity = ignoreCapacity
             };
         }
 
         private static List<EffectEntry> Effects(params EffectEntry[] entries)
         {
             return new List<EffectEntry>(entries);
+        }
+
+        // --- Edificios ---
+
+        /// <summary>
+        /// Preenche custo, producao e trabalhadores dos 5 recursos nos 7 edificios da
+        /// economia (task 9.1) — o catalogo existente so tinha o ouro antigo
+        /// (`_baseGoldProduction`), o que travava populacao em 0 (nenhum edificio
+        /// dava capacidade) e deixava a torre com defesa incondicional (sem
+        /// trabalhador exigido). Numeros de primeira leva: o grupo 11 recalibra por
+        /// simulacao.
+        /// </summary>
+        private static List<BuildingAsset> SeedBuildings()
+        {
+            List<BuildingAsset> buildings = new List<BuildingAsset>();
+
+            buildings.Add(Building("hall", "Salao do Reino", null, 0, 2, 2, null,
+                null, null, workersRequired: 0, populationCapacity: 5));
+
+            buildings.Add(Building("farm", "Fazenda",
+                new List<TerrainType> { TerrainType.Plain }, 20, 0, 0, null,
+                null, Resources(ResourceKind.Food, 4), workersRequired: 1, populationCapacity: 0));
+
+            buildings.Add(Building("sawmill", "Serraria",
+                new List<TerrainType> { TerrainType.Forest }, 25, 0, 0,
+                Adjacencies(Adjacency(TerrainType.Forest, 2, ResourceKind.Gold)),
+                null, Resources(ResourceKind.Wood, 3), workersRequired: 1, populationCapacity: 0));
+
+            buildings.Add(Building("mine", "Mina",
+                new List<TerrainType> { TerrainType.Mine }, 30, 0, 0, null,
+                null, Resources(ResourceKind.Stone, 4), workersRequired: 1, populationCapacity: 0));
+
+            buildings.Add(Building("docks", "Ancoradouro",
+                new List<TerrainType> { TerrainType.River }, 22, 0, 0,
+                Adjacencies(Adjacency(TerrainType.River, 2, ResourceKind.Gold)),
+                null, Resources(ResourceKind.Food, 2), workersRequired: 1, populationCapacity: 0));
+
+            buildings.Add(Building("outpost", "Posto Avancado", null, 18, 1, 3, null,
+                null, null, workersRequired: 0, populationCapacity: 2));
+
+            buildings.Add(Building("watchtower", "Torre de Vigia", null, 30, 0, 6, null,
+                null, null, workersRequired: 2, populationCapacity: 0));
+
+            return buildings;
+        }
+
+        private static BuildingAsset Building(
+            string id, string name, List<TerrainType> allowedTerrains,
+            int goldCost, int baseGoldProduction, int defense,
+            List<BuildingAsset.Adjacency> adjacencyBonuses,
+            List<BuildingAsset.ResourceEntry> cost, List<BuildingAsset.ResourceEntry> production,
+            int workersRequired, int populationCapacity)
+        {
+            BuildingAsset asset = GetOrCreate<BuildingAsset>(id, DataFolders.Buildings);
+            asset.EditorConfigure(
+                name, allowedTerrains, goldCost, baseGoldProduction, defense, adjacencyBonuses,
+                cost, production, workersRequired, populationCapacity);
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static List<BuildingAsset.ResourceEntry> Resources(ResourceKind kind, int amount)
+        {
+            return new List<BuildingAsset.ResourceEntry>
+            {
+                new BuildingAsset.ResourceEntry { Resource = kind, Amount = amount }
+            };
+        }
+
+        private static BuildingAsset.Adjacency Adjacency(TerrainType terrain, int perMatch, ResourceKind resource)
+        {
+            return new BuildingAsset.Adjacency
+            {
+                Match = AdjacencyMatch.Terrain,
+                Terrain = terrain,
+                GoldPerMatch = perMatch,
+                Resource = resource
+            };
+        }
+
+        private static List<BuildingAsset.Adjacency> Adjacencies(params BuildingAsset.Adjacency[] entries)
+        {
+            return new List<BuildingAsset.Adjacency>(entries);
         }
 
         // --- Cartas ---
@@ -190,6 +278,42 @@ namespace KingdomCollapse.EditorTools
                 Effects(
                     Effect(EffectEntryKind.AddDefense, 8),
                     Effect(EffectEntryKind.RepairBase, 1))));
+
+            // --- Cartas de recursos (task 9.2) ---
+
+            cards.Add(Card("card_lumberjack", "Lenhador", "Ganha 6 de madeira.", 1,
+                TargetRequirement.None,
+                Effects(Effect(EffectEntryKind.GainResource, 6, resource: ResourceKind.Wood))));
+
+            cards.Add(Card("card_quarry", "Cantaria", "Ganha 6 de pedra.", 1,
+                TargetRequirement.None,
+                Effects(Effect(EffectEntryKind.GainResource, 6, resource: ResourceKind.Stone))));
+
+            cards.Add(Card("card_reap", "Colheita de Grao", "Ganha 6 de comida.", 1,
+                TargetRequirement.None,
+                Effects(Effect(EffectEntryKind.GainResource, 6, resource: ResourceKind.Food))));
+
+            cards.Add(Card("card_trade_wood", "Escambo de Madeira",
+                "Perde 5 de madeira, ganha 8 de ouro.", 1, TargetRequirement.None,
+                Effects(
+                    Effect(EffectEntryKind.LoseResource, 5, resource: ResourceKind.Wood),
+                    Effect(EffectEntryKind.GainGold, 8))));
+
+            cards.Add(Card("card_migrants", "Migrantes",
+                "2 pessoas se juntam ao reino, se houver alojamento.", 2,
+                TargetRequirement.None,
+                Effects(Effect(EffectEntryKind.Recruit, 2))));
+
+            cards.Add(Card("card_refugees", "Refugiados",
+                "3 pessoas se juntam ao reino, mesmo sem alojamento.", 3,
+                TargetRequirement.None,
+                Effects(Effect(EffectEntryKind.Recruit, 3, ignoreCapacity: true))));
+
+            cards.Add(Card("card_stonewall", "Muralha de Pedra",
+                "Perde 6 de pedra, ganha 10 de defesa.", 1, TargetRequirement.None,
+                Effects(
+                    Effect(EffectEntryKind.LoseResource, 6, resource: ResourceKind.Stone),
+                    Effect(EffectEntryKind.AddDefense, 10))));
 
             return cards;
         }
@@ -309,6 +433,14 @@ namespace KingdomCollapse.EditorTools
                 "Os pedreiros trabalharam de graca, por medo.",
                 Effects(Effect(EffectEntryKind.AddDefense, 8))));
 
+            events.Add(Simple("event_windfall", "Achado no bosque", EventClass.Positive,
+                "Uma arvore caida ja veio cortada pela tempestade.",
+                Effects(Effect(EffectEntryKind.GainResource, 8, resource: ResourceKind.Wood))));
+
+            events.Add(Simple("event_lode", "Filao rico", EventClass.Positive,
+                "A picareta bate em algo que nao e so pedra comum.",
+                Effects(Effect(EffectEntryKind.GainResource, 8, resource: ResourceKind.Stone))));
+
             // --- Neutros ---
 
             events.Add(Simple("event_flood", "Cheia do rio", EventClass.Neutral,
@@ -364,6 +496,15 @@ namespace KingdomCollapse.EditorTools
                     Effect(EffectEntryKind.LoseGold, 0.4f, GoldScaling.FractionOfCurrent),
                     Effect(EffectEntryKind.GrantTile))));
 
+            events.Add(Offer("event_smith", "Ferreiro itinerante", EventClass.Neutral,
+                "Ele forja por materiais, nao por moedas.",
+                "Dispensar", Effects(),
+                "Pagar em madeira e pedra",
+                Effects(
+                    Effect(EffectEntryKind.LoseResource, 5, resource: ResourceKind.Wood),
+                    Effect(EffectEntryKind.LoseResource, 5, resource: ResourceKind.Stone),
+                    Effect(EffectEntryKind.AddDefense, 10))));
+
             // --- Negativos ---
 
             events.Add(Simple("event_tax", "Imposto do reino vizinho", EventClass.Negative,
@@ -385,6 +526,11 @@ namespace KingdomCollapse.EditorTools
             events.Add(Simple("event_fire", "Incendio pequeno", EventClass.Negative,
                 "Contido antes de chegar ao Salao.",
                 Effects(Effect(EffectEntryKind.DamageBase, 0.1f, asFraction: true))));
+
+            events.Add(Simple("event_spoilage", "Estrago no celeiro", EventClass.Negative,
+                "A umidade chegou primeiro que o inverno.",
+                Effects(Effect(EffectEntryKind.LoseResource, 0.25f, resource: ResourceKind.Food,
+                    scaling: GoldScaling.FractionOfCurrent))));
 
             events.Add(Simple("event_sabotage", "Sabotagem", EventClass.Negative,
                 "As ferramentas amanhecem quebradas.",
@@ -428,7 +574,8 @@ namespace KingdomCollapse.EditorTools
         // --- Registro no GameDatabase ---
 
         private static void Register(
-            List<CardAsset> cards, List<WeatherAsset> weather, List<EventAsset> events)
+            List<BuildingAsset> buildings, List<CardAsset> cards, List<WeatherAsset> weather,
+            List<EventAsset> events)
         {
             string[] guids = AssetDatabase.FindAssets("t:GameDatabase");
             if (guids.Length == 0)
@@ -445,6 +592,8 @@ namespace KingdomCollapse.EditorTools
             // Cartas e eventos entram tambem nas listas de "desbloqueado desde o
             // inicio": conteudo fora delas existe mas nunca aparece numa run, e o
             // silencio disso ja custou uma rodada de diagnostico.
+            Fill(serialized, "_buildings", buildings);
+            Fill(serialized, "_startingBuildings", buildings);
             Fill(serialized, "_cards", cards);
             Fill(serialized, "_startingCards", cards);
             Fill(serialized, "_events", events);

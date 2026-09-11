@@ -14,8 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
   _displayName: Fazenda
-  _allowedTerrains: 
+  _prefab: {fileID: 919132149155446097, guid: 6e64fbab148f7e045a34a86923b88b81, type: 3}
+  _allowedTerrains: 00000000
   _goldCost: 20
-  _baseGoldProduction: 3
+  _baseGoldProduction: 0
   _defense: 0
   _adjacencyBonuses: []
+  _cost: []
+  _production:
+  - Resource: 3
+    Amount: 4
+  _workersRequired: 1
+  _populationCapacity: 0

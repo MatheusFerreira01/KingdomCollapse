@@ -14,8 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: KingdomCollapse.Game:KingdomCollapse.Game:BuildingAsset
   _id: 
   _displayName: Torre de Vigia
+  _prefab: {fileID: 919132149155446097, guid: 851add2c96fc6e94d9886d37a532e277, type: 3}
   _allowedTerrains: 
   _goldCost: 30
   _baseGoldProduction: 0
   _defense: 6
   _adjacencyBonuses: []
+  _cost: []
+  _production: []
+  _workersRequired: 2
+  _populationCapacity: 0
