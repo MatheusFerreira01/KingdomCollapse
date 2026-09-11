@@ -181,8 +181,8 @@ namespace KingdomCollapse.Core
                     }
 
                     if (best == null
-                        || Value(candidate, wantsDefense, foodAtRisk, pressuringIdentity)
-                           > Value(best, wantsDefense, foodAtRisk, pressuringIdentity))
+                        || Value(candidate, wantsDefense, foodAtRisk, pressuringIdentity, run)
+                           > Value(best, wantsDefense, foodAtRisk, pressuringIdentity, run))
                     {
                         best = candidate;
                     }
@@ -213,11 +213,15 @@ namespace KingdomCollapse.Core
         /// Prioridade de construção do bot. Fome iminente vence tudo — população
         /// perdida por descuido é o pior desfecho, e é reversível cedo (task 7.2).
         /// Rival que defesa não anula pesa o recurso pressionado em vez de torre
-        /// (task 7.3, design D4). Caso contrário, cai na leitura antiga: defesa sob
-        /// ameaça, produção em dia calmo.
+        /// (task 7.3, design D4). Em dia calmo sem pressão nenhuma, o bot ainda
+        /// precisa enxergar madeira/pedra/comida/capacidade — sem isso ele so via
+        /// ouro e defesa, nunca erguia fazenda ou posto, e a populacao nunca crescia
+        /// (task 11.2: causa raiz do "edificio sem gente"/"populacao ociosa"
+        /// medido pelo simulador).
         /// </summary>
         private static int Value(
-            BuildingDefinition building, bool wantsDefense, bool foodAtRisk, RivalIdentity pressuringIdentity)
+            BuildingDefinition building, bool wantsDefense, bool foodAtRisk, RivalIdentity pressuringIdentity,
+            RunState run)
         {
             if (foodAtRisk)
             {
@@ -236,9 +240,20 @@ namespace KingdomCollapse.Core
                 return stockpile * 5 + building.BaseGoldProduction;
             }
 
-            return wantsDefense
-                ? building.Defense * 4 + building.BaseGoldProduction
-                : building.BaseGoldProduction * 2 + building.Defense;
+            // Capacidade so vale a pena quando a populacao esta perto do teto atual:
+            // sem isso o bot ergueria posto avancado infinitamente cedo, roubando
+            // celulas de fazenda/serraria/mina que produzem todo dia.
+            int room = run.PopulationCapacity() - run[ResourceKind.Population];
+            int capacityValue = building.PopulationCapacity * (room <= 2 ? 4 : 1);
+
+            int productionValue = building.Production[ResourceKind.Food] * 6 +
+                                   building.Production[ResourceKind.Wood] * 2 +
+                                   building.Production[ResourceKind.Stone] * 2 +
+                                   building.BaseGoldProduction * 2;
+
+            int defenseValue = wantsDefense ? building.Defense * 4 : building.Defense;
+
+            return productionValue + capacityValue + defenseValue;
         }
 
         /// <summary>Teto por dia, para uma configuracao degenerada nao girar sem fim.</summary>

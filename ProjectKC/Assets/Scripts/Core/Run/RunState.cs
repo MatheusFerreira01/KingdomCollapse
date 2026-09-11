@@ -18,7 +18,16 @@ namespace KingdomCollapse.Core
     {
         None = 0,
         IntegrityLost,
-        TerritoryLost
+        TerritoryLost,
+
+        /// <summary>Comida em zero por dias seguidos demais (design D4 seguido ate o
+        /// fim: rival de eixo Recurso/Populacao precisa poder matar a run mesmo com
+        /// defesa alta, e nao so incomodar para sempre).</summary>
+        Starvation,
+
+        /// <summary>Ouro em zero por dias seguidos demais — mesma logica, mas para a
+        /// economia geral em vez de comida especificamente.</summary>
+        Bankruptcy
     }
 
     /// <summary>Como a run termina. Vitoria e Colapso sao desfechos de primeira
@@ -114,6 +123,13 @@ namespace KingdomCollapse.Core
             Day = 1;
             Phase = DayPhase.DayStart;
             Pool = new ResourcePool(race.StartingResources);
+
+            // Sem isto, uma raca que ja comeca com gente e starva no proprio
+            // primeiro dia (antes de UpdateChronicShortageStreaks rodar pela
+            // primeira vez) nunca marcava ter tido populacao, e a extincao nunca
+            // era detectada.
+            _everHadPopulation = race.StartingResources[ResourceKind.Population] > 0;
+
             MaxIntegrity = race.StartingIntegrity;
             Integrity = race.StartingIntegrity;
             EnergyPerDay = race.EnergyPerDay;
@@ -182,6 +198,23 @@ namespace KingdomCollapse.Core
         public bool IsOver => Phase == DayPhase.Collapsed || Phase == DayPhase.Victory;
 
         public CollapseReason Collapse { get; private set; } = CollapseReason.None;
+
+        /// <summary>Dias seguidos (ate agora) com comida zerada. A UI le isto para
+        /// avisar antes do colapso por fome cronica chegar.</summary>
+        public int DaysWithoutFood { get; private set; }
+
+        /// <summary>Dias seguidos (ate agora) com ouro zerado.</summary>
+        public int DaysWithoutGold { get; private set; }
+
+        /// <summary>Populacao ja passou de zero nesta run. Kits de teste minimos que
+        /// nunca tiveram gente nenhuma nao devem colapsar so por nunca ter comecado
+        /// a ter populacao — extincao so importa pra quem chegou a ter povo.</summary>
+        private bool _everHadPopulation;
+
+        /// <summary>Dias seguidos (ate agora) com populacao zerada, depois de ja ter
+        /// tido gente. Da uma folga curta pra recrutar de volta antes do colapso —
+        /// nao e instantaneo, porque um dia ruim de fome nao devia ser sentenca.</summary>
+        public int DaysAtZeroPopulation { get; private set; }
 
         /// <summary>Vitoria e Colapso sao desfechos distintos (design D5); isto e
         /// quem consulta qual dos dois terminou a run, sem inferir pelo Phase.</summary>
@@ -521,8 +554,35 @@ namespace KingdomCollapse.Core
         // --- Colapso ---
 
         /// <summary>
-        /// Verifica as duas condicoes de fim: integridade zerada ou territorio perdido.
-        /// Chamado depois de cada passo que pode causar perda.
+        /// Atualiza as sequencias de dias sem comida/ouro. Chamado uma vez por Fim do
+        /// Dia, depois de producao e consumo ja terem acontecido — sem isso um rival
+        /// de eixo Recurso/Populacao (design D4) poderia drenar o reino pra sempre
+        /// sem nunca terminar a run, porque defesa alta o mantinha "repelido" enquanto
+        /// o pedagio continuava corroendo por fora da regra de defesa.
+        /// </summary>
+        public void UpdateChronicShortageStreaks()
+        {
+            if (this[ResourceKind.Population] > 0)
+            {
+                _everHadPopulation = true;
+            }
+
+            // So conta fome sem ninguem pra alimentar: populacao zero nao "passa
+            // fome", so nao tem gente — sem esta guarda, todo catalogo minimo sem
+            // populacao nenhuma (comum em teste de regra) colapsava por fome cronica
+            // mesmo sem ninguem sofrendo com isso.
+            bool starving = this[ResourceKind.Population] > 0 && this[ResourceKind.Food] <= 0;
+            DaysWithoutFood = starving ? DaysWithoutFood + 1 : 0;
+            DaysWithoutGold = Gold <= 0 ? DaysWithoutGold + 1 : 0;
+
+            bool extinctToday = _everHadPopulation && this[ResourceKind.Population] <= 0;
+            DaysAtZeroPopulation = extinctToday ? DaysAtZeroPopulation + 1 : 0;
+        }
+
+        /// <summary>
+        /// Verifica as condicoes de fim: integridade zerada, territorio perdido, ou
+        /// fome/falencia cronica demais. Chamado depois de cada passo que pode causar
+        /// perda.
         /// </summary>
         public bool CheckCollapse()
         {
@@ -545,6 +605,38 @@ namespace KingdomCollapse.Core
             if (StandingTileCount() <= 0)
             {
                 Collapse = CollapseReason.TerritoryLost;
+                Outcome = RunOutcome.Collapse;
+                Phase = DayPhase.Collapsed;
+                return true;
+            }
+
+            // Extincao usa metade do limite de fome cronica: quem chegou a zero
+            // depois de ja ter tido gente esta pior do que quem so passou fome com
+            // o povo ainda de pe (spec — sem isso extincao e "so mais um dia de
+            // fome" em vez de um resultado pior).
+            int extinctionLimit = Math.Max(
+                1, (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 12.0)) / 2);
+            if (DaysAtZeroPopulation >= extinctionLimit)
+            {
+                Collapse = CollapseReason.Starvation;
+                Outcome = RunOutcome.Collapse;
+                Phase = DayPhase.Collapsed;
+                return true;
+            }
+
+            int starvationLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.StarvationCollapseDays, 12.0));
+            if (DaysWithoutFood >= starvationLimit)
+            {
+                Collapse = CollapseReason.Starvation;
+                Outcome = RunOutcome.Collapse;
+                Phase = DayPhase.Collapsed;
+                return true;
+            }
+
+            int bankruptcyLimit = (int)Math.Max(1, Rules.GetDouble(RuleKeys.BankruptcyCollapseDays, 12.0));
+            if (DaysWithoutGold >= bankruptcyLimit)
+            {
+                Collapse = CollapseReason.Bankruptcy;
                 Outcome = RunOutcome.Collapse;
                 Phase = DayPhase.Collapsed;
                 return true;

@@ -699,6 +699,7 @@ namespace KingdomCollapse.Core
             }
 
             ResolvePopulationGrowth();
+            Run.UpdateChronicShortageStreaks();
 
             int handBefore = Run.Deck.Hand.Count;
             int discarded = Run.Deck.DiscardHand();

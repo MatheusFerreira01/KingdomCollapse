@@ -19,6 +19,8 @@ namespace KingdomCollapse.Core
         private int _rosterIndex = -1;
         private int _repelsAchieved;
         private int _nextAttackDay = -1;
+        private int _campaignStartDay;
+        private bool _pendingDeclaration;
 
         public RivalCampaignState(
             List<RivalDefinition> roster, int intervalDays = 4, int restDays = 3, int leadDays = 3)
@@ -64,6 +66,12 @@ namespace KingdomCollapse.Core
                 _rosterIndex = 0;
                 _repelsAchieved = 0;
                 _nextAttackDay = currentDay + _leadDays;
+                _campaignStartDay = currentDay;
+                JustDeclared = Current;
+            }
+            else if (_pendingDeclaration)
+            {
+                _pendingDeclaration = false;
                 JustDeclared = Current;
             }
 
@@ -72,7 +80,12 @@ namespace KingdomCollapse.Core
                 return null;
             }
 
-            int force = Current.CampaignCurve.ForceFor(_nextAttackDay);
+            // Forca e sempre lida na curva do rival vigente a partir do dia 1 dele,
+            // nao do dia absoluto da run (task 11.2): sem isso, o segundo ou terceiro
+            // rival da escada herda o "dia" do jogo inteiro e a curva explode antes
+            // do primeiro ataque dele, tornando a campanha impossivel de vencer.
+            int dayInCampaign = Math.Max(1, _nextAttackDay - _campaignStartDay + 1);
+            int force = Current.CampaignCurve.ForceFor(dayInCampaign);
             ScheduledThreat scheduled = clock.Schedule(_nextAttackDay, force, currentDay, Current.Identity, Current.Id);
             _nextAttackDay += _intervalDays;
             return scheduled;
@@ -102,7 +115,18 @@ namespace KingdomCollapse.Core
             clock.ClearPendingForRival(Current.Id);
             _rosterIndex++;
             _repelsAchieved = 0;
-            _nextAttackDay = AllDefeated ? -1 : currentDay + _restDays;
+
+            if (AllDefeated)
+            {
+                _nextAttackDay = -1;
+            }
+            else
+            {
+                _nextAttackDay = currentDay + _restDays;
+                _campaignStartDay = _nextAttackDay;
+                _pendingDeclaration = true;
+            }
+
             return true;
         }
     }

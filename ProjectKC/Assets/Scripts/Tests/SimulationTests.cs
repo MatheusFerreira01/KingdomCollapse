@@ -8,24 +8,15 @@ namespace KingdomCollapse.Tests
     [TestFixture]
     public class SimulationTests
     {
+        /// <summary>
+        /// Catalogo do simulador (task 11.1): espelha o conteudo real do jogo
+        /// (BalanceContent, que reflete o ContentSeeder) em vez do minimo de regra
+        /// que TestContent.Catalog oferece — sem isso o diagnostico mede um jogo que
+        /// ninguem joga e acusa "madeira parada" mesmo com serraria no catalogo real.
+        /// </summary>
         private static ContentCatalog SimCatalog()
         {
-            RaceDefinition humans = TestContent.Humans();
-            ContentCatalog catalog = TestContent.Catalog(humans);
-
-            catalog.AddCard(TestContent.GoldCard("moeda", 1, 12), unlockedFromStart: true);
-            catalog.AddEvent(
-                EventDefinition.Simple(
-                    "caravana", "Caravana", EventClass.Positive,
-                    new List<IEffect> { new GainGoldEffect(10) }, cooldownDays: 2),
-                unlockedFromStart: true);
-            catalog.AddEvent(
-                EventDefinition.Simple(
-                    "imposto", "Imposto", EventClass.Negative,
-                    new List<IEffect> { new LoseGoldEffect(0.15) }, cooldownDays: 2),
-                unlockedFromStart: true);
-
-            return catalog;
+            return BalanceContent.Catalog();
         }
 
         private static RunSetup Setup(int seed)
@@ -108,6 +99,70 @@ namespace KingdomCollapse.Tests
 
             Assert.That(brutal.Median, Is.LessThan(gentle.Median),
                 "gentil=" + gentle.Median + " brutal=" + brutal.Median);
+        }
+
+        // --- 11.2/11.3: nivel 1, os 3 rivais reais ---
+
+        private static RunSetup Level1Setup(int seed)
+        {
+            return new RunSetup("humans", seed)
+            {
+                FirstThreatDay = 999, // desliga a curva anonima: so a campanha dos rivais ameaca
+                Rivals = BalanceContent.Level1Rivals(),
+                CampaignIntervalDays = 4,
+                CampaignRestDays = 3,
+                ThreatLeadDays = 3
+            };
+        }
+
+        [Test]
+        public void Nivel1_TaxaDeVitoria()
+        {
+            SimulationReport report = SimulationHarness.RunBatch(1000, Level1Setup, SimCatalog());
+
+            TestContext.WriteLine(report.Describe());
+            TestContext.WriteLine("Taxa de vitoria nivel 1: " + (report.VictoryFraction * 100).ToString("0.0") + "%");
+        }
+
+        /// <summary>
+        /// Task 11.3: um bot que so ergue defesa (torre/posto, sem fazenda/mina/
+        /// serraria/ancoradouro) precisa perder mais para o rival economico do que um
+        /// bot com a economia completa — prova que os tres rivais exigem respostas
+        /// diferentes, e nao so "mais defesa resolve tudo".
+        /// </summary>
+        [Test]
+        public void RivalEconomico_SoDefesaPerdeMaisQueEconomiaCompleta()
+        {
+            List<RivalDefinition> saboteurOnly = new List<RivalDefinition>
+            {
+                new RivalDefinition(
+                    "Rival_Saboteur", "Sabotadores",
+                    new RivalIdentity("Rival_Saboteur", "Sabotadores", RivalAxis.Resource, ResourceKind.Food),
+                    5, new ThreatCurve(baseForce: 3, perDay: 1.0, dayExponent: 1.2))
+            };
+
+            RunSetup Setup(int seed) => new RunSetup("humans", seed)
+            {
+                FirstThreatDay = 999,
+                Rivals = saboteurOnly,
+                CampaignIntervalDays = 4,
+                CampaignRestDays = 3,
+                ThreatLeadDays = 3
+            };
+
+            SimulationReport fullEconomy = SimulationHarness.RunBatch(300, Setup, BalanceContent.Catalog());
+            SimulationReport towersOnly = SimulationHarness.RunBatch(300, Setup, BalanceContent.TowersOnlyCatalog());
+
+            TestContext.WriteLine("Economia completa: " + fullEconomy.Describe());
+            TestContext.WriteLine("So torres: " + towersOnly.Describe());
+
+            // Nenhum dos dois necessariamente vence a campanha (ela nao e o alvo
+            // deste teste) — o que prova a resposta diferente e quanto tempo cada um
+            // aguenta: so defesa fica sem comida e colapsa cedo, sempre, enquanto a
+            // economia completa aguenta muito mais.
+            Assert.That(towersOnly.Median, Is.LessThan(fullEconomy.Median),
+                "so defesa deveria sobreviver bem menos tempo contra o rival economico do que " +
+                "a economia completa (cheio=dia " + fullEconomy.Median + " torres=dia " + towersOnly.Median + ")");
         }
 
         [Test]

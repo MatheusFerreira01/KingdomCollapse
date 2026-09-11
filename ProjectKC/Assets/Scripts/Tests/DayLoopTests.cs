@@ -286,6 +286,33 @@ namespace KingdomCollapse.Tests
             Assert.That(dayTenMilestones, Is.LessThanOrEqualTo(1));
         }
 
+        /// <summary>
+        /// Falencia cronica colapsa a run (task 11.2/11.3): sem gastar nem ganhar
+        /// ouro nenhum, dias seguidos com ouro zerado precisam terminar a partida —
+        /// mesma logica da fome cronica, so que para a economia geral.
+        /// </summary>
+        [Test]
+        public void FalenciaCronicaEncerraARunPorColapso()
+        {
+            // Salao sem producao nenhuma: com o Hall padrao de TestContent (2 de
+            // ouro/dia) o ouro nunca ficaria zerado tempo suficiente pra testar isto.
+            RaceDefinition race = TestContent.Humans(gold: 0);
+            ContentCatalog catalog = new ContentCatalog();
+            catalog.AddBuilding(
+                new BuildingDefinition("hall", "Salao do Reino", new List<TerrainType>(), 0, 0, 1), true);
+            catalog.AddRace(race, true);
+
+            RunBundle bundle = TestContent.Run(race, catalog);
+
+            for (int i = 0; i < 20 && !bundle.Run.IsOver; i++)
+            {
+                bundle.Engine.EndDay();
+            }
+
+            Assert.That(bundle.Run.IsOver, Is.True, "falencia cronica precisa encerrar a run");
+            Assert.That(bundle.Run.Collapse, Is.EqualTo(CollapseReason.Bankruptcy));
+        }
+
         [Test]
         public void ConstruirDebitaOuroEContaNasEstatisticas()
         {

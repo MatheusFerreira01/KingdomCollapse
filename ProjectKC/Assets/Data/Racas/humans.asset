@@ -15,6 +15,11 @@ MonoBehaviour:
   _id: 
   _displayName: Humanos
   _description: 
+  _startingResources:
+  - Resource: 4
+    Amount: 3
+  - Resource: 3
+    Amount: 30
   _startingGold: 50
   _startingIntegrity: 20
   _handSize: 5

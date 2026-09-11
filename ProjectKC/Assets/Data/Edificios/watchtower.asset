@@ -18,9 +18,9 @@ MonoBehaviour:
   _allowedTerrains: 
   _goldCost: 30
   _baseGoldProduction: 0
-  _defense: 6
+  _defense: 7
   _adjacencyBonuses: []
   _cost: []
   _production: []
-  _workersRequired: 2
+  _workersRequired: 1
   _populationCapacity: 0

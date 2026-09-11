@@ -17,6 +17,6 @@ MonoBehaviour:
   _axis: 1
   _resource: 0
   _attackCount: 2
-  _baseForce: 6
-  _perDay: 1.6
-  _dayExponent: 1.3
+  _baseForce: 4
+  _perDay: 1.1
+  _dayExponent: 1.2

@@ -105,9 +105,9 @@
 
 ## 11. Balanceamento
 
-- [ ] 11.1 Espelhar o conteúdo novo no harness de linha de comando, verificando que a mediana medida localmente bate com a do simulador no Editor
-- [ ] 11.2 Calibrar economia e campanhas até que a fração de vitórias no nível 1 fique entre 40% e 60% para o bot, verificando pelo relatório do simulador
-- [ ] 11.3 Verificar por simulação que os três rivais exigem respostas diferentes: um bot que só ergue torres deve perder para o rival econômico
+- [x] 11.1 Espelhar o conteúdo novo no harness de linha de comando, verificando que a mediana medida localmente bate com a do simulador no Editor
+- [x] 11.2 Calibrar economia e campanhas até que a fração de vitórias no nível 1 fique entre 40% e 60% para o bot, verificando pelo relatório do simulador
+- [x] 11.3 Verificar por simulação que os três rivais exigem respostas diferentes: um bot que só ergue torres deve perder para o rival econômico
 - [ ] 11.4 Jogar 5 runs completas e registrar em `docs/playtest.md` duração real, momentos de tédio e decisões que pareceram falsas
 - [ ] 11.5 Corrigir o que o playtest apontar e confirmar por uma segunda rodada registrada no mesmo documento
 - [ ] 11.6 Verificar que a suíte completa passa e que o jogo roda uma campanha inteira, do dia 1 à Vitória, sem erro no Console

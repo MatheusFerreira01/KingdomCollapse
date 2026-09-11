@@ -155,17 +155,34 @@ namespace KingdomCollapse.Tests
         }
 
         [Test]
-        public void FomeNaoEncerraARun()
+        public void FomePassageiraNaoEncerraARun()
         {
             RunBundle bundle = Run(ResourceAmounts.Of(ResourceKind.Population, 4));
 
-            for (int i = 0; i < 6 && !bundle.Run.IsOver; i++)
+            bundle.Engine.EndDay();
+
+            Assert.That(bundle.Run[ResourceKind.Population], Is.LessThan(4));
+            Assert.That(bundle.Run.IsOver, Is.False, "um dia de fome derruba populacao, nao a run");
+        }
+
+        /// <summary>
+        /// Fome que persiste por dias demais colapsa a run (task 11.3 revisao):
+        /// sem isto, um rival de eixo Recurso/Populacao (design D4, "nao resolvido
+        /// por defesa") nunca conseguia de fato terminar a run — so incomodava pra
+        /// sempre enquanto a defesa segurasse o ataque em si.
+        /// </summary>
+        [Test]
+        public void FomeCronicaEncerraARunPorColapso()
+        {
+            RunBundle bundle = Run(ResourceAmounts.Of(ResourceKind.Population, 4));
+
+            for (int i = 0; i < 10 && !bundle.Run.IsOver; i++)
             {
                 bundle.Engine.EndDay();
             }
 
-            Assert.That(bundle.Run[ResourceKind.Population], Is.Zero);
-            Assert.That(bundle.Run.IsOver, Is.False, "fome derruba a populacao, nao a run");
+            Assert.That(bundle.Run.IsOver, Is.True, "fome cronica precisa encerrar a run");
+            Assert.That(bundle.Run.Collapse, Is.EqualTo(CollapseReason.Starvation));
         }
 
         [Test]

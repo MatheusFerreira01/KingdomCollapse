@@ -174,8 +174,8 @@ namespace KingdomCollapse.EditorTools
             buildings.Add(Building("outpost", "Posto Avancado", null, 18, 1, 3, null,
                 null, null, workersRequired: 0, populationCapacity: 2));
 
-            buildings.Add(Building("watchtower", "Torre de Vigia", null, 30, 0, 6, null,
-                null, null, workersRequired: 2, populationCapacity: 0));
+            buildings.Add(Building("watchtower", "Torre de Vigia", null, 30, 0, 7, null,
+                null, null, workersRequired: 1, populationCapacity: 0));
 
             return buildings;
         }
