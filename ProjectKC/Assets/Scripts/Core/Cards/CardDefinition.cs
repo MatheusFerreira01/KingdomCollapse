@@ -43,7 +43,8 @@ namespace KingdomCollapse.Core
             TargetRequirement target,
             IReadOnlyList<IEffect> effects,
             bool retained = false,
-            IReadOnlyList<string> allowedRaceIds = null)
+            IReadOnlyList<string> allowedRaceIds = null,
+            string rulesText = null)
         {
             Id = id;
             DisplayName = displayName;
@@ -52,11 +53,16 @@ namespace KingdomCollapse.Core
             Effects = effects ?? new List<IEffect>();
             Retained = retained;
             AllowedRaceIds = allowedRaceIds ?? new List<string>();
+            RulesText = rulesText ?? string.Empty;
         }
 
         public string Id { get; }
 
         public string DisplayName { get; }
+
+        /// <summary>Texto de regra para exibir na carta. A UI le daqui em vez de ir
+        /// direto no asset, para nao precisar conhecer o Unity.</summary>
+        public string RulesText { get; }
 
         public int EnergyCost { get; }
 

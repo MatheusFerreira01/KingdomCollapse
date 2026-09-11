@@ -36,6 +36,40 @@ namespace KingdomCollapse.Game
 
         public IReadOnlyList<RaceAsset> Races => _races;
 
+        /// <summary>Id do edificio para o prefab 3D atribuido no asset, quando houver.
+        /// GridView usa para desenhar o marcador em vez do cubo padrao.</summary>
+        public Dictionary<string, GameObject> BuildBuildingPrefabs()
+        {
+            Dictionary<string, GameObject> prefabs = new Dictionary<string, GameObject>();
+
+            for (int i = 0; i < _buildings.Count; i++)
+            {
+                if (_buildings[i] != null && _buildings[i].Prefab != null)
+                {
+                    prefabs[_buildings[i].Id] = _buildings[i].Prefab;
+                }
+            }
+
+            return prefabs;
+        }
+
+        /// <summary>Id da carta para a arte atribuida no asset, quando houver. Carta
+        /// sem entrada aqui cai no layout so-texto (spec proposal, item 8).</summary>
+        public Dictionary<string, Texture2D> BuildCardArt()
+        {
+            Dictionary<string, Texture2D> art = new Dictionary<string, Texture2D>();
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i] != null && _cards[i].Art != null)
+                {
+                    art[_cards[i].Id] = _cards[i].Art;
+                }
+            }
+
+            return art;
+        }
+
         public ContentCatalog BuildCatalog()
         {
             ContentCatalog catalog = new ContentCatalog();

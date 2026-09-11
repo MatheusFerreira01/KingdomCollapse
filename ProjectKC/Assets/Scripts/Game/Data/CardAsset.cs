@@ -10,6 +10,9 @@ namespace KingdomCollapse.Game
     {
         [SerializeField] private string _displayName = "Carta";
 
+        [Tooltip("Opcional: sem arte atribuida, a carta mostra so nome, custo e texto de regra.")]
+        [SerializeField] private Texture2D _art;
+
         [TextArea]
         [SerializeField] private string _rulesText;
 
@@ -28,6 +31,8 @@ namespace KingdomCollapse.Game
 
         public string RulesText => _rulesText;
 
+        public Texture2D Art => _art;
+
         public CardDefinition ToDefinition()
         {
             return new CardDefinition(
@@ -37,7 +42,8 @@ namespace KingdomCollapse.Game
                 _target,
                 EffectEntry.ToEffects(_effects),
                 _retained,
-                _allowedRaceIds);
+                _allowedRaceIds,
+                _rulesText);
         }
 
 #if UNITY_EDITOR

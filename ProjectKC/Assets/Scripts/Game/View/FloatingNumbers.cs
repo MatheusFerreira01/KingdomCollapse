@@ -15,9 +15,24 @@ namespace KingdomCollapse.Game
             Text = text;
             Color = color;
             Lifetime = Mathf.Max(0.1f, lifetime);
+            IsScreenAnchored = false;
+        }
+
+        /// <summary>Ancorado direto em coordenada de tela (HUD fixo), em vez de
+        /// posicao de mundo projetada — o relogio de ameaca no cabecalho usa este
+        /// construtor porque nao tem celula de origem para projetar.</summary>
+        public FloatingNumber(Vector2 screen, string text, Color color, float lifetime)
+        {
+            World = screen;
+            Text = text;
+            Color = color;
+            Lifetime = Mathf.Max(0.1f, lifetime);
+            IsScreenAnchored = true;
         }
 
         public Vector3 World { get; }
+
+        public bool IsScreenAnchored { get; }
 
         public string Text { get; }
 
@@ -103,6 +118,13 @@ namespace KingdomCollapse.Game
             _active.Add(new FloatingNumber(world, text, color, _lifetime));
         }
 
+        /// <summary>Sobe e some a partir de um ponto fixo de tela (HUD), sem projecao
+        /// de camera — usado pelo delta do relogio de ameaca no cabecalho.</summary>
+        public void SpawnScreen(Vector2 screen, string text, Color color)
+        {
+            _active.Add(new FloatingNumber(screen, text, color, _lifetime));
+        }
+
         /// <summary>
         /// Um número por recurso da célula, escalonado no tempo para que valores
         /// diferentes não se sobreponham e virem borrão.
@@ -145,29 +167,43 @@ namespace KingdomCollapse.Game
             }
 
             Camera camera = Camera.main;
-            if (camera == null)
-            {
-                return;
-            }
 
             Color previous = GUI.color;
 
             for (int i = 0; i < _active.Count; i++)
             {
                 FloatingNumber number = _active[i];
-                Vector3 world = number.World + Vector3.up * (_riseDistance * number.Progress);
-                Vector3 screen = camera.WorldToScreenPoint(world);
+                Vector2 guiPoint;
 
-                if (screen.z <= 0f)
+                if (number.IsScreenAnchored)
                 {
-                    continue;
+                    // Ja esta em espaco de tela: so sobe conforme o progresso, sem
+                    // depender de camera nem projecao de mundo.
+                    guiPoint = new Vector2(number.World.x, number.World.y - _riseDistance * 20f * number.Progress);
+                }
+                else
+                {
+                    if (camera == null)
+                    {
+                        continue;
+                    }
+
+                    Vector3 world = number.World + Vector3.up * (_riseDistance * number.Progress);
+                    Vector3 screen = camera.WorldToScreenPoint(world);
+
+                    if (screen.z <= 0f)
+                    {
+                        continue;
+                    }
+
+                    guiPoint = new Vector2(screen.x, Screen.height - screen.y);
                 }
 
                 Color color = number.Color;
                 color.a = 1f - number.Progress;
                 GUI.color = color;
 
-                GUI.Label(new Rect(screen.x - 40f, Screen.height - screen.y - 12f, 80f, 22f), number.Text);
+                GUI.Label(new Rect(guiPoint.x - 40f, guiPoint.y - 12f, 80f, 22f), number.Text);
             }
 
             GUI.color = previous;

@@ -1,0 +1,17 @@
+Icones de recurso — Game-icons.net (https://game-icons.net)
+Licenca: Creative Commons BY 3.0 (uso livre, inclusive comercial, EXIGE credito).
+
+resource_gold.png       <- "Coins" por Delapouite       https://game-icons.net/1x1/delapouite/coins.html
+resource_wood.png       <- "Wood pile" por Delapouite    https://game-icons.net/1x1/delapouite/wood-pile.html
+resource_stone.png      <- "Stone pile" por Delapouite   https://game-icons.net/1x1/delapouite/stone-pile.html
+resource_food.png       <- "Wheat" por Lorc              https://game-icons.net/1x1/lorc/wheat.html
+resource_population.png <- "Farmer" por Delapouite       https://game-icons.net/1x1/delapouite/farmer.html
+resource_energy.png     <- "Heavy lightning" por Lorc    https://game-icons.net/1x1/lorc/heavy-lightning.html
+resource_defense.png    <- "Checked shield" por Lorc     https://game-icons.net/1x1/lorc/checked-shield.html
+resource_threat.png     <- "Horned skull" por Lorc       https://game-icons.net/1x1/lorc/horned-skull.html
+
+Credito minimo exigido pela licenca (juntar aos creditos do jogo quando existirem,
+mesmo texto do pacote Weather):
+"Icones por Lorc e Delapouite (game-icons.net), CC BY 3.0."
+
+Brancos, fundo transparente, 512x512.

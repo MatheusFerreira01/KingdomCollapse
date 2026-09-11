@@ -1,0 +1,19 @@
+Modelo 3D — Kenney Castle Kit (https://kenney.nl/assets/castle-kit)
+Licenca: Creative Commons CC0 1.0 Universal (dominio publico, uso livre
+inclusive comercial, sem exigencia de atribuicao).
+
+tower-square.fbx       <- torre completa, sugerida para o prop do Salao (hall.asset)
+tower-slant-roof.fbx   <- torre pequena com telhado azul, sugerida para o prop da
+                           Torre de Vigia (watchtower.asset) — distinta da torre do
+                           Salao, pra nao ficar identica
+bridge-straight.fbx    <- prancha/ponte curta, sugerida para o prop do Ancoradouro
+                           (docks.asset) — improviso honesto: nao e um cais de
+                           verdade, mas uma plataforma de madeira lê como doca
+                           melhor que o cubo liso
+Textures/colormap.png  <- atlas de textura que os tres FBX referenciam; tem que
+                           ficar exatamente nessa subpasta relativa (Textures/
+                           do lado do .fbx) para o Unity achar a textura sozinho.
+
+O Castle Kit e modular (paredes, torres em partes, portoes) — so peguei as pecas ja
+montadas inteiras, porque o resto exige empilhar varias pecas manualmente no
+Editor, que nao fazia sentido copiar sem poder ver o resultado.

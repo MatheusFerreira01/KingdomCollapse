@@ -1,0 +1,20 @@
+Modelos 3D — Kenney Fantasy Town Kit (https://kenney.nl/assets/fantasy-town-kit)
+Licenca: Creative Commons CC0 1.0 Universal (dominio publico, uso livre
+inclusive comercial, sem exigencia de credito).
+
+windmill.fbx  <- sugerido para o prop da Fazenda (farm.asset)
+watermill.fbx <- NAO usar em Serraria — e roda d'agua de moinho de graos, sem
+                  relacao com serrar madeira. Erro da leva anterior; se quiser
+                  usar em outro lugar (ex. um futuro predio de moagem), o modelo
+                  continua aqui, so tira do campo Prefab de sawmill.asset.
+Textures/colormap.png <- atlas que o material do FBX referencia; tem que ficar
+                          nessa subpasta relativa (igual ao pacote Castle).
+
+Serraria (sawmill.asset) continua sem modelo: achei um "Low Poly Sawmill" bom no
+Sketchfab (CC-BY, feito pra isso — troncos e tabuas como objetos separados), mas
+o download de la exige login que eu nao tenho como fazer. Se quiser, baixa voce
+mesmo em https://sketchfab.com/3d-models/low-poly-sawmill-12fca67ff61f41ce8d3c390143fc5fc3
+e eu ligo o resto.
+
+Mina, Posto Avancado, Torre de Vigia e Ancoradouro ganharam modelo — ver
+Assets/Art/Externo/Cave/LICENSE.txt e Assets/Art/Externo/Castle/LICENSE.txt.

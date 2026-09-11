@@ -14,9 +14,13 @@ O que ela ensinou, e que define tudo o que vem depois:
 - **Ameaça anônima e infinita não dá o que perseguir.** Medimos dias de sobrevivência por quatro rodadas num jogo cuja árvore de meta tinha zero nós.
 - **Sem retorno visual não dá para saber se é divertido.** O clímax de cada quatro dias era uma linha de log.
 
+## Concluído (2)
+
+**`add-hud-and-terrain-redesign`** — 2026-09-11. Terreno com textura e prop 3D em vez de cor chapada; recursos/energia/defesa em ícone; relógio de ameaça no cabeçalho com delta animado; clima persistente com tooltip, luz de cena e partículas; célula bufada/penalizada com partícula própria; popup central de construção; log flutuante; correção do bug que travava cartas com alvo em célula comprável. Playtest em `docs/playtest.md` achou um bloqueio de conteúdo pro grupo 9 da mudança abaixo — ver lá.
+
 ## Em andamento
 
-**`add-rival-kingdoms-economy`** — proposta pronta, 65 tarefas.
+**`add-rival-kingdoms-economy`** — retomada em 2026-09-11 a partir do grupo 4, 65 tarefas.
 
 Economia de cinco recursos com população como bem e dívida; reinos rivais nomeados com campanha finita e vitória; escada de dificuldade; árvore de meta com poder permanente sob teto; camada de retorno visual; encontros com presença persistente.
 

@@ -1,6 +1,15 @@
 > Tarefas marcadas **[Editor]** são trabalho do Matheus dentro do Unity. As demais são código C# gerado aqui.
 >
 > A ordem importa: o jogo precisa compilar e passar nos testes ao fim de cada grupo, e **nenhuma calibração vale antes do grupo 7** (o bot precisa saber jogar a economia nova, ou mede o jogo errado — já erramos assim duas vezes).
+>
+> **Retomado em 2026-09-11.** Esteve pausado a partir do grupo 4 enquanto
+> `add-hud-and-terrain-redesign` resolvia a legibilidade (terreno em cor chapada, tudo
+> texto, clima sumindo em 1s). Playtest daquela mudança achou um bloqueio prévio pro
+> grupo 9: os 7 assets de prédio (`Assets/Data/Edificios`) e a raça `humans` nunca
+> foram preenchidos com os campos de custo/produção/trabalhadores/população da
+> economia de cinco recursos — só o `_baseGoldProduction` antigo sobrou. Isso trava a
+> tarefa 9.2 e explica por que a run fica fácil e a população nunca cresce (capacidade
+> zero em todo prédio). Ver `docs/playtest.md` (2026-09-11).
 
 ## 1. Economia de recursos
 

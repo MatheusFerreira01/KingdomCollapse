@@ -27,6 +27,11 @@ namespace KingdomCollapse.Game
 
         [SerializeField] private string _displayName = "Edificio";
 
+        [Tooltip("Opcional: sem prefab atribuido, GridView desenha o marcador de cubo atual.")]
+        [SerializeField] private GameObject _prefab;
+
+        public GameObject Prefab => _prefab;
+
         [Tooltip("Terrenos onde pode ser construido. Vazio aceita qualquer terreno.")]
         [SerializeField] private List<TerrainType> _allowedTerrains = new List<TerrainType>();
 

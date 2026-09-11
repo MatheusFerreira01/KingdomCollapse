@@ -1,0 +1,18 @@
+Texturas de terreno — ambientCG (https://ambientcg.com)
+Licenca: Creative Commons CC0 1.0 Universal (dominio publico, uso livre
+inclusive comercial, sem exigencia de atribuicao).
+
+terrain_plain.png   <- Grass001  (https://ambientcg.com/view?id=Grass001)
+terrain_forest.png  <- Moss001   (https://ambientcg.com/view?id=Moss001)
+terrain_mine.png    <- Rock026   (https://ambientcg.com/view?id=Rock026)
+terrain_ruin.png    <- Bricks066 (https://ambientcg.com/view?id=Bricks066)
+
+River ficou sem textura nesta leva: nenhum asset de agua encontrado no
+ambientCG se encaixou bem (a categoria nao tem textura estatica de
+superficie de agua). O terreno River continua na cor chapada atual ate
+alguem escolher um asset melhor — o campo em TerrainVisualSet aceita
+qualquer Texture2D quando quiser preencher.
+
+So o mapa de cor (Color.png) de cada asset foi mantido; os originais tem
+tambem AmbientOcclusion, Displacement, Normal e Roughness para uso em PBR,
+que nao se aplicam ao material Unlit/Lit simples usado aqui.

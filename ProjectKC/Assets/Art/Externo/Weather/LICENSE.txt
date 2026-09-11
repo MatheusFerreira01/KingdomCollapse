@@ -1,0 +1,18 @@
+Icones de clima — Game-icons.net (https://game-icons.net)
+Licenca: Creative Commons BY 3.0 (uso livre, inclusive comercial, EXIGE credito
+ao autor — diferente dos outros packs desta pasta Externo, que sao CC0).
+
+weather_sun.png     <- "Sun" por Lorc      https://game-icons.net/1x1/lorc/sun.html
+weather_rain.png    <- "Raining" por Lorc  https://game-icons.net/1x1/lorc/raining.html
+weather_drought.png <- "Whirlwind" por Lorc https://game-icons.net/1x1/lorc/whirlwind.html
+                        (redemoinho/vento — nao achei icone de "seca" literal,
+                        vento seco combina com o pedido original)
+weather_fog.png     <- "Fog" por Delapouite https://game-icons.net/1x1/delapouite/fog.html
+weather_storm.png   <- "Lightning storm" por Lorc https://game-icons.net/1x1/lorc/lightning-storm.html
+weather_calm.png    <- "Fluffy cloud" por Lorc https://game-icons.net/1x1/lorc/fluffy-cloud.html
+
+Credito minimo exigido pela licenca (colocar nos creditos do jogo quando existirem):
+"Icones de clima por Lorc e Delapouite (game-icons.net), CC BY 3.0."
+
+Todos brancos com fundo transparente, 512x512, prontos pra usar como Texture2D
+no Unity sem edicao.

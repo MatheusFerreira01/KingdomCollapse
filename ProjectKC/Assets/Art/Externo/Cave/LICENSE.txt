@@ -1,0 +1,9 @@
+Modelos 3D — Kenney Modular Cave Kit (https://kenney.nl/assets/modular-cave-kit)
+Licenca: Creative Commons CC0 1.0 Universal (dominio publico, uso livre
+inclusive comercial, sem exigencia de credito).
+
+gate-metal-bars.fbx <- sugerido para o prop da Mina (mine.asset) — arco de tunel
+                        com grade de metal, leu bem como entrada de mina
+gate.fbx            <- sugerido para o prop do Posto Avancado (outpost.asset) —
+                        arco de pedra simples, usado aqui como marco de fronteira
+Textures/colormap.png <- atlas que o material do FBX referencia.

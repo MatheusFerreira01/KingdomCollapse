@@ -113,6 +113,91 @@ namespace KingdomCollapse.Game
             }
         }
 
+        /// <summary>
+        /// Fator de escala para um prefab caber num alvo de tamanho conhecido, pela
+        /// pegada no chao (X/Z, nao altura — torre alta e moinho largo devem caber
+        /// igual). Cada pacote de asset externo vem numa escala diferente (o moinho
+        /// do Kenney Fantasy Town e muito maior que a arvore do Nature Kit); sem
+        /// isso, cada prefab novo quebraria o tabuleiro de um jeito diferente.
+        /// </summary>
+        public static float FitScale(Bounds bounds, float targetFootprint)
+        {
+            float footprint = Mathf.Max(bounds.size.x, bounds.size.z);
+            if (footprint <= 0.001f)
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp(targetFootprint / footprint, 0.01f, 25f);
+        }
+
+        /// <summary>Le a cor base do material, para guardar antes de tingir (ex.:
+        /// escurecer marcador de construcao ocioso) e poder restaurar depois.</summary>
+        public static Color GetColor(Material material)
+        {
+            if (material == null)
+            {
+                return Color.white;
+            }
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                return material.GetColor("_BaseColor");
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                return material.GetColor("_Color");
+            }
+
+            return Color.white;
+        }
+
+        /// <summary>
+        /// Aplica a textura do terreno sobre o material, se atribuida. A cor definida
+        /// por <see cref="SetColor"/> continua multiplicando por cima (tinte de
+        /// selecao, ociosidade, fantasma etc.), entao a textura nao quebra nenhum dos
+        /// realces ja existentes.
+        /// </summary>
+        public static void SetTexture(Material material, Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", texture);
+            }
+
+            if (material.HasProperty("_MainTex"))
+            {
+                material.SetTexture("_MainTex", texture);
+            }
+        }
+
+        /// <summary>Nome e explicacao curta, para o tooltip ao pairar o mouse sobre a
+        /// celula (spec terrain-art).</summary>
+        public static string DescriptionFor(TerrainType terrain)
+        {
+            switch (terrain)
+            {
+                case TerrainType.Plain:
+                    return "Planicie: terreno comum, aceita a maioria das construcoes.";
+                case TerrainType.Forest:
+                    return "Floresta: rende madeira extra; so algumas construcoes cabem aqui.";
+                case TerrainType.Mine:
+                    return "Mina: rende pedra; terreno rigido, poucas construcoes cabem.";
+                case TerrainType.River:
+                    return "Rio: producao de comida sensivel ao clima — chuva ajuda aqui.";
+                case TerrainType.Ruin:
+                    return "Ruina: terreno raro e danificado; poucas construcoes cabem.";
+                default:
+                    return terrain.ToString();
+            }
+        }
+
         private static void MakeTransparent(Material material)
         {
             // Chaves do URP/Lit para modo transparente. Sem elas o alpha e ignorado.

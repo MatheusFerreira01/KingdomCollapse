@@ -1,0 +1,15 @@
+Modelos 3D — Kenney Nature Kit (https://kenney.nl/assets/nature-kit)
+Licenca: Creative Commons CC0 1.0 Universal (dominio publico, uso livre
+inclusive comercial, sem exigencia de atribuicao).
+
+tree_default.fbx  <- arvore generica de folhas, sugerida para o prop de Floresta
+rock_largeA.fbx   <- rocha grande, sugerida para o prop de Mina
+
+Sem textura: os dois modelos usam cor solida por material (woodBark, leafsGreen
+na arvore; pedra na rocha), entao o Unity extrai os materiais certos direto do
+FBX ao importar — nao precisa de nenhum arquivo de imagem junto.
+
+Planicie, Rio e Ruina ficaram sem prop 3D nesta leva (o Nature Kit e focado em
+natureza; nao tem nada de ruina/estrutura quebrada que servisse, e planicie/rio
+ja funcionam so com a textura). O campo em TerrainVisualSet aceita qualquer
+prefab quando quiser preencher depois.
