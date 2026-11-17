@@ -81,6 +81,15 @@ namespace KingdomCollapse.Core
         public override string Describe() => "possui edificio " + _buildingId;
     }
 
+    /// <summary>So faz sentido quando ha o que consertar: celula arrasada ou base ferida.</summary>
+    public sealed class HasDamageCondition : EventCondition
+    {
+        public override bool IsSatisfied(RunState run) =>
+            run.Integrity < run.MaxIntegrity || run.StandingTileCount() < run.Grid.OwnedCount;
+
+        public override string Describe() => "ha dano a reparar";
+    }
+
     public sealed class MinimumTilesCondition : EventCondition
     {
         private readonly int _tiles;

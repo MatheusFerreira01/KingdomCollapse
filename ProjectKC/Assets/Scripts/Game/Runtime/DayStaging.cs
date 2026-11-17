@@ -165,7 +165,24 @@ namespace KingdomCollapse.Game
 
         private float DurationFor(DayStep step)
         {
-            float baseTime = step.IsHighlight ? 1.15f : 0.55f;
+            float baseTime;
+            switch (step.Kind)
+            {
+                case DayStepKind.Attack:
+                    baseTime = 3.2f;
+                    break;
+                case DayStepKind.Event:
+                    baseTime = 2.8f;
+                    break;
+                case DayStepKind.Threat:
+                case DayStepKind.Weather:
+                    baseTime = 1.7f;
+                    break;
+                default:
+                    baseTime = step.IsHighlight ? 1.4f : 0.9f;
+                    break;
+            }
+
             return Speed == StagingSpeed.Fast ? baseTime * 0.4f : baseTime;
         }
 

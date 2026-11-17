@@ -135,6 +135,10 @@ namespace KingdomCollapse.Game
             List<CatalogViolation> violations = new List<CatalogViolation>();
             violations.AddRange(EventCatalogValidator.Validate(BuildEventDefinitions()));
             violations.AddRange(MetaCatalogValidator.Validate(BuildMetaTree()));
+            if (_levels.Count > 0)
+            {
+                violations.AddRange(MetaCatalogValidator.ValidatePowerCaps(BuildMetaTree(), BuildLadder()));
+            }
             violations.AddRange(WeatherCatalogValidator.Validate(BuildCatalog().Weather));
             violations.AddRange(RivalCatalogValidator.Validate(rivals));
 

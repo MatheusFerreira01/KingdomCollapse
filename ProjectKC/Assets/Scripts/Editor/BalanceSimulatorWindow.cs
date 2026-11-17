@@ -21,6 +21,8 @@ namespace KingdomCollapse.EditorTools
         private GameDatabase _database;
         private string _raceId = "humans";
         private int _runs = 1000;
+        private bool _builtIn = true;
+        private int _level = 1;
         private float _expansionReserve = 1.5f;
 
         private string _report = string.Empty;
@@ -67,6 +69,13 @@ namespace KingdomCollapse.EditorTools
                 "Alvo da spec: Colapso tipico entre os dias " + TargetMinDay + " e " + TargetMaxDay + ".",
                 MessageType.None);
 
+            _builtIn = EditorGUILayout.Toggle(
+                new GUIContent("Conteudo embutido", "Mede o StarterContent, que e o que o jogo usa por padrao."), _builtIn);
+            if (_builtIn)
+            {
+                _level = Mathf.Clamp(EditorGUILayout.IntField("Nivel", _level), 1, 9);
+            }
+
             _database = (GameDatabase)EditorGUILayout.ObjectField(
                 "Base de conteudo", _database, typeof(GameDatabase), false);
 
@@ -79,7 +88,7 @@ namespace KingdomCollapse.EditorTools
 
             EditorGUILayout.Space();
 
-            using (new EditorGUI.DisabledScope(_database == null))
+            using (new EditorGUI.DisabledScope(_database == null && !_builtIn))
             {
                 if (GUILayout.Button("Simular", GUILayout.Height(30)))
                 {
@@ -87,7 +96,7 @@ namespace KingdomCollapse.EditorTools
                 }
             }
 
-            if (_database == null)
+            if (_database == null && !_builtIn)
             {
                 EditorGUILayout.HelpBox("Arraste um GameDatabase para simular.", MessageType.Warning);
             }
@@ -101,6 +110,12 @@ namespace KingdomCollapse.EditorTools
 
         private void Run()
         {
+            if (_builtIn)
+            {
+                RunBuiltIn();
+                return;
+            }
+
             ContentCatalog catalog = _database.BuildCatalog();
 
             if (!catalog.Races.ContainsKey(_raceId))
@@ -120,6 +135,44 @@ namespace KingdomCollapse.EditorTools
 
             stopwatch.Stop();
             _report = Describe(report, stopwatch.Elapsed.TotalSeconds, catalog);
+        }
+
+        /// <summary>
+        /// Mede o jogo como ele e jogado: conteudo embutido, nivel escolhido, e o bot
+        /// que sabe plantar, abrigar e guarnecer. A metrica e a fracao de vitorias.
+        /// </summary>
+        private void RunBuiltIn()
+        {
+            ContentCatalog catalog = StarterContent.BuildCatalog();
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            SimulationReport report = SimulationHarness.RunBatch(
+                _runs,
+                seed => StarterContent.CreateSetup(seed + 1, _level),
+                catalog,
+                new StewardPolicy());
+
+            stopwatch.Stop();
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Conteudo embutido, nivel " + _level + ", " + report.Count + " runs.");
+            builder.AppendLine("Vitorias: " + (report.WinFraction * 100).ToString("0.0") + "%   (alvo do nivel 1 para o bot: 40% a 65%)");
+            builder.AppendLine("Dia mediano da vitoria: " + report.MedianWinDay);
+            builder.AppendLine("Dia mediano de qualquer desfecho: " + report.Median +
+                               "  (p10 " + report.Percentile(0.10) + ", p90 " + report.Percentile(0.90) + ")");
+            builder.AppendLine("Tempo: " + stopwatch.Elapsed.TotalSeconds.ToString("0.00") + "s");
+            builder.AppendLine();
+
+            List<CatalogViolation> violations = StarterContent.Validate();
+            builder.AppendLine(violations.Count == 0 ? "Catalogo valido." : "VIOLACOES DE CATALOGO:");
+            for (int i = 0; i < violations.Count; i++)
+            {
+                builder.AppendLine("  * " + violations[i]);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine(Histogram(report));
+            _report = builder.ToString();
         }
 
         private string Describe(SimulationReport report, double seconds, ContentCatalog catalog)

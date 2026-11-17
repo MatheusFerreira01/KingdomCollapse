@@ -8,7 +8,8 @@ namespace KingdomCollapse.Core
         UnknownNode,
         AlreadyPurchased,
         MissingPrerequisite,
-        NotEnoughCurrency
+        NotEnoughCurrency,
+        LevelLocked
     }
 
     public readonly struct PurchaseResult
@@ -99,12 +100,89 @@ namespace KingdomCollapse.Core
                 }
             }
 
+            if (profile.HighestUnlockedLevel < node.RequiredLevel)
+            {
+                return PurchaseResult.Fail(PurchaseRejection.LevelLocked);
+            }
+
             if (profile.Currency < node.Cost)
             {
                 return PurchaseResult.Fail(PurchaseRejection.NotEnoughCurrency);
             }
 
             return PurchaseResult.Success;
+        }
+
+        /// <summary>
+        /// Bonus permanentes que valem para uma run desta raca: tronco geral mais o
+        /// galho dela, na ordem dos ids para que a aplicacao seja deterministica.
+        /// </summary>
+        public List<MetaBonus> GrantedBonuses(MetaProfile profile, string raceId)
+        {
+            List<MetaBonus> bonuses = new List<MetaBonus>();
+            if (profile == null)
+            {
+                return bonuses;
+            }
+
+            List<string> ids = new List<string>(_nodes.Keys);
+            ids.Sort(string.CompareOrdinal);
+
+            for (int n = 0; n < ids.Count; n++)
+            {
+                MetaNodeDefinition node = _nodes[ids[n]];
+                if (!profile.HasNode(node.Id) || (node.IsRaceBranch && node.RaceBranchId != raceId))
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < node.Bonuses.Count; i++)
+                {
+                    bonuses.Add(node.Bonuses[i]);
+                }
+            }
+
+            return bonuses;
+        }
+
+        /// <summary>
+        /// Poder maximo que um jogador pode ter acumulado ao jogar o nivel dado: todo
+        /// no do tronco geral ja compravel, mais o galho de raca mais forte (galhos
+        /// nao se somam, porque uma run so tem uma raca).
+        /// </summary>
+        public int PowerAvailableAt(int levelRank)
+        {
+            int trunk = 0;
+            Dictionary<string, int> branches = new Dictionary<string, int>();
+
+            foreach (KeyValuePair<string, MetaNodeDefinition> pair in _nodes)
+            {
+                MetaNodeDefinition node = pair.Value;
+                if (node.RequiredLevel > levelRank)
+                {
+                    continue;
+                }
+
+                if (!node.IsRaceBranch)
+                {
+                    trunk += node.Power;
+                    continue;
+                }
+
+                branches.TryGetValue(node.RaceBranchId, out int current);
+                branches[node.RaceBranchId] = current + node.Power;
+            }
+
+            int strongest = 0;
+            foreach (KeyValuePair<string, int> pair in branches)
+            {
+                if (pair.Value > strongest)
+                {
+                    strongest = pair.Value;
+                }
+            }
+
+            return trunk + strongest;
         }
 
         public PurchaseResult Purchase(MetaProfile profile, string nodeId)
@@ -209,7 +287,7 @@ namespace KingdomCollapse.Core
             {
                 MetaNodeDefinition node = pair.Value;
 
-                if (node.Unlocks.Count == 0)
+                if (node.Unlocks.Count == 0 && node.Bonuses.Count == 0)
                 {
                     violations.Add(new CatalogViolation(node.Id, "conteudo", "no nao desbloqueia nada"));
                 }
@@ -221,7 +299,7 @@ namespace KingdomCollapse.Core
                         violations.Add(new CatalogViolation(
                             node.Id,
                             "bonus numerico",
-                            "meta desbloqueia conteudo, nunca poder permanente (" +
+                            "poder permanente e declarado como bonus do no, que pesa no teto do nivel (" +
                             node.Unlocks[i].ContentId + ")"));
                     }
                 }
@@ -245,6 +323,47 @@ namespace KingdomCollapse.Core
                 if (node.Cost < 0)
                 {
                     violations.Add(new CatalogViolation(node.Id, "custo", "custo negativo"));
+                }
+            }
+
+            return violations;
+        }
+
+        /// <summary>
+        /// O teto de poder por nivel (spec difficulty-ladder, design D6). Para cada
+        /// degrau, o poder que a arvore ja pode ter concedido precisa caber no teto
+        /// que o degrau declara: e isso que impede o grind de trivializar a escada.
+        /// </summary>
+        public static List<CatalogViolation> ValidatePowerCaps(MetaTree tree, DifficultyLadder ladder)
+        {
+            List<CatalogViolation> violations = new List<CatalogViolation>();
+            if (tree == null || ladder == null)
+            {
+                return violations;
+            }
+
+            for (int i = 0; i < ladder.Levels.Count; i++)
+            {
+                DifficultyLevel level = ladder.Levels[i];
+                int power = tree.PowerAvailableAt(level.Rank);
+                if (power > level.MetaPowerCap)
+                {
+                    violations.Add(new CatalogViolation(
+                        level.Id,
+                        "teto de poder",
+                        "a arvore concede " + power + " de poder ate o nivel " + level.Rank +
+                        ", " + (power - level.MetaPowerCap) + " acima do teto de " + level.MetaPowerCap));
+                }
+            }
+
+            int lastRank = ladder.Levels.Count;
+            foreach (KeyValuePair<string, MetaNodeDefinition> pair in tree.Nodes)
+            {
+                if (lastRank > 0 && pair.Value.RequiredLevel > lastRank)
+                {
+                    violations.Add(new CatalogViolation(
+                        pair.Key, "nivel exigido", "exige o nivel " + pair.Value.RequiredLevel +
+                        ", que nao existe na escada"));
                 }
             }
 

@@ -26,8 +26,26 @@ namespace KingdomCollapse.Game
         [Tooltip("Vazio significa tronco geral. Preenchido restringe o desbloqueio a esta raca.")]
         [SerializeField] private string _raceBranchId;
 
-        [Tooltip("Meta desbloqueia conteudo. NumericBonus e reprovado pela validacao de catalogo.")]
+        [Tooltip("Conteudo que o no libera. NumericBonus e reprovado: poder permanente vai em Bonuses.")]
         [SerializeField] private List<UnlockEntry> _unlocks = new List<UnlockEntry>();
+
+        [Serializable]
+        public sealed class BonusEntry
+        {
+            public MetaBonusKind Kind = MetaBonusKind.StartingResource;
+
+            [Tooltip("So vale para StartingResource.")]
+            public ResourceKind Resource = ResourceKind.Food;
+
+            public int Amount = 5;
+        }
+
+        [Tooltip("Poder permanente no estado inicial da run. Pesa no teto de poder do nivel.")]
+        [SerializeField] private List<BonusEntry> _bonuses = new List<BonusEntry>();
+
+        [Tooltip("Nivel de dificuldade que precisa estar liberado para comprar este no.")]
+        [Min(1)]
+        [SerializeField] private int _requiredLevel = 1;
 
         public string DisplayName => _displayName;
 
@@ -48,8 +66,17 @@ namespace KingdomCollapse.Game
                 }
             }
 
+            List<MetaBonus> bonuses = new List<MetaBonus>();
+            for (int i = 0; i < _bonuses.Count; i++)
+            {
+                bonuses.Add(_bonuses[i].Kind == MetaBonusKind.MaxIntegrity
+                    ? MetaBonus.Integrity(_bonuses[i].Amount)
+                    : MetaBonus.Starting(_bonuses[i].Resource, _bonuses[i].Amount));
+            }
+
             return new MetaNodeDefinition(
-                Id, _displayName, _cost, unlocks, prerequisites, _raceBranchId, _description);
+                Id, _displayName, _cost, unlocks, prerequisites, _raceBranchId, _description,
+                bonuses, _requiredLevel);
         }
     }
 }

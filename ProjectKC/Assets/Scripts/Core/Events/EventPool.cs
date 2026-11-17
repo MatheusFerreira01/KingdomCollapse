@@ -32,6 +32,13 @@ namespace KingdomCollapse.Core
 
         public EventClassWeights Weights { get; }
 
+        /// <summary>
+        /// Chance de um dia ter evento, de 0 a 1. O padrao 1 e o comportamento
+        /// original, um evento por dia; o jogo usa menos, porque evento todo dia
+        /// vira ruido e tira o peso de cada um.
+        /// </summary>
+        public double EventChance { get; set; } = 1.0;
+
         public IReadOnlyList<EventDefinition> Catalog => _catalog;
 
         public void Add(EventDefinition definition)
@@ -85,6 +92,11 @@ namespace KingdomCollapse.Core
         {
             List<EventDefinition> eligible = EligibleFor(run);
             if (eligible.Count == 0)
+            {
+                return null;
+            }
+
+            if (EventChance < 1.0 && random.NextDouble() >= EventChance)
             {
                 return null;
             }

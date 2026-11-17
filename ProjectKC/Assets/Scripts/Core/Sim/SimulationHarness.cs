@@ -246,8 +246,12 @@ namespace KingdomCollapse.Core
             int peakDefense,
             int buildingsBuilt,
             int goldAtEnd,
-            int cardsPlayed)
+            int cardsPlayed,
+            RunOutcome outcome = RunOutcome.Collapse,
+            int rivalsDefeated = 0)
         {
+            Outcome = outcome;
+            RivalsDefeated = rivalsDefeated;
             Seed = seed;
             CollapseDay = collapseDay;
             Reason = reason;
@@ -260,6 +264,13 @@ namespace KingdomCollapse.Core
         }
 
         public int Seed { get; }
+
+        /// <summary>Como a run terminou. E a metrica que importa desde que existe Vitoria (design D7).</summary>
+        public RunOutcome Outcome { get; }
+
+        public bool Won => Outcome == RunOutcome.Victory;
+
+        public int RivalsDefeated { get; }
 
         public int CollapseDay { get; }
 
@@ -332,6 +343,53 @@ namespace KingdomCollapse.Core
         }
 
         public int Median => Percentile(0.50);
+
+        /// <summary>Fracao das runs que venceram a campanha, de 0 a 1.</summary>
+        public double WinFraction
+        {
+            get
+            {
+                if (Results.Count == 0)
+                {
+                    return 0;
+                }
+
+                int wins = 0;
+                for (int i = 0; i < Results.Count; i++)
+                {
+                    if (Results[i].Won)
+                    {
+                        wins++;
+                    }
+                }
+
+                return wins / (double)Results.Count;
+            }
+        }
+
+        /// <summary>Dia mediano em que as runs vencedoras terminaram. Zero se nenhuma venceu.</summary>
+        public int MedianWinDay
+        {
+            get
+            {
+                List<int> days = new List<int>();
+                for (int i = 0; i < Results.Count; i++)
+                {
+                    if (Results[i].Won)
+                    {
+                        days.Add(Results[i].CollapseDay);
+                    }
+                }
+
+                if (days.Count == 0)
+                {
+                    return 0;
+                }
+
+                days.Sort();
+                return days[days.Count / 2];
+            }
+        }
 
         public int Percentile(double fraction)
         {
@@ -529,9 +587,13 @@ namespace KingdomCollapse.Core
                 // acumular a lista por 500 dias so gasta memoria.
                 engine.DrainEvents();
 
-                EventDefinition pending = engine.PendingDayEvent;
-                int option = pending == null ? 0 : chosen.ChooseEventOption(bundle.Run, pending);
-                engine.EndDay(option);
+                // O dia para no evento com escolha, como no jogo, para que a politica
+                // decida olhando o evento que saiu, e nao as cegas.
+                engine.BeginEndDay();
+                if (engine.IsAwaitingEventChoice)
+                {
+                    engine.ResolvePendingEvent(chosen.ChooseEventOption(bundle.Run, engine.PendingDayEvent));
+                }
             }
 
             RunScore score = engine.FinalScore ?? ScoreCalculator.Calculate(bundle.Run);
@@ -544,7 +606,9 @@ namespace KingdomCollapse.Core
                 peakDefense,
                 bundle.Run.Stats.BuildingsBuilt,
                 bundle.Run.Gold,
-                cardsPlayed);
+                cardsPlayed,
+                bundle.Run.Outcome,
+                bundle.Run.Stats.RivalsDefeated);
         }
 
         public static SimulationReport RunBatch(

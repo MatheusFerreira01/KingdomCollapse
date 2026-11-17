@@ -23,7 +23,7 @@ namespace KingdomCollapse.Game
             switch (terrain)
             {
                 case TerrainType.Plain:
-                    return new Color(0.55f, 0.72f, 0.36f);
+                    return new Color(0.50f, 0.70f, 0.34f);
                 case TerrainType.Forest:
                     return new Color(0.22f, 0.47f, 0.28f);
                 case TerrainType.Mine:
@@ -55,7 +55,7 @@ namespace KingdomCollapse.Game
             }
         }
 
-        public static readonly Color HiddenTint = new Color(0.20f, 0.20f, 0.22f);
+        public static readonly Color HiddenTint = new Color(0.26f, 0.27f, 0.31f);
         public static readonly Color DestroyedTint = new Color(0.28f, 0.20f, 0.18f);
         public static readonly Color BuildingColor = new Color(0.88f, 0.78f, 0.52f);
         public static readonly Color HallColor = new Color(0.92f, 0.62f, 0.30f);
@@ -70,6 +70,9 @@ namespace KingdomCollapse.Game
 
         public static readonly Color IdleMarkerColor = new Color(0.55f, 0.50f, 0.42f);
         public static readonly Color PurchasableColor = new Color(0.95f, 0.85f, 0.40f);
+
+        /// <summary>Celula que aceita a carta em curso.</summary>
+        public static readonly Color TargetColor = new Color(0.40f, 0.90f, 1.00f);
 
         public static Vector3 WorldPosition(Coord coord, float height)
         {
@@ -111,6 +114,76 @@ namespace KingdomCollapse.Game
             {
                 material.SetColor("_Color", color);
             }
+        }
+
+        /// <summary>
+        /// O chao em volta do reino: um plano escuro com a grade das celulas marcada
+        /// bem de leve. Da onde o reino pisar e onde a sombra cair, e mostra para
+        /// onde o territorio pode crescer, sem competir com as celulas.
+        /// </summary>
+        public static GameObject CreateGround(Transform parent)
+        {
+            const float Extent = 400f;
+
+            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            ground.name = "Chao";
+            ground.transform.SetParent(parent, false);
+            ground.transform.localPosition = new Vector3(0f, -0.02f, 0f);
+            ground.transform.localScale = new Vector3(Extent / 10f, 1f, Extent / 10f);
+
+            // O clique no mundo procura celulas; o chao nao pode entrar na frente.
+            Collider collider = ground.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Object.Destroy(collider);
+            }
+
+            const int Size = 64;
+            Texture2D texture = new Texture2D(Size, Size, TextureFormat.RGBA32, true)
+            {
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Trilinear,
+                anisoLevel = 8,
+                hideFlags = HideFlags.DontSave
+            };
+
+            Color fill = new Color(0.150f, 0.172f, 0.205f);
+            Color line = new Color(0.205f, 0.232f, 0.275f);
+            for (int y = 0; y < Size; y++)
+            {
+                for (int x = 0; x < Size; x++)
+                {
+                    bool edge = x == 0 || y == 0 || x == Size - 1 || y == Size - 1;
+                    texture.SetPixel(x, y, edge ? line : fill);
+                }
+            }
+
+            texture.Apply(true);
+
+            Material material = CreateMaterial(Color.white);
+            material.mainTexture = texture;
+
+            // Uma repeticao por celula, com a linha caindo na divisa entre elas.
+            float repeats = Extent / TileStep;
+            float offset = 0.5f - (Extent * 0.5f) / TileStep;
+            offset -= Mathf.Floor(offset);
+            material.mainTextureScale = new Vector2(repeats, repeats);
+            material.mainTextureOffset = new Vector2(offset, offset);
+
+            if (material.HasProperty("_Smoothness"))
+            {
+                material.SetFloat("_Smoothness", 0f);
+            }
+
+            if (material.HasProperty("_Glossiness"))
+            {
+                material.SetFloat("_Glossiness", 0f);
+            }
+
+            Renderer renderer = ground.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return ground;
         }
 
         private static void MakeTransparent(Material material)

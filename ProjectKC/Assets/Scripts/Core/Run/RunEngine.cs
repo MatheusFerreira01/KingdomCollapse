@@ -208,7 +208,8 @@ namespace KingdomCollapse.Core
 
             // Dano de clima e pequeno e nunca letal: o clima da textura ao dia, nao
             // encerra a run (spec weather).
-            int damage = Run.TodayWeather?.BaseDamage ?? 0;
+            // No dia 1 o jogador ainda nao fez nada: o clima nao fere a base antes da primeira decisao.
+            int damage = Run.Day <= 1 ? 0 : Run.TodayWeather?.BaseDamage ?? 0;
             if (damage > 0)
             {
                 int allowed = Math.Min(damage, Math.Max(0, Run.Integrity - 1));
@@ -305,6 +306,13 @@ namespace KingdomCollapse.Core
             if (!check.Ok)
             {
                 return CommandResult.FailGrid(check.Rejection);
+            }
+
+            Tile target = Run.Grid.TileAt(coord);
+            if (target != null && target.Terrain == TerrainType.Forest &&
+                Run.Rules.GetBool(RuleKeys.NoBuildOnForest, false))
+            {
+                return CommandResult.FailGrid(GridRejection.TerrainNotAllowed);
             }
 
             ResourceAmounts buildCost = BuildCostOf(building);
@@ -448,7 +456,20 @@ namespace KingdomCollapse.Core
         /// Resolve o dia inteiro: producao, ameacas, evento e limpeza. Para de imediato
         /// se o Colapso acontecer no meio.
         /// </summary>
-        public CommandResult EndDay(int eventOptionIndex = 0)
+        /// <summary>
+        /// Verdadeiro quando o dia parou num evento com escolha e espera
+        /// <see cref="ResolvePendingEvent"/>. Nenhum outro comando e aceito ate la.
+        /// </summary>
+        public bool IsAwaitingEventChoice => !Run.IsOver && Run.Phase == DayPhase.Event && PendingDayEvent != null;
+
+        /// <summary>
+        /// Encerra o dia ate o evento. Se o evento sorteado tiver escolha, o dia para
+        /// na fase de Evento com <see cref="PendingDayEvent"/> preenchido e so segue
+        /// com <see cref="ResolvePendingEvent"/>; sem escolha, resolve tudo de uma vez.
+        /// E o caminho do jogo: <see cref="EndDay"/> continua existindo para quem ja
+        /// sabe a opcao (simulador, testes) e produz exatamente o mesmo estado.
+        /// </summary>
+        public CommandResult BeginEndDay()
         {
             CommandResult phase = EnsurePlanning();
             if (!phase.Ok)
@@ -456,6 +477,44 @@ namespace KingdomCollapse.Core
                 return phase;
             }
 
+            if (ResolveUntilEvent())
+            {
+                return CommandResult.Success;
+            }
+
+            EventDefinition definition = EventPool.Draw(Run, Run.Random.Channel(RandomChannel.Events));
+            PendingDayEvent = definition;
+
+            if (definition != null && definition.HasChoice)
+            {
+                Emit(new DayEventDrawnEvent(definition));
+                return CommandResult.Success;
+            }
+
+            FinishEvent(definition, 0, announce: true);
+            return CommandResult.Success;
+        }
+
+        /// <summary>Responde ao evento pendente e termina o dia.</summary>
+        public CommandResult ResolvePendingEvent(int optionIndex)
+        {
+            if (Run.IsOver)
+            {
+                return CommandResult.Fail(CommandRejection.RunOver);
+            }
+
+            if (!IsAwaitingEventChoice)
+            {
+                return CommandResult.Fail(CommandRejection.WrongPhase);
+            }
+
+            FinishEvent(PendingDayEvent, optionIndex, announce: false);
+            return CommandResult.Success;
+        }
+
+        /// <summary>Producao e ataques. Devolve verdadeiro se a run acabou ali.</summary>
+        private bool ResolveUntilEvent()
+        {
             SetPhase(DayPhase.Resolution);
             ResolveProduction();
             ResolveThreats();
@@ -464,29 +523,76 @@ namespace KingdomCollapse.Core
             if (Run.IsOver || Run.CheckCollapse())
             {
                 FinishRun();
-                return CommandResult.Success;
+                return true;
             }
 
             SetPhase(DayPhase.Event);
-            ResolveDayEvent(eventOptionIndex);
+            return false;
+        }
+
+        private void FinishEvent(EventDefinition definition, int optionIndex, bool announce)
+        {
+            PendingDayEvent = null;
+            int eventDefense = 0;
+
+            if (definition != null)
+            {
+                if (announce)
+                {
+                    Emit(new DayEventDrawnEvent(definition));
+                }
+
+                int defenseBefore = Run.PendingDefense;
+                EventOutcome outcome = EventResolver.Resolve(Run, definition, optionIndex);
+                eventDefense = Math.Max(0, Run.PendingDefense - defenseBefore);
+                if (outcome != null)
+                {
+                    Emit(new DayEventResolvedEvent(outcome));
+                }
+            }
 
             if (Run.CheckCollapse())
             {
                 FinishRun();
-                return CommandResult.Success;
+                return;
             }
 
             SetPhase(DayPhase.DayEnd);
             ResolveEndOfDay();
 
+            // O evento acontece depois dos ataques do dia. A defesa que ele concede
+            // seria zerada logo em seguida sem nunca ter defendido nada, entao ela
+            // vale para o dia seguinte (e so para ele).
+            if (eventDefense > 0)
+            {
+                Run.AddPendingDefense(eventDefense);
+            }
+
             if (Run.CheckCollapse())
             {
                 FinishRun();
-                return CommandResult.Success;
+                return;
             }
 
             Run.Day++;
             BeginDay();
+        }
+
+        public CommandResult EndDay(int eventOptionIndex = 0)
+        {
+            CommandResult phase = EnsurePlanning();
+            if (!phase.Ok)
+            {
+                return phase;
+            }
+
+            if (ResolveUntilEvent())
+            {
+                return CommandResult.Success;
+            }
+
+            EventDefinition definition = EventPool.Draw(Run, Run.Random.Channel(RandomChannel.Events));
+            FinishEvent(definition, eventOptionIndex, announce: true);
             return CommandResult.Success;
         }
 
@@ -535,6 +641,9 @@ namespace KingdomCollapse.Core
         /// Cresce a populacao com o excedente de comida, ate o teto dos edificios.
         /// Roda no Fim do Dia, depois de o consumo ja ter acontecido.
         /// </summary>
+        /// <summary>Teto de quem chega por dia: o reino cresce, nao dobra de um dia para o outro.</summary>
+        public const int MaxGrowthPerDay = 2;
+
         private void ResolvePopulationGrowth()
         {
             int capacity = Run.PopulationCapacity();
@@ -546,14 +655,26 @@ namespace KingdomCollapse.Core
             }
 
             double perGrowth = Math.Max(1, Run.Rules.GetDouble(RuleKeys.FoodPerGrowth, 5.0));
-            int growth = (int)(Run[ResourceKind.Food] / perGrowth);
+            double perHead = Run.Rules.GetDouble(RuleKeys.FoodPerPopulation, RunState.DefaultFoodPerPopulation);
 
-            if (growth <= 0)
+            // So o excedente vira gente: cada habitante novo precisa caber na comida
+            // que sobra DEPOIS de separar o que o reino, ja com ele, come amanha.
+            // Sem essa reserva o crescimento esvaziava o celeiro num dia e a fome
+            // levava no seguinte quem tinha acabado de chegar.
+            int growth = 0;
+            int limit = Math.Min(capacity - current, MaxGrowthPerDay);
+            while (growth < limit)
             {
-                return;
+                int next = growth + 1;
+                double reserve = Math.Ceiling((current + next) * perHead);
+                if (Run[ResourceKind.Food] - next * perGrowth < reserve)
+                {
+                    break;
+                }
+
+                growth = next;
             }
 
-            growth = Math.Min(growth, capacity - current);
             if (growth <= 0)
             {
                 return;
@@ -640,26 +761,6 @@ namespace KingdomCollapse.Core
                 {
                     return;
                 }
-            }
-        }
-
-        private void ResolveDayEvent(int optionIndex)
-        {
-            EventDefinition definition = EventPool.Draw(Run, Run.Random.Channel(RandomChannel.Events));
-            PendingDayEvent = definition;
-
-            if (definition == null)
-            {
-                return;
-            }
-
-            Emit(new DayEventDrawnEvent(definition));
-            EventOutcome outcome = EventResolver.Resolve(Run, definition, optionIndex);
-            PendingDayEvent = null;
-
-            if (outcome != null)
-            {
-                Emit(new DayEventResolvedEvent(outcome));
             }
         }
 

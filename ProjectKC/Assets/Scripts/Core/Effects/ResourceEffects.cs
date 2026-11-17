@@ -50,6 +50,9 @@ namespace KingdomCollapse.Core
             return EffectResult.Ok("+" + amount + " " + ResourceKinds.DisplayName(_kind));
         }
 
+        /// <summary>Quanto este efeito daria agora, sem aplicar. Para a interface mostrar antes da escolha.</summary>
+        public int Preview(RunState run) => Math.Max(0, ResolveAmount(run));
+
         private int ResolveAmount(RunState run)
         {
             switch (_scaling)
@@ -90,6 +93,19 @@ namespace KingdomCollapse.Core
         }
 
         public ResourceKind Resource => _kind;
+
+        /// <summary>
+        /// Quanto este efeito tiraria agora, sem aplicar. Nunca mais do que existe;
+        /// o orcamento de severidade ainda pode reduzir na hora de aplicar.
+        /// </summary>
+        public int Preview(RunState run)
+        {
+            int current = run[_kind];
+            int requested = _scaling == GoldScaling.FractionOfCurrent
+                ? (int)Math.Ceiling(current * _amount)
+                : (int)Math.Round(_amount, MidpointRounding.AwayFromZero);
+            return Math.Max(0, Math.Min(requested, current));
+        }
 
         public EffectResult Apply(EffectContext context)
         {

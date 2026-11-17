@@ -38,6 +38,9 @@ namespace KingdomCollapse.Core
         public const string FoodPerGrowth = "food_per_growth";
 
         /// <summary>Multiplica a defesa vinda de edificios guarnecidos. Padrao 1.</summary>
+        /// <summary>Elfos: floresta possuida rende sozinha, e por isso nao aceita obra.</summary>
+        public const string NoBuildOnForest = "no_build_on_forest";
+
         public const string GarrisonDefenseMultiplier = "garrison_defense_multiplier";
 
         // --- Pontos de extensao por raca ---

@@ -28,6 +28,9 @@ namespace KingdomCollapse.Core
 
         public int ThreatLeadDays { get; set; } = 3;
 
+        /// <summary>Chance de um dia ter evento. 1 = todo dia.</summary>
+        public double EventChance { get; set; } = 1.0;
+
         /// <summary>
         /// Rivais da run, na ordem em que entram em guerra. Vazio cai na ameaca
         /// anonima por dia, que so existe enquanto o conteudo nao traz rivais.
@@ -137,8 +140,13 @@ namespace KingdomCollapse.Core
                 ApplyStartingScarcity(run, level.StartingResourceFactor);
             }
 
+            ApplyMetaBonuses(run, tree, profile);
+
             EventPool pool = new EventPool(
-                ResolveEvents(race, catalog, tree, profile), setup.EventWeights);
+                ResolveEvents(race, catalog, tree, profile), setup.EventWeights)
+            {
+                EventChance = setup.EventChance
+            };
 
             RunEngine engine = new RunEngine(run, pool);
 
@@ -179,6 +187,33 @@ namespace KingdomCollapse.Core
                 int current = run[kind];
                 int kept = (int)Math.Round(current * factor, MidpointRounding.AwayFromZero);
                 run.Remove(kind, current - kept);
+            }
+        }
+
+        /// <summary>
+        /// Poder permanente comprado na arvore (design D6). Entra depois da escassez
+        /// do nivel: o corte do nivel aperta o que a raca traz, e nao o que o jogador
+        /// conquistou entre runs.
+        /// </summary>
+        private static void ApplyMetaBonuses(RunState run, MetaTree tree, MetaProfile profile)
+        {
+            if (tree == null || profile == null)
+            {
+                return;
+            }
+
+            List<MetaBonus> bonuses = tree.GrantedBonuses(profile, run.Race.Id);
+            for (int i = 0; i < bonuses.Count; i++)
+            {
+                MetaBonus bonus = bonuses[i];
+                if (bonus.Kind == MetaBonusKind.MaxIntegrity)
+                {
+                    run.RaiseMaxIntegrity(bonus.Amount);
+                }
+                else
+                {
+                    run.Pool.Add(bonus.Resource, bonus.Amount);
+                }
             }
         }
 

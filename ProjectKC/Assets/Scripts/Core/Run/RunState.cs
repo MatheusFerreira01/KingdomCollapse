@@ -287,6 +287,21 @@ namespace KingdomCollapse.Core
         /// Aplica dano a base. Nao decide o Colapso: quem resolve o dia consulta
         /// CheckCollapse depois, para que a ordem das fases fique num lugar so.
         /// </summary>
+        /// <summary>
+        /// Aumenta a integridade maxima e cura o mesmo tanto. Usado ao montar a run,
+        /// por bonus permanente da arvore de meta.
+        /// </summary>
+        internal void RaiseMaxIntegrity(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            MaxIntegrity += amount;
+            Integrity += amount;
+        }
+
         public int Damage(int amount)
         {
             if (amount <= 0)

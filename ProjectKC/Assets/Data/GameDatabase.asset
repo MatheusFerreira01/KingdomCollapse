@@ -67,6 +67,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c24729d7167a4764f91d435d0f0cf1d1, type: 2}
   - {fileID: 11400000, guid: 0e616f664154f4344bd7be82f6e10d59, type: 2}
   - {fileID: 11400000, guid: 24c09673407106141a9b98049b5e5129, type: 2}
+  _rivals:
+  - {fileID: 11400000, guid: 3c93a0c5f32fd5e4e9469d4f8e0740a8, type: 2}
+  - {fileID: 11400000, guid: 2a49ea85d1ea3fd47af00f477df8f28b, type: 2}
+  - {fileID: 11400000, guid: 1fc077a16988c0b4280700a1f91aeb22, type: 2}
+  _levels: []
   _startingBuildings:
   - {fileID: 11400000, guid: 3e846973da5153b4a9d93b8a618d78f0, type: 2}
   - {fileID: 11400000, guid: 0c648caef9519114b80990ccf48439bd, type: 2}

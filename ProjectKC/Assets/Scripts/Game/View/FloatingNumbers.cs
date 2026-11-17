@@ -44,8 +44,8 @@ namespace KingdomCollapse.Game
     {
         private readonly List<FloatingNumber> _active = new List<FloatingNumber>();
 
-        [SerializeField] private float _lifetime = 1.1f;
-        [SerializeField] private float _riseDistance = 0.9f;
+        [SerializeField] private float _lifetime = 1.6f;
+        [SerializeField] private float _riseDistance = 1.1f;
 
         public IReadOnlyList<FloatingNumber> Active => _active;
 
@@ -56,7 +56,7 @@ namespace KingdomCollapse.Game
                 case ResourceKind.Gold:
                     return new Color(0.95f, 0.80f, 0.30f);
                 case ResourceKind.Wood:
-                    return new Color(0.55f, 0.40f, 0.24f);
+                    return new Color(0.78f, 0.56f, 0.32f);
                 case ResourceKind.Stone:
                     return new Color(0.70f, 0.72f, 0.76f);
                 case ResourceKind.Food:
@@ -75,13 +75,13 @@ namespace KingdomCollapse.Game
                 case ResourceKind.Gold:
                     return "ouro";
                 case ResourceKind.Wood:
-                    return "mad";
+                    return "madeira";
                 case ResourceKind.Stone:
-                    return "ped";
+                    return "pedra";
                 case ResourceKind.Food:
-                    return "com";
+                    return "comida";
                 case ResourceKind.Population:
-                    return "pop";
+                    return "gente";
                 default:
                     return string.Empty;
             }
@@ -139,7 +139,10 @@ namespace KingdomCollapse.Game
 
         private void OnGUI()
         {
-            if (_active.Count == 0)
+            // Atras dos paineis do HUD: numero do tabuleiro nao cobre botao.
+            GUI.depth = 10;
+
+            if (_active.Count == 0 || Event.current.type != EventType.Repaint)
             {
                 return;
             }
@@ -150,27 +153,52 @@ namespace KingdomCollapse.Game
                 return;
             }
 
+            UiTheme.Begin();
+
             Color previous = GUI.color;
+            float width = UiTheme.S(220f);
+            float height = UiTheme.S(26f);
 
             for (int i = 0; i < _active.Count; i++)
             {
                 FloatingNumber number = _active[i];
                 Vector3 world = number.World + Vector3.up * (_riseDistance * number.Progress);
                 Vector3 screen = camera.WorldToScreenPoint(world);
-
                 if (screen.z <= 0f)
                 {
                     continue;
                 }
 
-                Color color = number.Color;
-                color.a = 1f - number.Progress;
-                GUI.color = color;
+                // Some so no fim: o numero precisa ficar legivel enquanto sobe.
+                float alpha = Mathf.Clamp01((1f - number.Progress) * 2.5f);
+                Rect rect = new Rect(screen.x - width * 0.5f, Screen.height - screen.y - height * 0.5f, width, height);
 
-                GUI.Label(new Rect(screen.x - 40f, Screen.height - screen.y - 12f, 80f, 22f), number.Text);
+                GUI.color = new Color(0f, 0f, 0f, alpha * 0.85f);
+                GUI.Label(new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height), number.Text, ShadowStyle());
+
+                Color color = number.Color;
+                color.a = alpha;
+                GUI.color = Color.white;
+                UiTheme.LabelColored(rect, number.Text, UiTheme.CenterBold, color);
             }
 
             GUI.color = previous;
+        }
+
+        private static GUIStyle _shadow;
+        private static int _shadowSize;
+
+        /// <summary>Mesma fonte do numero, em preto, sem rich text: a sombra nao herda cor de tag.</summary>
+        private static GUIStyle ShadowStyle()
+        {
+            if (_shadow == null || _shadowSize != UiTheme.CenterBold.fontSize)
+            {
+                _shadow = new GUIStyle(UiTheme.CenterBold) { richText = false };
+                _shadow.normal.textColor = Color.white;
+                _shadowSize = UiTheme.CenterBold.fontSize;
+            }
+
+            return _shadow;
         }
     }
 }
